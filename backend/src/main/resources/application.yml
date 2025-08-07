@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: sportify
+  datasource:
+    url: jdbc:postgresql://localhost:5432/sportify
+    username: root
+    password: secret
+  jpa:
+    show-sql: true
+  flyway:
+    enabled: true
+
+
+
+server:
+    port: 8080
