@@ -7,6 +7,8 @@ spring:
     password: secret
   jpa:
     show-sql: true
+    hibernate:
+      ddl-auto: update
   flyway:
     enabled: true
 
@@ -14,3 +16,9 @@ spring:
 
 server:
     port: 8080
+
+springdoc:
+    swagger-ui:
+        path: /swagger-ui.html
+
+#  springdoc.swagger-ui.path=/swagger-ui.html
