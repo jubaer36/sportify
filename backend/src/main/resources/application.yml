@@ -21,4 +21,9 @@ springdoc:
     swagger-ui:
         path: /swagger-ui.html
 
+
+provisorr:
+  jwtSecret: YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkwYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkw
+  jwtExpirationMs: 86400000
+  jwtRefreshExpirationMs : 604800000
 #  springdoc.swagger-ui.path=/swagger-ui.html
