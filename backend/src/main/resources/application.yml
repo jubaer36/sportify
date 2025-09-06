@@ -3,8 +3,8 @@ spring:
     name: sportify
   datasource:
     url: jdbc:postgresql://localhost:5432/sportify
-    username: root
-    password: secret
+    username: postgres
+    password: admin
   jpa:
     show-sql: true
     hibernate:
@@ -15,7 +15,7 @@ spring:
 
 
 server:
-    port: 8080
+    port: 8090
 
 springdoc:
     swagger-ui:
