@@ -20,4 +20,8 @@ public class ScoreService {
     public List<Score> getAllScores() {
         return scoreRepository.findAll();
     }
+
+    public Score createScore(Score score) {
+        return scoreRepository.save(score);
+    }
 }

@@ -27,4 +27,10 @@ public class MatchController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(matchDTOs);
     }
+
+    @PostMapping
+    public ResponseEntity<MatchDTO> createMatch(@RequestBody Match match) {
+        Match created = matchService.createMatch(match);
+        return ResponseEntity.status(HttpStatus.CREATED).body(MatchDTO.fromEntity(created));
+    }
 }

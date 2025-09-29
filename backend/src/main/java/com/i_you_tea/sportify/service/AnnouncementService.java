@@ -20,4 +20,8 @@ public class AnnouncementService {
     public List<Announcement> getAllAnnouncements() {
         return announcementRepository.findAll();
     }
+
+    public Announcement createAnnouncement(Announcement announcement) {
+        return announcementRepository.save(announcement);
+    }
 }

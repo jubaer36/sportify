@@ -21,4 +21,8 @@ public class HallOfFameService {
     public List<HallOfFame> getAllHallOfFameEntries() {
         return hallOfFameRepository.findAll();
     }
+
+    public HallOfFame createHallOfFame(HallOfFame hallOfFame) {
+        return hallOfFameRepository.save(hallOfFame);
+    }
 }

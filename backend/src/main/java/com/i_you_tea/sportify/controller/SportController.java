@@ -25,4 +25,10 @@ public class SportController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(sportDTOs);
     }
+
+    @PostMapping
+    public ResponseEntity<SportDTO> createSport(@RequestBody SportDTO sportDTO) {
+        Sport created = sportService.createSport(sportDTO.toEntity());
+        return ResponseEntity.status(HttpStatus.CREATED).body(SportDTO.fromEntity(created));
+    }
 }

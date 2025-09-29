@@ -16,4 +16,8 @@ public class SportService {
     public List<Sport> getAllSports() {
         return sportRepository.findAll();
     }
+
+    public Sport createSport(Sport sport) {
+        return sportRepository.save(sport);
+    }
 }

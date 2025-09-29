@@ -20,4 +20,8 @@ public class MatchService {
     public List<Match> getAllMatches() {
         return matchRepository.findAll();
     }
+
+    public Match createMatch(Match match) {
+        return matchRepository.save(match);
+    }
 }

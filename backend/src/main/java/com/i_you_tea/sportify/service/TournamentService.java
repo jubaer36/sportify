@@ -19,4 +19,8 @@ public class TournamentService {
     public List<Tournament> getAllTournaments() {
         return tournamentRepository.findAll();
     }
+
+    public Tournament createTournament(Tournament tournament) {
+        return tournamentRepository.save(tournament);
+    }
 }

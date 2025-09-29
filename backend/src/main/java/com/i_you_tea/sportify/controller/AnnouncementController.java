@@ -27,4 +27,10 @@ public class AnnouncementController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(announcementDTOs);
     }
+
+    @PostMapping
+    public ResponseEntity<AnnouncementDTO> createAnnouncement(@RequestBody Announcement announcement) {
+        Announcement created = announcementService.createAnnouncement(announcement);
+        return ResponseEntity.status(HttpStatus.CREATED).body(AnnouncementDTO.fromEntity(created));
+    }
 }

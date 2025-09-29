@@ -25,4 +25,10 @@ public class NotificationController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(notificationDTOs);
     }
+
+    @PostMapping
+    public ResponseEntity<NotificationDTO> createNotification(@RequestBody Notification notification) {
+        Notification created = notificationService.createNotification(notification);
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(NotificationDTO.fromEntity(created));
+    }
 }

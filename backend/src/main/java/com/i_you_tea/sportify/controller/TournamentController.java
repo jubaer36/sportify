@@ -27,4 +27,10 @@ public class TournamentController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(tournamentDTOs);
     }
+
+    @PostMapping
+    public ResponseEntity<TournamentDTO> createTournament(@RequestBody Tournament tournament) {
+        Tournament created = tournamentService.createTournament(tournament);
+        return ResponseEntity.status(HttpStatus.CREATED).body(TournamentDTO.fromEntity(created));
+    }
 }

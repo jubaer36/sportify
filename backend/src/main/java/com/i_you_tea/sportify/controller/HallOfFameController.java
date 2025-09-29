@@ -25,4 +25,10 @@ public class HallOfFameController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(hallOfFameDTOs);
     }
+
+    @PostMapping
+    public ResponseEntity<HallOfFameDTO> createHallOfFame(@RequestBody HallOfFame hallOfFame) {
+        HallOfFame created = hallOfFameService.createHallOfFame(hallOfFame);
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(HallOfFameDTO.fromEntity(created));
+    }
 }

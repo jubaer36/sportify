@@ -25,4 +25,10 @@ public class TeamController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(teamDTOs);
     }
+
+    @PostMapping
+    public ResponseEntity<TeamDTO> createTeam(@RequestBody Team team) {
+        Team created = teamService.createTeam(team);
+        return ResponseEntity.status(HttpStatus.CREATED).body(TeamDTO.fromEntity(created));
+    }
 }

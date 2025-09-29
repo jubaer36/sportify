@@ -19,4 +19,8 @@ public class NotificationService {
     public List<Notification> getAllNotifications() {
         return notificationRepository.findAll();
     }
+
+    public Notification createNotification(Notification notification) {
+        return notificationRepository.save(notification);
+    }
 }
