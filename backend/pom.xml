@@ -99,6 +99,14 @@
             <artifactId>spring-dotenv</artifactId>
             <version>4.0.0</version>
         </dependency>
+        
+<!--         Alternative: Direct dotenv-java dependency for better Spring Boot 3.x compatibility -->
+
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
 
 
     </dependencies>
@@ -134,7 +142,7 @@
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>9.22.3</version>
                 <configuration>
-                    <url>jdbc:postgresql://localhost:5432/sportify</url>
+                    <url>jdbc:postgresql://localhost:5433/sportify</url>
                     <user>root</user>
                     <password>secret</password>
                     <cleanDisabled>false</cleanDisabled>
