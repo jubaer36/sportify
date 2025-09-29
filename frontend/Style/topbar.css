@@ -9,6 +9,11 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  transition: margin-left 0.3s;
+}
+
+.topbar.sidebar-open {
+  margin-left: 220px;
 }
 
 .nav-left {
@@ -47,4 +52,40 @@
 
 .profile-logo:hover {
   box-shadow: 0 0 0 3px #bae6fd;
+}
+
+.sidebar-toggle {
+  background: none;
+  border: none;
+  margin-right: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0;
+}
+
+.hamburger {
+  width: 28px;
+  height: 3px;
+  background: #0284c7;
+  border-radius: 2px;
+  position: relative;
+  display: inline-block;
+}
+.hamburger::before,
+.hamburger::after {
+  content: "";
+  position: absolute;
+  width: 28px;
+  height: 3px;
+  background: #0284c7;
+  border-radius: 2px;
+  left: 0;
+  transition: 0.2s;
+}
+.hamburger::before {
+  top: -8px;
+}
+.hamburger::after {
+  top: 8px;
 }
