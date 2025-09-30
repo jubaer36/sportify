@@ -19,14 +19,17 @@ import java.util.stream.Collectors;
 public class AnnouncementController {
     @Autowired
     private AnnouncementService announcementService;
+
     @GetMapping
-    public ResponseEntity<List<AnnouncementDTO>> getAllAnnouncements() {
+    public ResponseEntity<List<AnnouncementDTO>> getAllAnnouncements(@RequestHeader("Authorization") String token) {
+        token = token.replace("Bearer ", "");
         List<Announcement> announcements = announcementService.getAllAnnouncements();
         List<AnnouncementDTO> announcementDTOs = announcements.stream()
                 .map(AnnouncementDTO::fromEntity)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(announcementDTOs);
     }
+
 
     @PostMapping
     public ResponseEntity<AnnouncementDTO> createAnnouncement(@RequestBody Announcement announcement) {
