@@ -1,6 +1,6 @@
 "use client";
 
-import "./register.css"
+import "./register.css";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -19,7 +19,9 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -50,71 +52,87 @@ export default function RegisterPage() {
   };
 
   return (
+    <div className="register-page">
     <div className="auth-bg">
       <form className="auth-form" onSubmit={handleRegister}>
-        <Image src="/Photos/logo3.png" alt="Logo" width={250} height={150} className="logo" />
-        <div className="switch-tabs">
-          <Link href="/login" className="inactive">Login</Link>
-          <span className="active">Register</span>
-        </div>
+        {/* Logo */}
+        <Image
+          src="/Photos/logo3.png"
+          alt="Logo"
+          width={500}
+          height={220}
+          className="logo"
+        />
+
+        {/* Static label instead of tabs */}
         <h2 className="form-title">Register</h2>
-        <input
-          type="text"
-          name="name"
-          placeholder="Full Name"
-          required
-          value={form.name}
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          name="username"
-          placeholder="Username"
-          required
-          value={form.username}
-          onChange={handleChange}
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          required
-          value={form.email}
-          onChange={handleChange}
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          required
-          value={form.password}
-          onChange={handleChange}
-        />
-        <select
-          name="role"
-          value={form.role}
-          onChange={handleChange}
-          className="role-select"
-        >
-          <option value="PLAYER">Player</option>
-          <option value="CAPTAIN">Captain</option>
-          <option value="ADMIN">Admin</option>
-        </select>
+
+        {/* Grouped input fields */}
+        <div className="form-fields">
+          <input
+            type="text"
+            name="name"
+            placeholder="Full Name"
+            required
+            value={form.name}
+            onChange={handleChange}
+          />
+          <input
+            type="text"
+            name="username"
+            placeholder="Username"
+            required
+            value={form.username}
+            onChange={handleChange}
+          />
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            required
+            value={form.email}
+            onChange={handleChange}
+          />
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            required
+            value={form.password}
+            onChange={handleChange}
+          />
+          <select
+            name="role"
+            value={form.role}
+            onChange={handleChange}
+            className="role-select"
+          >
+            <option value="PLAYER">Player</option>
+            <option value="CAPTAIN">Captain</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+
+        {/* Status messages */}
         {error && <div className="error">{error}</div>}
         {success && <div className="success">{success}</div>}
+
+        {/* Actions */}
         <div className="form-actions">
-          <button type="button" className="btn inactive" disabled>
-            Login
-          </button>
           <button type="submit" className="btn active" disabled={loading}>
             {loading ? "Registering..." : "Register"}
           </button>
         </div>
+
+        {/* Bottom navigation */}
         <div className="bottom-text">
           Already have an account?{" "}
-          <Link href="/login" className="link">Login</Link>
+          <Link href="/login" className="link">
+            Sign In
+          </Link>
         </div>
       </form>
+    </div>
     </div>
   );
 }

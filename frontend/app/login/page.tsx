@@ -1,6 +1,6 @@
 "use client";
 
-import "./login.css"
+import "./login.css";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -45,44 +45,60 @@ export default function LoginPage() {
   };
 
   return (
+    <div className="login-page">
     <div className="auth-bg">
       <form className="auth-form" onSubmit={handleLogin}>
-        <Image src="/Photos/logo3.png" alt="Logo" width={250} height={150} className="logo" />
-        <div className="switch-tabs">
-          <span className="active">Login</span>
-          <Link href="/register" className="inactive">Register</Link>
-        </div>
+        {/* Logo at very top */}
+        <Image
+          src="/Photos/logo3.png"
+          alt="Logo"
+          width={500}
+          height={220}
+          className="logo"
+        />
+
+        {/* Only title, no switch-tabs */}
         <h2 className="form-title">Login</h2>
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          required
-          value={form.email}
-          onChange={handleChange}
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          required
-          value={form.password}
-          onChange={handleChange}
-        />
+
+        {/* Input section */}
+        <div className="form-fields">
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            required
+            value={form.email}
+            onChange={handleChange}
+          />
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            required
+            value={form.password}
+            onChange={handleChange}
+          />
+        </div>
+
         {error && <div className="error">{error}</div>}
+
+        {/* Buttons */}
         <div className="form-actions">
           <button type="submit" className="btn active" disabled={loading}>
             {loading ? "Logging in..." : "Login"}
           </button>
-          <button type="button" className="btn inactive" disabled>
-            Register
-          </button>
         </div>
+
+        {/* Bottom link */}
         <div className="bottom-text">
           New to Sportify?{" "}
-          <Link href="/register" className="link">Register now</Link>
+          <Link href="/register" className="link">
+            Register
+          </Link>{" "}
+          now
         </div>
       </form>
+    </div>
     </div>
   );
 }
