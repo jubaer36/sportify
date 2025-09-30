@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,11 +70,11 @@ export default function LoginPage() {
         {/* Input section */}
         <div className="form-fields">
           <input
-            type="email"
-            name="email"
-            placeholder="Email"
+            type="text"
+            name="username"
+            placeholder="Username"
             required
-            value={form.email}
+            value={form.username}
             onChange={handleChange}
           />
           <input
