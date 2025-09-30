@@ -32,9 +32,16 @@ public class UserController {
     }
 
     @GetMapping("/profile")
-    public ResponseEntity<?> getCurrentUserProfile(@AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<?> getCurrentUserProfile(@RequestHeader("Authorization") String token) {
         try {
-            User currentUser = (User) userDetails;
+            Optional<User> userOptional = userService.getCurrentUserFromToken(token);
+            
+            if (userOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Invalid or expired token"));
+            }
+            
+            User currentUser = userOptional.get();
             UserDTO userDTO = UserDTO.fromEntity(currentUser);
             return ResponseEntity.ok(userDTO);
         } catch (Exception e) {
@@ -44,10 +51,17 @@ public class UserController {
     }
 
     @PutMapping("/profile")
-    public ResponseEntity<?> updateProfile(@AuthenticationPrincipal UserDetails userDetails,
+    public ResponseEntity<?> updateProfile(@RequestHeader("Authorization") String token,
             @RequestBody UserDTO updateRequest) {
         try {
-            User currentUser = (User) userDetails;
+            Optional<User> userOptional = userService.getCurrentUserFromToken(token);
+            
+            if (userOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Invalid or expired token"));
+            }
+            
+            User currentUser = userOptional.get();
 
             // Update only allowed fields (not password, email, username)
             if (updateRequest.getName() != null) {

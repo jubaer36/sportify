@@ -32,6 +32,13 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
+
+      if(data.token) {
+        localStorage.setItem("token", data.token);
+      }
+      if(data.refreshToken){
+        localStorage.setItem("refreshToken", data.refreshToken);
+      }
       // Redirect based on role
       const role = data.user.role?.toLowerCase();
       if (role === "admin") router.push("/admin/dashboard");

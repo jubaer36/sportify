@@ -1,0 +1,44 @@
+.captain-dashboard-bg {
+  min-height: 100vh;
+  background: #e0f2fe;
+  display: flex;
+  flex-direction: column;
+}
+
+.captain-dashboard-content {
+  max-width: 700px;
+  margin: 3rem auto 0 auto;
+  background: #fff;
+  border-radius: 1.2rem;
+  box-shadow: 0 4px 24px 0 #38bdf82a;
+  padding: 2.5rem 2rem;
+  text-align: center;
+}
+
+.captain-dashboard-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #0284c7;
+  margin-bottom: 2rem;
+}
+
+.captain-news-section {
+  text-align: left;
+}
+
+.captain-news-section h2 {
+  font-size: 1.3rem;
+  color: #0c4a6e;
+  margin-bottom: 1rem;
+}
+
+.captain-news-section ul {
+  list-style: disc inside;
+  color: #334155;
+  font-size: 1.08rem;
+  padding-left: 1rem;
+}
+
+.captain-news-section li {
+  margin-bottom: 0.7rem;
+}

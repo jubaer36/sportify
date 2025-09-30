@@ -1,16 +1,47 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
+import CaptainSidebar from "./captain_sidebar";
+import PlayerSidebar from "./player_sidebar";
+
 import "../Style/topbar.css";
 
 export default function Topbar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profile, setProfile] = useState(null);
+
+  const fetchProfile = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const res = await fetch("http://localhost:8090/api/users/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data);
+        console.log("Fetched profile:", data);
+      } else {
+        console.error("Failed to fetch profile");
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
   return (
     <>
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {profile?.role === "ADMIN" && <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
+      {profile?.role === "CAPTAIN" && <CaptainSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
+      {profile?.role === "PLAYER" && <PlayerSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
+
+      {/* <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} /> */}
       <nav className={`topbar${sidebarOpen ? " sidebar-open" : ""}`}>
         <button
           className="sidebar-toggle"
