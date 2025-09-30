@@ -14,6 +14,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -28,47 +31,73 @@ public class AuthController {
     private final JWTService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
-        try {
-            // Authenticate user with email and password
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getEmail(),
-                            loginRequest.getPassword()));
 
-            // Find user by email
-            Optional<User> userOptional = userService.findByEmail(loginRequest.getEmail());
-            if (userOptional.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("error", "Invalid email or password"));
-            }
 
-            User user = userOptional.get();
-            UserDetails userDetails = user; // User implements UserDetails
+@PostMapping("/login")
+public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
+    Logger log = LoggerFactory.getLogger(this.getClass());
+    try {
+        log.info("➡️ Login request received for username: {}", loginRequest.getUsername());
 
-            // Generate tokens
-            String token = jwtService.generateToken(userDetails);
-            Map<String, Object> refreshClaims = new HashMap<>();
-            String refreshToken = jwtService.generateRefreshToken(refreshClaims, userDetails);
+        // Step 1: Authenticate user
+        log.debug("Authenticating user with AuthenticationManager...");
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginRequest.getUsername(),
+                        loginRequest.getPassword()
+                )
+        );
+        log.info("✅ Authentication successful for username: {}", loginRequest.getUsername());
 
-            // Save refresh token
-            jwtService.saveRefreshToken(user.getUserId(), refreshToken);
+        // Step 2: Find user by username
+        String userName = loginRequest.getUsername();
+        log.debug("Looking up user in DB with username: {}", userName);
+        Optional<User> userOptional = userService.findByUsername(userName);
 
-            // Create response
-            UserDTO userDTO = UserDTO.fromEntity(user);
-            AuthResponseDTO response = new AuthResponseDTO(token, refreshToken, userDTO);
-
-            return ResponseEntity.ok(response);
-
-        } catch (BadCredentialsException e) {
+        if (userOptional.isEmpty()) {
+            log.warn("❌ User not found in DB: {}", userName);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid email or password"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An error occurred during login"));
+                    .body(Map.of("error", "Invalid username or password"));
         }
+
+        User user = userOptional.get();
+        log.info("✅ User loaded from DB: id={}, username={}", user.getUserId(), user.getUsername());
+
+        // Step 3: Wrap as UserDetails
+        UserDetails userDetails = user; // assuming User implements UserDetails
+        log.debug("UserDetails prepared for username: {}", userDetails.getUsername());
+
+        // Step 4: Generate tokens
+        log.debug("Generating JWT tokens for username: {}", userDetails.getUsername());
+        String token = jwtService.generateToken(userDetails);
+        Map<String, Object> refreshClaims = new HashMap<>();
+        String refreshToken = jwtService.generateRefreshToken(refreshClaims, userDetails);
+        log.info("✅ Tokens generated for username: {}", userDetails.getUsername());
+
+        // Step 5: Save refresh token
+        log.debug("Saving refresh token for userId={}", user.getUserId());
+        jwtService.saveRefreshToken(user.getUserId(), refreshToken);
+        log.info("✅ Refresh token saved for userId={}", user.getUserId());
+
+        // Step 6: Build response
+        UserDTO userDTO = UserDTO.fromEntity(user);
+        AuthResponseDTO response = new AuthResponseDTO(token, refreshToken, userDTO);
+        log.info("✅ Login successful for username={} (userId={})", user.getUsername(), user.getUserId());
+
+        return ResponseEntity.ok(response);
+
+    } catch (BadCredentialsException e) {
+        log.error("❌ Bad credentials for username={}", loginRequest.getUsername());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "Invalid username or password"));
+    } catch (Exception e) {
+        log.error("🔥 Unexpected error during login for username={} -> {}", loginRequest.getUsername(), e.getMessage(), e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "An error occurred during login"));
     }
+}
+
+
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequestDTO registerRequest) {
@@ -165,9 +194,9 @@ public class AuthController {
     public ResponseEntity<?> logout(@RequestBody RefreshTokenRequestDTO refreshRequest) {
         try {
             String refreshToken = refreshRequest.getRefreshToken();
-            String email = jwtService.extractUserName(refreshToken);
+            String userName = jwtService.extractUserName(refreshToken);
 
-            Optional<User> userOptional = userService.findByEmail(email);
+            Optional<User> userOptional = userService.findByUsername(userName);
             if (userOptional.isPresent()) {
                 User user = userOptional.get();
                 jwtService.deleteRefreshToken(user.getUserId());
