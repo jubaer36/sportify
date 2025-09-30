@@ -1,0 +1,51 @@
+[
+  {
+    "name": "Abdullah Al Jubaer",
+    "username": "jubaer",
+    "email": "abdullahaljubaergem@gmail.com",
+    "password": "123",
+    "role": "ADMIN"
+  },
+  {
+    "name": "Shufan Shahi",
+    "username": "shahi",
+    "email": "shahi@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Alif Rashid",
+    "username": "alif",
+    "email": "alif@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Mosharrifur Rahman Ratul",
+    "username": "ratul",
+    "email": "ratul@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Nazmus Sadiq",
+    "username": "sadiq",
+    "email": "sadiq@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Fahim Ahmed Khan",
+    "username": "fahim",
+    "email": "fahim@gmail.com",
+    "password": "123",
+    "role": "CAPTAIN"
+  },
+  {
+    "name": "Raihan Mahmud",
+    "username": "raihan",
+    "email": "raihan@gmail.com",
+    "password": "123",
+    "role": "CAPTAIN"
+  }
+]

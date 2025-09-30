@@ -40,6 +40,14 @@ public class Tournament {
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
     
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "champion_id")
+    private Team champion;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "runner_up_id")
+    private Team runnerUp;
+    
     public enum TournamentType {
         ROUND_ROBIN, KNOCKOUT
     }

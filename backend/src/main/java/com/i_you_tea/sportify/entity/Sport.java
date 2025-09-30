@@ -25,4 +25,16 @@ public class Sport {
     
     @Column(name = "rules", columnDefinition = "TEXT")
     private String rules;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "captain_id")
+    private User captain;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recent_champion_id")
+    private Team recentChampion;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recent_runner_up_id")
+    private Team recentRunnerUp;
 }

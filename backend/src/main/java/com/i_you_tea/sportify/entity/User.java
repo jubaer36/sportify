@@ -46,7 +46,7 @@ public class User implements UserDetails {
     private String profilePhoto;
     
     public enum UserRole {
-        PLAYER, ADMIN, REFEREE, SCOREKEEPER
+        PLAYER, ADMIN, CAPTAIN, SCOREKEEPER
     }
     
     // UserDetails implementation methods

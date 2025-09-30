@@ -21,4 +21,12 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
     List<Tournament> findByStartDateBetween(LocalDate startDate, LocalDate endDate);
     
     List<Tournament> findByNameContainingIgnoreCase(String name);
+    
+    List<Tournament> findByChampion(com.i_you_tea.sportify.entity.Team champion);
+    
+    List<Tournament> findByRunnerUp(com.i_you_tea.sportify.entity.Team runnerUp);
+    
+    List<Tournament> findByChampionTeamId(Long championId);
+    
+    List<Tournament> findByRunnerUpTeamId(Long runnerUpId);
 }

@@ -13,10 +13,10 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         ×
       </button>
       <nav className="sidebar-nav">
-        <Link href="/profile" className="sidebar-link">My Profile</Link>
-        <Link href="/teams" className="sidebar-link">My Teams</Link>
-        <Link href="/games" className="sidebar-link">My Games</Link>
-        <Link href="/favourites" className="sidebar-link">Favourites</Link>
+        <Link href="/admin/profile" className="sidebar-link">My Profile</Link>
+        <Link href="/admin/teams" className="sidebar-link">Manage Teams</Link>
+        <Link href="/admin/all-games" className="sidebar-link">All Games</Link>
+        <Link href="/admin/dashboard" className="sidebar-link">Dashboard</Link>
       </nav>
     </aside>
   );

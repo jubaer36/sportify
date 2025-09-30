@@ -29,8 +29,41 @@ public class TournamentController {
     }
 
     @PostMapping
-    public ResponseEntity<TournamentDTO> createTournament(@RequestBody Tournament tournament) {
-        Tournament created = tournamentService.createTournament(tournament);
+    public ResponseEntity<TournamentDTO> createTournament(@RequestBody TournamentDTO tournamentDTO) {
+        Tournament created = tournamentService.createTournament(tournamentDTO.toEntity());
         return ResponseEntity.status(HttpStatus.CREATED).body(TournamentDTO.fromEntity(created));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<TournamentDTO> getTournamentById(@PathVariable Long id) {
+        return tournamentService.getTournamentById(id)
+                .map(tournament -> ResponseEntity.ok(TournamentDTO.fromEntity(tournament)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<TournamentDTO> updateTournament(@PathVariable Long id, @RequestBody TournamentDTO tournamentDTO) {
+        Tournament updated = tournamentService.updateTournament(id, tournamentDTO.toEntity());
+        if (updated != null) {
+            return ResponseEntity.ok(TournamentDTO.fromEntity(updated));
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTournament(@PathVariable Long id) {
+        if (tournamentService.deleteTournament(id)) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/sport/{sportId}")
+    public ResponseEntity<List<TournamentDTO>> getTournamentsBySport(@PathVariable Long sportId) {
+        List<Tournament> tournaments = tournamentService.getTournamentsBySport(sportId);
+        List<TournamentDTO> tournamentDTOs = tournaments.stream()
+                .map(TournamentDTO::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(tournamentDTOs);
     }
 }
