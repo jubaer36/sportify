@@ -26,6 +26,7 @@ public class MatchDTO {
     private Match.MatchStatus status;
     private Long winnerTeamId;
     private String winnerTeamName;
+    private String round;
     
     public static MatchDTO fromEntity(Match match) {
         return new MatchDTO(
@@ -42,7 +43,8 @@ public class MatchDTO {
             match.getVenue(),
             match.getStatus(),
             match.getWinnerTeam() != null ? match.getWinnerTeam().getTeamId() : null,
-            match.getWinnerTeam() != null ? match.getWinnerTeam().getTeamName() : null
+            match.getWinnerTeam() != null ? match.getWinnerTeam().getTeamName() : null,
+            match.getRound()
         );
     }
 }

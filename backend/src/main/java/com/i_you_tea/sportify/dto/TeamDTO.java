@@ -17,7 +17,10 @@ public class TeamDTO {
     private Long createdById;
     private String createdByName;
     private String logo;
-    
+    private Long tournamentId;
+
+
+
     public static TeamDTO fromEntity(Team team) {
         return new TeamDTO(
             team.getTeamId(),
@@ -26,7 +29,8 @@ public class TeamDTO {
             team.getSport() != null ? team.getSport().getName() : null,
             team.getCreatedBy() != null ? team.getCreatedBy().getUserId() : null,
             team.getCreatedBy() != null ? team.getCreatedBy().getName() : null,
-            team.getLogo()
+            team.getLogo(),
+            team.getTournament() != null ? team.getTournament().getTournamentId() : null
         );
     }
 }
