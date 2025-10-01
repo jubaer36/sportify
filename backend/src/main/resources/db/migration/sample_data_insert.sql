@@ -24,14 +24,14 @@ INSERT INTO sports (sport_id, name, is_team_game, rules, captain_id) VALUES
 (5, 'Badminton', false, 'Standard badminton rules, singles match, best of 3 games to 21 points.', NULL);
 
 -- Insert Teams
-INSERT INTO teams (team_id, team_name, sport_id, created_by, logo) VALUES
-(1, 'Thunder Strikers', 1, 2, 'thunder_strikers_logo.png'),
-(2, 'Lightning Bolts', 1, 3, 'lightning_bolts_logo.png'),
-(3, 'Sky Warriors', 2, 4, 'sky_warriors_logo.png'),
-(4, 'Fire Eagles', 2, 5, 'fire_eagles_logo.png'),
-(5, 'Storm Riders', 3, 2, 'storm_riders_logo.png'),
-(6, 'Golden Gladiators', 1, 6, 'golden_gladiators_logo.png'),
-(7, 'Silver Sharks', 3, 7, 'silver_sharks_logo.png');
+INSERT INTO teams (team_id, team_name, sport_id, created_by, logo,tournament_id) VALUES
+(1, 'Thunder Strikers', 1, 2, 'thunder_strikers_logo.png',8),
+(2, 'Lightning Bolts', 1, 3, 'lightning_bolts_logo.png',8),
+(3, 'Sky Warriors', 2, 4, 'sky_warriors_logo.png,',2),
+(4, 'Fire Eagles', 2, 5, 'fire_eagles_logo.png',2),
+(5, 'Storm Riders', 3, 2, 'storm_riders_logo.png',7),
+(6, 'Golden Gladiators', 1, 6, 'golden_gladiators_logo.png',8),
+(7, 'Silver Sharks', 3, 7, 'silver_sharks_logo.png',7);
 
 -- Insert Team Members
 INSERT INTO team_members (team_id, user_id, role_in_team) VALUES
