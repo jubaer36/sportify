@@ -79,7 +79,7 @@ export default function Topbar() {
           <Link href="/admin/dashboard" className="nav-btn">Ongoing events</Link>
           <Link href="/admin/dashboard?tab=upcoming" className="nav-btn">Upcoming events</Link>
           <Link href="/admin/dashboard?tab=history" className="nav-btn">History</Link>
-          <Link href="/admin/dashboard?tab=tournaments" className="nav-btn">Tournaments</Link>
+          <Link href="/tournaments" className="nav-btn">Tournaments</Link>
         </div>
 
         <div className="nav-right">

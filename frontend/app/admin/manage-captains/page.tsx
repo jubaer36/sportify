@@ -215,13 +215,13 @@ export default function ManageCaptains() {
               <p>
                 Selected Sport: <strong>{selectedSport.name}</strong>
               </p>
-              <input
+              {/* <input
                 type="text"
                 placeholder="Search user..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="search-box"
-              />
+              /> */}
 
               {loadingUsers ? (
                 <div className="loading-message">Loading users...</div>
