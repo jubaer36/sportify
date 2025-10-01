@@ -20,7 +20,8 @@ public class SportController {
     private SportService sportService;
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<SportDTO>> getAllSports() {
+    public ResponseEntity<List<SportDTO>> getAllSports(@RequestHeader("Authorization") String token) {
+        token = token.replace("Bearer ", "");
         List<Sport> sports = sportService.getAllSports();
         List<SportDTO> sportDTOs = sports.stream()
                 .map(SportDTO::fromEntity)

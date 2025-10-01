@@ -27,6 +27,12 @@ public class Team {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tournament_id", nullable = true)
+    private Tournament tournament;
+
     
     @Column(name = "logo")
     private String logo;

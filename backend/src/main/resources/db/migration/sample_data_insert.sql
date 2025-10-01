@@ -69,14 +69,14 @@ INSERT INTO tournaments (tournament_id, name, sport_id, type, start_date, end_da
 (7, 'Elite Cricket Championship', 3, 'KNOCKOUT', '2024-09-01', '2024-09-30', 7, 7, 5);
 
 -- Insert Matches
-INSERT INTO matches (match_id, tournament_id, sport_id, team1_id, team2_id, scheduled_time, venue, status, winner_team_id) VALUES
-(1, 1, 1, 1, 2, '2024-03-15 15:00:00', 'Main Football Ground', 'COMPLETED', 1),
-(2, 2, 2, 3, 4, '2024-04-10 18:00:00', 'Basketball Court A', 'COMPLETED', 3),
-(3, 3, 3, 5, 1, '2024-05-20 14:00:00', 'Cricket Stadium', 'ONGOING', NULL),
-(4, 1, 1, 1, 5, '2024-03-20 16:00:00', 'Secondary Ground', 'SCHEDULED', NULL),
-(5, 2, 2, 3, 5, '2024-04-25 19:00:00', 'Basketball Court B', 'COMPLETED', 5),
-(6, 6, 1, 6, 1, '2024-08-15 16:00:00', 'Captain''s Ground', 'COMPLETED', 6),
-(7, 7, 3, 7, 5, '2024-09-10 14:30:00', 'Elite Cricket Ground', 'COMPLETED', 7);
+INSERT INTO matches (match_id, tournament_id, sport_id, team1_id, team2_id, scheduled_time, venue, status, winner_team_id , round) VALUES
+(1, 1, 1, 1, 2, '2024-03-15 15:00:00', 'Main Football Ground', 'COMPLETED', 1, 'Round of 16'),
+(2, 2, 2, 3, 4, '2024-04-10 18:00:00', 'Basketball Court A', 'COMPLETED', 3 , 'Round of 32'),
+(3, 3, 3, 5, 1, '2024-05-20 14:00:00', 'Cricket Stadium', 'ONGOING', NULL , 'Quarter-Final'),
+(4, 1, 1, 1, 5, '2024-03-20 16:00:00', 'Secondary Ground', 'SCHEDULED', NULL, 'Final'),
+(5, 2, 2, 3, 5, '2024-04-25 19:00:00', 'Basketball Court B', 'COMPLETED', 5, 'Semi-Final'),
+(6, 6, 1, 6, 1, '2024-08-15 16:00:00', 'Captain''s Ground', 'COMPLETED', 6, 'Round of 16'),
+(7, 7, 3, 7, 5, '2024-09-10 14:30:00', 'Elite Cricket Ground', 'COMPLETED', 7 , 'Quarter-Final');
 
 -- Insert Scores
 INSERT INTO scores (score_id, match_id, team_id, points, updated_by) VALUES
