@@ -31,4 +31,22 @@ public class NotificationController {
         Notification created = notificationService.createNotification(notification);
         return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(NotificationDTO.fromEntity(created));
     }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<NotificationDTO>> getNotificationsForUser(@PathVariable Long userId) {
+        List<Notification> notifications = notificationService.getNotificationsForUser(userId);
+        List<NotificationDTO> notificationDTOs = notifications.stream()
+                .map(NotificationDTO::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(notificationDTOs);
+    }
+
+    @PutMapping("/{id}/read")
+    public ResponseEntity<NotificationDTO> markNotificationAsRead(@PathVariable Long id) {
+        Notification updated = notificationService.markAsRead(id);
+        if (updated != null) {
+            return ResponseEntity.ok(NotificationDTO.fromEntity(updated));
+        }
+        return ResponseEntity.notFound().build();
+    }
 }

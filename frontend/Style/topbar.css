@@ -40,6 +40,33 @@
 .nav-right {
   display: flex;
   align-items: center;
+  gap: 1.2rem; /* Add gap between notification, profile, and logout */
+}
+
+/* Notification button */
+.notification-btn {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-right: 0;
+  transition: transform 0.2s ease;
+}
+
+.notification-btn:hover {
+  box-shadow: 0 0 0 3px #bae6fd;
+  transform: scale(1.25);
+}
+
+.notification-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #38bdf8;
+  background: #fff;
+  padding: 4px;
+  transition: box-shadow 0.18s, transform 0.2s ease;
 }
 
 .profile-logo {
@@ -47,6 +74,7 @@
   height: 35px;
   border-radius: 50%;
   border: 2px solid #38bdf8;
+  margin-left: 20px;
   background: #fff;
   cursor: pointer;
   transition: box-shadow 0.18s, transform 0.2s ease;
