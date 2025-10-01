@@ -1,0 +1,240 @@
+/* My Teams Page Styles */
+.my-teams-bg {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-family: 'Arial', sans-serif;
+}
+
+.my-teams-content {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.my-teams-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: white;
+}
+
+.my-teams-title {
+  font-size: 3rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.user-info {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  margin: 0;
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50vh;
+  font-size: 1.5rem;
+  color: white;
+  text-align: center;
+}
+
+.error-message {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 2rem;
+  text-align: center;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.error-message h2 {
+  color: #ff6b6b;
+  margin-bottom: 1rem;
+}
+
+.no-teams-message {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 3rem;
+  text-align: center;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-top: 2rem;
+}
+
+.no-teams-message h3 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #ffd93d;
+}
+
+.teams-container {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.teams-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.teams-header h2 {
+  color: white;
+  font-size: 2rem;
+  margin: 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.teams-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.team-row {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.team-row:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.team-logo {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.team-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.default-logo {
+  color: white;
+  font-size: 2rem;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.team-info {
+  flex-grow: 1;
+  color: #333;
+}
+
+.team-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+}
+
+.team-sport {
+  font-size: 1.1rem;
+  color: #667eea;
+  margin: 0 0 0.3rem 0;
+  font-weight: 600;
+}
+
+.team-creator {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  margin: 0;
+  font-style: italic;
+}
+
+.team-actions {
+  flex-shrink: 0;
+}
+
+.view-details-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.view-details-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+}
+
+.view-details-btn:active {
+  transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .my-teams-content {
+    padding: 1rem;
+  }
+  
+  .my-teams-title {
+    font-size: 2.5rem;
+  }
+  
+  .team-row {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .team-info {
+    text-align: center;
+  }
+  
+  .team-logo {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .default-logo {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .my-teams-title {
+    font-size: 2rem;
+  }
+  
+  .teams-container {
+    padding: 1rem;
+  }
+  
+  .team-row {
+    padding: 1rem;
+  }
+}
