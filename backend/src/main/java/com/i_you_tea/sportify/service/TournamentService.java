@@ -117,6 +117,10 @@ public class TournamentService {
         return false;
     }
     
+    public List<Tournament> getTournamentsByUserId(Long userId) {
+        return tournamentRepository.findTournamentsByUserId(userId);
+    }
+    
     private void updateSportRecentResults(Tournament tournament) {
         Optional<Sport> sportOpt = sportRepository.findById(tournament.getSport().getSportId());
         if (sportOpt.isPresent()) {

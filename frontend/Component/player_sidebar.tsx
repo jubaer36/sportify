@@ -14,8 +14,8 @@ export default function PlayerSidebar({ open, onClose }: SidebarProps) {
       </button>
       <nav className="sidebar-nav">
         <Link href="/profile" className="sidebar-link">My Profile</Link>
-        <Link href="/teams" className="sidebar-link">My Teams</Link>
-        <Link href="/games" className="sidebar-link">My Games</Link>
+        <Link href="/player/my-teams" className="sidebar-link">My Teams</Link>
+        <Link href="/player/my-games" className="sidebar-link">My Games</Link>
         <Link href="/favourites" className="sidebar-link">Favourites</Link>
       </nav>
     </aside>

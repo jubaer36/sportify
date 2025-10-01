@@ -68,4 +68,14 @@ public class TournamentController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(tournamentDTOs);
     }
+
+    @GetMapping("/user/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN') or hasRole('PLAYER')")
+    public ResponseEntity<List<TournamentDTO>> getTournamentsByUserId(@PathVariable Long userId) {
+        List<Tournament> tournaments = tournamentService.getTournamentsByUserId(userId);
+        List<TournamentDTO> tournamentDTOs = tournaments.stream()
+                .map(TournamentDTO::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(tournamentDTOs);
+    }
 }

@@ -1,6 +1,7 @@
 package com.i_you_tea.sportify.controller;
 
 import com.i_you_tea.sportify.dto.TeamDTO;
+import com.i_you_tea.sportify.dto.UserTeamsRequestDTO;
 import com.i_you_tea.sportify.entity.Team;
 import com.i_you_tea.sportify.service.TeamService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -44,5 +46,38 @@ public class TeamController {
     public ResponseEntity<TeamDTO> createTeam(@RequestBody Team team) {
         Team created = teamService.createTeam(team);
         return ResponseEntity.status(HttpStatus.CREATED).body(TeamDTO.fromEntity(created));
+    }
+
+    @PostMapping("/user-teams")
+    public ResponseEntity<?> getUserTeams(@RequestBody UserTeamsRequestDTO request) {
+        try {
+            if (request.getUserId() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "User ID is required"));
+            }
+
+            List<Team> teams = teamService.getTeamsByUserId(request.getUserId());
+            
+            if (teams.isEmpty()) {
+                return ResponseEntity.ok(Map.of(
+                    "message", "No teams found for this user",
+                    "teams", List.of()
+                ));
+            }
+
+            List<TeamDTO> teamDTOs = teams.stream()
+                    .map(TeamDTO::fromEntity)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(Map.of(
+                "message", "Teams retrieved successfully",
+                "teams", teamDTOs,
+                "totalTeams", teamDTOs.size()
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error retrieving user teams: " + e.getMessage()));
+        }
     }
 }
