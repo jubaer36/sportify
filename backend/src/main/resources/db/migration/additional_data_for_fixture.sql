@@ -2,8 +2,7 @@
 -- This script adds 25 new football teams for a single Winter Football Championship tournament
 
 -- Create the Winter Football Championship tournament (single sport)
-INSERT INTO tournaments (tournament_id, name, sport_id, type, start_date, end_date, created_by, champion_id, runner_up_id) VALUES
-(8, 'Winter Football Championship 2024', 1, 'KNOCKOUT', '2024-12-01', '2024-12-31', 1, NULL, NULL);
+
 
 -- Insert 25 new football teams for the Winter Football Championship
 INSERT INTO teams (team_id, team_name, sport_id, created_by, logo , tournament_id) VALUES
