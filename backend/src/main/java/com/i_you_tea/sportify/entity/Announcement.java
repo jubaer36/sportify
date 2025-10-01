@@ -39,4 +39,10 @@ public class Announcement {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "related_tournament_id")
     private Tournament relatedTournament;
+    
+    @Column(name = "start_date")
+    private LocalDateTime startDate;
+    
+    @Column(name = "end_date")
+    private LocalDateTime endDate;
 }

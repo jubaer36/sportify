@@ -22,6 +22,8 @@ public class AnnouncementDTO {
     private String relatedSportName;
     private Long relatedTournamentId;
     private String relatedTournamentName;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
     
     public static AnnouncementDTO fromEntity(Announcement announcement) {
         return new AnnouncementDTO(
@@ -34,7 +36,9 @@ public class AnnouncementDTO {
             announcement.getRelatedSport() != null ? announcement.getRelatedSport().getSportId() : null,
             announcement.getRelatedSport() != null ? announcement.getRelatedSport().getName() : null,
             announcement.getRelatedTournament() != null ? announcement.getRelatedTournament().getTournamentId() : null,
-            announcement.getRelatedTournament() != null ? announcement.getRelatedTournament().getName() : null
+            announcement.getRelatedTournament() != null ? announcement.getRelatedTournament().getName() : null,
+            announcement.getStartDate(),
+            announcement.getEndDate()
         );
     }
 }
