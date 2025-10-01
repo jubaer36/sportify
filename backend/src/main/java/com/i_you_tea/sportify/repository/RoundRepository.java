@@ -27,4 +27,14 @@ public interface RoundRepository extends JpaRepository<Round, Long> {
      * Check if a round value already exists for a specific tournament ID
      */
     boolean existsByRoundValueAndTournament_TournamentId(Integer roundValue, Long tournamentId);
+    
+    /**
+     * Find rounds by tournament type
+     */
+    List<Round> findByType(Round.TournamentType type);
+    
+    /**
+     * Find rounds by tournament and type
+     */
+    List<Round> findByTournament_TournamentIdAndType(Long tournamentId, Round.TournamentType type);
 }

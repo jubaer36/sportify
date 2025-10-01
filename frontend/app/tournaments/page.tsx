@@ -16,7 +16,6 @@ interface Tournament {
   runnerUpId?: number;
   runnerUpName?: string;
   sportId: number;
-  tournamentType: "KNOCKOUT" | "ROUND_ROBIN";
 }
 
 interface Sport {
@@ -57,7 +56,6 @@ export default function TournamentsPage() {
   // --- Filters ---
   const [selectedSport, setSelectedSport] = useState<string>("All");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
-  const [selectedType, setSelectedType] = useState<string>("All");
 
   // Fetch tournaments and sports with authorization
   useEffect(() => {
@@ -122,8 +120,7 @@ export default function TournamentsPage() {
 
     return (
       (selectedSport === "All" || sport?.name === selectedSport) &&
-      (selectedStatus === "All" || status === selectedStatus) &&
-      (selectedType === "All" || t.tournamentType === selectedType)
+      (selectedStatus === "All" || status === selectedStatus)
     );
   });
 
@@ -156,15 +153,6 @@ export default function TournamentsPage() {
             <option value="Ongoing">Ongoing</option>
             <option value="Ended">Ended</option>
             <option value="Upcoming">Upcoming</option>
-          </select>
-
-          <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-          >
-            <option value="All">All Types</option>
-            <option value="KNOCKOUT">Knockout</option>
-            <option value="ROUND_ROBIN">Round Robin</option>
           </select>
         </div>
 
@@ -223,11 +211,7 @@ export default function TournamentsPage() {
                         />
                         {sport ? sport.name : "Unknown Sport"}
                       </span>
-                      <span className="tag type-tag">
-                        {tournament.tournamentType === "KNOCKOUT"
-                          ? "Knockout"
-                          : "Round Robin"}
-                      </span>
+
                     </div>
                   </div>
                 </div>

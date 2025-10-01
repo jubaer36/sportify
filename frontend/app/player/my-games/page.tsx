@@ -144,13 +144,6 @@ export default function MyGames() {
                     </div>
                     
                     <div className="info-row">
-                      <span className="info-label">Format:</span>
-                      <span className="info-value">
-                        {tournament.type === 'ROUND_ROBIN' ? 'Round Robin' : 'Knockout'}
-                      </span>
-                    </div>
-                    
-                    <div className="info-row">
                       <span className="info-label">Duration:</span>
                       <span className="info-value">
                         {formatDate(tournament.startDate)} - {formatDate(tournament.endDate)}
