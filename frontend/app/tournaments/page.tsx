@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Topbar from "@/Component/topbar";
+import { makeAuthenticatedRequest } from "@/utils/api";
 import "./tournaments.css";
 
 // --- DTOs matching backend ---
@@ -53,26 +54,44 @@ export default function TournamentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch tournaments and sports
+  // --- Filters ---
+  const [selectedSport, setSelectedSport] = useState<string>("All");
+  const [selectedStatus, setSelectedStatus] = useState<string>("All");
+  const [selectedType, setSelectedType] = useState<string>("All");
+
+  // Fetch tournaments and sports with authorization
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
+
       try {
-        // Use full backend URL with port 8090
-        const tRes = await fetch("http://localhost:8090/api/tournaments");
-        const tData = await tRes.json();
-        console.log("Tournament API response:", tData);
-        const sRes = await fetch("http://localhost:8090/api/sports");
-        const sData = await sRes.json();
-        setTournaments(Array.isArray(tData) ? tData : tData.data || []);
-        setSports(Array.isArray(sData) ? sData : sData.data || []);
+        // Authenticated request for tournaments
+        const tRes = await makeAuthenticatedRequest<Tournament[]>("/api/tournaments");
+        // Authenticated request for sports
+        const sRes = await makeAuthenticatedRequest<Sport[]>("/api/sports");
+
+        if (tRes.status === 401 || sRes.status === 401) {
+          setError("Authentication failed. Please login again.");
+          setTournaments([]);
+          setSports([]);
+        } else if (tRes.error || sRes.error) {
+          setError(tRes.error || sRes.error || "Failed to load tournaments or sports.");
+          setTournaments([]);
+          setSports([]);
+        } else {
+          setTournaments(Array.isArray(tRes.data) ? tRes.data : []);
+          setSports(Array.isArray(sRes.data) ? sRes.data : []);
+        }
       } catch (err) {
         setError("Failed to load tournaments or sports.");
+        setTournaments([]);
+        setSports([]);
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
   }, []);
 
@@ -91,44 +110,95 @@ export default function TournamentsPage() {
     const today = new Date();
     const start = new Date(t.startDate);
     const end = t.endDate ? new Date(t.endDate) : undefined;
-    if (end && end < today) return "ended";
-    if (start <= today && (!end || end >= today)) return "ongoing";
-    return "";
+    if (end && end < today) return "Ended";
+    if (start <= today && (!end || end >= today)) return "Ongoing";
+    return "Upcoming";
   };
+
+  // --- Apply Filters ---
+  const filteredTournaments = tournaments.filter((t) => {
+    const sport = getSport(t.sportId);
+    const status = getStatus(t);
+
+    return (
+      (selectedSport === "All" || sport?.name === selectedSport) &&
+      (selectedStatus === "All" || status === selectedStatus) &&
+      (selectedType === "All" || t.tournamentType === selectedType)
+    );
+  });
 
   return (
     <div className="tournaments-bg">
       <Topbar />
+
       <div className="tournaments-content">
         <h1 className="tournaments-title">Tournaments</h1>
+
+        {/* --- Filter Section --- */}
+        <div className="filter-bar">
+          <select
+            value={selectedSport}
+            onChange={(e) => setSelectedSport(e.target.value)}
+          >
+            <option value="All">All Sports</option>
+            {sports.map((sport) => (
+              <option key={sport.sportId} value={sport.name}>
+                {sport.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+          >
+            <option value="All">All Status</option>
+            <option value="Ongoing">Ongoing</option>
+            <option value="Ended">Ended</option>
+            <option value="Upcoming">Upcoming</option>
+          </select>
+
+          <select
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+          >
+            <option value="All">All Types</option>
+            <option value="KNOCKOUT">Knockout</option>
+            <option value="ROUND_ROBIN">Round Robin</option>
+          </select>
+        </div>
+
+        {/* --- Display Section --- */}
         {loading ? (
           <div className="loading-message">Loading tournaments...</div>
         ) : error ? (
           <div className="error-message">{error}</div>
-        ) : tournaments.length === 0 ? (
+        ) : filteredTournaments.length === 0 ? (
           <div className="no-tournaments-message">No tournaments found.</div>
         ) : (
           <div className="tournaments-list">
-            {tournaments.map((tournament) => {
+            {filteredTournaments.map((tournament) => {
               const sport = getSport(tournament.sportId);
               const status = getStatus(tournament);
               return (
                 <div className="tournament-card" key={tournament.tournamentId}>
                   <div className="tournament-header">
                     <div className="tournament-name">{tournament.name}</div>
-                    {status === "ended" && (
+                    {status === "Ended" && (
                       <span className="tournament-status ended">Ended</span>
                     )}
-                    {status === "ongoing" && (
+                    {status === "Ongoing" && (
                       <span className="tournament-status ongoing">Ongoing</span>
+                    )}
+                    {status === "Upcoming" && (
+                      <span className="tournament-status upcoming">Upcoming</span>
                     )}
                   </div>
                   <div className="tournament-details">
                     <div className="tournament-row">
                       <span className="label">Duration:</span>
                       <span className="value">
-                        {formatDate(tournament.startDate)}
-                        {" - "}
+                        {formatDate(tournament.startDate)} -{" "}
                         {tournament.endDate ? formatDate(tournament.endDate) : "Present"}
                       </span>
                     </div>
