@@ -83,8 +83,16 @@ export default function Topbar() {
         </div>
 
         <div className="nav-right">
+          {/* Notification Button */}
+        <Link href="/notifications" className="notification-btn" title="Notifications">
+          <img
+            src="/Photos/notification_logo.png"
+            alt="Notifications"
+            className="notification-logo"
+          />
+        </Link>
           {/* Profile button */}
-          <Link href="/admin/profile">
+          <Link href="/profile">
             <Image
               src="/Photos/profile.png"
               alt="Profile"
