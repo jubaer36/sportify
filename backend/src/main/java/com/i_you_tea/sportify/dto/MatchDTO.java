@@ -26,7 +26,9 @@ public class MatchDTO {
     private Match.MatchStatus status;
     private Long winnerTeamId;
     private String winnerTeamName;
-    private String round;
+    private Long roundId;
+    private String roundName;
+    private Integer roundValue;
     
     public static MatchDTO fromEntity(Match match) {
         return new MatchDTO(
@@ -44,7 +46,19 @@ public class MatchDTO {
             match.getStatus(),
             match.getWinnerTeam() != null ? match.getWinnerTeam().getTeamId() : null,
             match.getWinnerTeam() != null ? match.getWinnerTeam().getTeamName() : null,
-            match.getRound()
+            match.getRound() != null ? match.getRound().getRoundId() : null,
+            match.getRound() != null ? match.getRound().getRoundName() : null,
+            match.getRound() != null ? match.getRound().getRoundValue() : null
         );
+    }
+    
+    public Match toEntity() {
+        Match match = new Match();
+        match.setMatchId(this.matchId);
+        match.setScheduledTime(this.scheduledTime);
+        match.setVenue(this.venue);
+        match.setStatus(this.status);
+        // Tournament, Sport, Teams, WinnerTeam, and Round relationships should be set by the service layer
+        return match;
     }
 }
