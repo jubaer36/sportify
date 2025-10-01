@@ -30,7 +30,7 @@ public class Round {
     private Tournament tournament;
     
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false)
+    @Column(name = "type", nullable = true)
     private TournamentType type;
     
     @OneToMany(mappedBy = "round", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

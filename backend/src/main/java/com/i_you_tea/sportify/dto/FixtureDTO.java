@@ -3,6 +3,7 @@ package com.i_you_tea.sportify.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.i_you_tea.sportify.entity.Round;
 
 import java.util.List;
 

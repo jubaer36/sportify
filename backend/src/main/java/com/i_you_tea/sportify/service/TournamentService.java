@@ -1,7 +1,7 @@
 package com.i_you_tea.sportify.service;
 
 import com.i_you_tea.sportify.entity.Round;
-import com.i_you_tea.sportify.entity.Round;
+import com.i_you_tea.sportify.entity.Match;
 import com.i_you_tea.sportify.repository.MatchRepository;
 import com.i_you_tea.sportify.repository.RoundRepository;
 import com.i_you_tea.sportify.entity.Tournament;
@@ -11,12 +11,13 @@ import com.i_you_tea.sportify.entity.User;
 import com.i_you_tea.sportify.repository.TournamentRepository;
 import com.i_you_tea.sportify.repository.TeamRepository;
 import com.i_you_tea.sportify.repository.SportRepository;
+import com.i_you_tea.sportify.dto.FixtureDTO;
+import com.i_you_tea.sportify.dto.MatchDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import lombok.Data;
 import lombok.AllArgsConstructor;
 
@@ -28,8 +29,7 @@ public class TournamentService {
     private final SportRepository sportRepository;
     private final RoundRepository roundRepository;
     private final MatchRepository matchRepository;
-    private final MatchRepository matchRepository;
-    private final RoundRepository roundRepository;
+
     
     public List<Tournament> getAllTournaments() {
         return tournamentRepository.findAll();
@@ -142,22 +142,30 @@ public class TournamentService {
 
     /**
      * Generate fixture for a tournament based on rounds
-     * Higher round values = earlier rounds, Lower round values = later rounds
-     * Round 1 = Final, Round 2 = Semi-final, etc.
+     * Process:
+     * 1. Fetch tournament and registered teams
+     * 2. Count teams and upscale to nearest power of 2
+     * 3. Calculate number of rounds using log2
+     * 4. Create rounds with both round robin and knockout options
+     * 5. Store matches for each round
      */
     public FixtureDTO generateFixture(Long tournamentId) {
-        // Get tournament
+        // Step 1: Fetch tournament
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new IllegalArgumentException("Tournament not found with id: " + tournamentId));
 
-        // Get participating teams
-        List<Team> participatingTeams = teamRepository.findByTournamentTournamentId(tournamentId);
-        if (participatingTeams.isEmpty()) {
-            throw new IllegalArgumentException("No participating teams found for tournament: " + tournamentId);
+        // Step 2: Fetch registered teams for this tournament
+        List<Team> registeredTeams = teamRepository.findByTournamentTournamentId(tournamentId);
+        if (registeredTeams.isEmpty()) {
+            throw new IllegalArgumentException("No teams registered for tournament: " + tournamentId);
         }
 
-        // Calculate number of rounds needed (log2 of number of teams)
-        int numRounds = (int) Math.ceil(Math.log(participatingTeams.size()) / Math.log(2));
+        // Step 3: Count total number of teams and upscale to nearest power of 2
+        int teamCount = registeredTeams.size();
+        int upscaledTeamCount = upscaleToNearestPowerOf2(teamCount);
+        
+        // Step 4: Calculate number of rounds using log2 of upscaled value
+        int numRounds = (int) (Math.log(upscaledTeamCount) / Math.log(2));
 
         FixtureDTO fixture = new FixtureDTO();
         fixture.setTournamentId(tournament.getTournamentId());
@@ -166,14 +174,35 @@ public class TournamentService {
 
         List<FixtureDTO.RoundFixtureDTO> roundFixtures = new ArrayList<>();
 
-        // Generate fixtures for each round, starting from the earliest round (highest round value)
-        for (int roundValue = numRounds; roundValue >= 1; roundValue--) {
-            FixtureDTO.RoundFixtureDTO roundFixture = generateRoundFixture(tournament, roundValue, participatingTeams, numRounds, Round.TournamentType.KNOCKOUT);
+        // Step 5: Generate fixtures for each round (from first round to final)
+        // First round uses all registered teams, subsequent rounds will be populated after winners are determined
+        for (int roundNumber = numRounds; roundNumber >= 1; roundNumber--) {
+            // Create round with both knockout and round robin options
+            // For now, we'll create the round structure without committing to a type
+            // The type will be selected when the round is about to start
+            FixtureDTO.RoundFixtureDTO roundFixture = generateRoundStructure(
+                tournament, roundNumber, registeredTeams, numRounds, upscaledTeamCount);
             roundFixtures.add(roundFixture);
         }
 
         fixture.setRounds(roundFixtures);
         return fixture;
+    }
+    
+    /**
+     * Upscale a number to the nearest power of 2
+     * Examples: 36 -> 64, 10 -> 16, 5 -> 8, 50 -> 64
+     */
+    private int upscaleToNearestPowerOf2(int number) {
+        if (number <= 0) {
+            return 1;
+        }
+        // Find the next power of 2 greater than or equal to the number
+        int power = 1;
+        while (power < number) {
+            power *= 2;
+        }
+        return power;
     }
 
     /**
@@ -215,53 +244,202 @@ public class TournamentService {
         private Round.TournamentType type;
     }
 
-    private FixtureDTO.RoundFixtureDTO generateRoundFixture(Tournament tournament, int roundValue,
-                                                           List<Team> participatingTeams, int totalRounds, Round.TournamentType type) {
+    /**
+     * Generate round structure with both knockout and round robin options
+     * The round is created in the database but matches are not yet committed
+     * Actual match generation happens when round type is selected
+     */
+    private FixtureDTO.RoundFixtureDTO generateRoundStructure(Tournament tournament, int roundNumber,
+                                                              List<Team> registeredTeams, int totalRounds,
+                                                              int upscaledTeamCount) {
         FixtureDTO.RoundFixtureDTO roundFixture = new FixtureDTO.RoundFixtureDTO();
-        roundFixture.setRoundValue(roundValue);
-        roundFixture.setRoundName(Round.calculateRoundName(roundValue));
-        roundFixture.setType(type);
-
-        List<Team> teamsForRound;
-        int expectedTeamsInRound = (int) Math.pow(2, roundValue);
-
-        if (roundValue == totalRounds) {
-            // First round - use all participating teams
-            teamsForRound = new ArrayList<>(participatingTeams);
-            // If we have more teams than expected, take a subset (in practice, this should be handled by tournament format)
-            if (teamsForRound.size() > expectedTeamsInRound) {
-                Collections.shuffle(teamsForRound);
-                teamsForRound = teamsForRound.subList(0, expectedTeamsInRound);
-            }
+        roundFixture.setRoundValue(roundNumber);
+        roundFixture.setRoundName(Round.calculateRoundName(roundNumber));
+        
+        // For the first round (highest number), create and save the round
+        if (roundNumber == totalRounds) {
+            // Create the round entity (initially without a type - to be decided later)
+            Round round = new Round();
+            round.setRoundValue(roundNumber);
+            round.setTournament(tournament);
+            // Type will be set to null initially, to be decided when round starts
+            round.setType(null);
+            
+            Round savedRound = roundRepository.save(round);
+            roundFixture.setRoundId(savedRound.getRoundId());
+            
+            // For first round, we know the teams - create matches for both possible types
+            List<Team> teamsForRound = prepareTeamsForFirstRound(registeredTeams, upscaledTeamCount);
+            
+            // Generate both knockout and round robin options (not saved yet)
+            List<MatchDTO> knockoutMatches = generateKnockoutMatches(tournament, roundNumber, teamsForRound);
+            List<MatchDTO> roundRobinMatches = generateRoundRobinMatches(tournament, roundNumber, teamsForRound);
+            
+            // For display purposes, show knockout by default (but nothing is saved yet)
+            roundFixture.setType(null); // Type not yet decided
+            roundFixture.setMatches(knockoutMatches); // Show knockout as preview
         } else {
-            // For subsequent rounds, we would normally get winners from previous round
-            // Since we're generating fixtures upfront, we'll create placeholder matches
-            // In a real implementation, these would be populated when previous round winners are known
-            teamsForRound = new ArrayList<>();
-            // For demo purposes, we'll use participating teams but note that this should be winners
-            List<Team> tempTeams = new ArrayList<>(participatingTeams);
-            Collections.shuffle(tempTeams);
-            int teamsNeeded = Math.min(expectedTeamsInRound, tempTeams.size());
-            teamsForRound = tempTeams.subList(0, teamsNeeded);
+            // For subsequent rounds, create placeholder round
+            Round round = new Round();
+            round.setRoundValue(roundNumber);
+            round.setTournament(tournament);
+            round.setType(null);
+            
+            Round savedRound = roundRepository.save(round);
+            roundFixture.setRoundId(savedRound.getRoundId());
+            roundFixture.setType(null);
+            roundFixture.setMatches(new ArrayList<>()); // Empty until previous round completes
         }
 
-        // Generate matches based on tournament type
-        List<MatchDTO> matches = new ArrayList<>();
-        if (type == Round.TournamentType.KNOCKOUT) {
-            matches = generateKnockoutMatches(tournament, roundValue, teamsForRound);
-        } else if (type == Round.TournamentType.ROUND_ROBIN) {
-            matches = generateRoundRobinMatches(tournament, roundValue, teamsForRound);
-        }
-
-        roundFixture.setMatches(matches);
         return roundFixture;
     }
+    
+    /**
+     * Prepare teams for the first round
+     * If we have fewer teams than upscaled count, some teams get byes
+     */
+    private List<Team> prepareTeamsForFirstRound(List<Team> registeredTeams, int upscaledTeamCount) {
+        List<Team> teamsForRound = new ArrayList<>(registeredTeams);
+        Collections.shuffle(teamsForRound); // Randomize team order
+        
+        // If we have fewer teams than slots, we'll handle byes in match generation
+        return teamsForRound;
+    }
+    
+    /**
+     * Select tournament type for a round and generate matches accordingly
+     * This is called when a round is about to start
+     */
+    public void selectRoundTypeAndGenerateMatches(Long roundId, Round.TournamentType selectedType) {
+        Round round = roundRepository.findById(roundId)
+                .orElseThrow(() -> new IllegalArgumentException("Round not found with id: " + roundId));
+        
+        // Set the selected type
+        round.setType(selectedType);
+        roundRepository.save(round);
+        
+        // Get teams for this round
+        List<Team> teamsForRound = getTeamsForRound(round);
+        
+        // Generate and save matches based on selected type
+        if (selectedType == Round.TournamentType.KNOCKOUT) {
+            generateAndSaveKnockoutMatches(round, teamsForRound);
+        } else if (selectedType == Round.TournamentType.ROUND_ROBIN) {
+            generateAndSaveRoundRobinMatches(round, teamsForRound);
+        }
+    }
+    
+    /**
+     * Get teams for a specific round
+     * For first round: registered teams
+     * For subsequent rounds: winners from previous round
+     */
+    private List<Team> getTeamsForRound(Round round) {
+        Tournament tournament = round.getTournament();
+        
+        // Get all rounds for this tournament sorted by round value descending
+        List<Round> allRounds = roundRepository.findByTournament_TournamentId(tournament.getTournamentId());
+        allRounds.sort((r1, r2) -> r2.getRoundValue().compareTo(r1.getRoundValue()));
+        
+        // Find if this is the first round
+        int maxRoundValue = allRounds.stream()
+                .mapToInt(Round::getRoundValue)
+                .max()
+                .orElse(1);
+        
+        if (round.getRoundValue() == maxRoundValue) {
+            // First round - return registered teams
+            return teamRepository.findByTournamentTournamentId(tournament.getTournamentId());
+        } else {
+            // Subsequent round - get winners from previous round
+            Round previousRound = allRounds.stream()
+                    .filter(r -> r.getRoundValue() == round.getRoundValue() + 1)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Previous round not found"));
+            
+            return getWinnersFromRound(previousRound);
+        }
+    }
+    
+    /**
+     * Get winners from a completed round
+     */
+    private List<Team> getWinnersFromRound(Round round) {
+        List<Match> matches = matchRepository.findByRound_RoundId(round.getRoundId());
+        List<Team> winners = new ArrayList<>();
+        
+        for (Match match : matches) {
+            if (match.getStatus() == Match.MatchStatus.COMPLETED && match.getWinnerTeam() != null) {
+                winners.add(match.getWinnerTeam());
+            }
+        }
+        
+        if (winners.isEmpty()) {
+            throw new IllegalStateException("No winners found in round: " + round.getRoundName() + 
+                    ". Make sure all matches are completed before proceeding to the next round.");
+        }
+        
+        return winners;
+    }
+    
+    /**
+     * Generate and save knockout matches for a round
+     */
+    private void generateAndSaveKnockoutMatches(Round round, List<Team> teams) {
+        List<Match> matches = new ArrayList<>();
+        Collections.shuffle(teams); // Randomize pairings
+        
+        // Create matches by pairing teams
+        for (int i = 0; i < teams.size(); i += 2) {
+            if (i + 1 < teams.size()) {
+                Match match = new Match();
+                match.setTournament(round.getTournament());
+                match.setSport(round.getTournament().getSport());
+                match.setTeam1(teams.get(i));
+                match.setTeam2(teams.get(i + 1));
+                match.setRound(round);
+                match.setStatus(Match.MatchStatus.SCHEDULED);
+                matches.add(match);
+            } else {
+                // Odd number of teams - this team gets a bye
+                // In a knockout, a bye means automatic advancement
+                // We can either not create a match or create a special bye match
+                // For now, we'll skip creating a match and this team advances automatically
+            }
+        }
+        
+        matchRepository.saveAll(matches);
+    }
+    
+    /**
+     * Generate and save round robin matches for a round
+     */
+    private void generateAndSaveRoundRobinMatches(Round round, List<Team> teams) {
+        List<Match> matches = new ArrayList<>();
+        
+        // Round-robin: each team plays every other team once
+        for (int i = 0; i < teams.size(); i++) {
+            for (int j = i + 1; j < teams.size(); j++) {
+                Match match = new Match();
+                match.setTournament(round.getTournament());
+                match.setSport(round.getTournament().getSport());
+                match.setTeam1(teams.get(i));
+                match.setTeam2(teams.get(j));
+                match.setRound(round);
+                match.setStatus(Match.MatchStatus.SCHEDULED);
+                matches.add(match);
+            }
+        }
+        
+        matchRepository.saveAll(matches);
+    }
 
+    /**
+     * Generate knockout match DTOs (for preview purposes, not saved to DB)
+     */
     private List<MatchDTO> generateKnockoutMatches(Tournament tournament, int roundValue, List<Team> teams) {
         List<MatchDTO> matches = new ArrayList<>();
-        // Shuffle teams for random pairing
-        Collections.shuffle(teams);
-
+        
         // Create matches by pairing teams
         for (int i = 0; i < teams.size(); i += 2) {
             if (i + 1 < teams.size()) {
@@ -270,12 +448,20 @@ public class TournamentService {
 
                 MatchDTO match = createMatchDTO(tournament, roundValue, team1, team2);
                 matches.add(match);
+            } else {
+                // Odd number of teams - this team gets a bye
+                // Create a special match DTO to indicate bye
+                MatchDTO byeMatch = createMatchDTO(tournament, roundValue, teams.get(i), null);
+                matches.add(byeMatch);
             }
         }
 
         return matches;
     }
 
+    /**
+     * Generate round robin match DTOs (for preview purposes, not saved to DB)
+     */
     private List<MatchDTO> generateRoundRobinMatches(Tournament tournament, int roundValue, List<Team> teams) {
         List<MatchDTO> matches = new ArrayList<>();
 
@@ -293,97 +479,79 @@ public class TournamentService {
         return matches;
     }
 
+    /**
+     * Create a match DTO for preview purposes
+     */
     private MatchDTO createMatchDTO(Tournament tournament, int roundValue, Team team1, Team team2) {
         MatchDTO match = new MatchDTO();
         match.setTournamentId(tournament.getTournamentId());
         match.setTournamentName(tournament.getName());
         match.setSportId(tournament.getSport().getSportId());
         match.setSportName(tournament.getSport().getName());
-        match.setTeam1Id(team1.getTeamId());
-        match.setTeam1Name(team1.getTeamName());
-        match.setTeam2Id(team2.getTeamId());
-        match.setTeam2Name(team2.getTeamName());
+        
+        if (team1 != null) {
+            match.setTeam1Id(team1.getTeamId());
+            match.setTeam1Name(team1.getTeamName());
+        }
+        
+        if (team2 != null) {
+            match.setTeam2Id(team2.getTeamId());
+            match.setTeam2Name(team2.getTeamName());
+        } else {
+            // Bye match
+            match.setTeam2Name("BYE");
+        }
+        
         match.setRoundValue(roundValue);
         match.setRoundName(Round.calculateRoundName(roundValue));
         match.setStatus(Match.MatchStatus.SCHEDULED);
 
         return match;
-    }    private FixtureDTO.RoundFixtureDTO generateRoundFixture(Tournament tournament, int roundValue,
-                                                           List<Team> participatingTeams,
-                                                           List<FixtureDTO.RoundFixtureDTO> previousRounds) {
-        FixtureDTO.RoundFixtureDTO roundFixture = new FixtureDTO.RoundFixtureDTO();
-        roundFixture.setRoundValue(roundValue);
-        roundFixture.setRoundName(Round.calculateRoundName(roundValue));
-
-        List<Team> teamsForRound;
-
-        if (roundValue == 1) {
-            // First round uses participating teams
-            teamsForRound = new ArrayList<>(participatingTeams);
-        } else {
-            // Subsequent rounds use winners from previous round
-            teamsForRound = getWinnersFromPreviousRound(previousRounds, roundValue);
+    }    /**
+     * Check if a round is complete (all matches finished)
+     */
+    public boolean isRoundComplete(Long roundId) {
+        Round round = roundRepository.findById(roundId)
+                .orElseThrow(() -> new IllegalArgumentException("Round not found with id: " + roundId));
+        
+        List<Match> matches = matchRepository.findByRound_RoundId(roundId);
+        
+        if (matches.isEmpty()) {
+            return false;
         }
-
-        // Shuffle teams for random pairing
-        Collections.shuffle(teamsForRound);
-
-        // Create matches by pairing teams
-        List<MatchDTO> matches = new ArrayList<>();
-        for (int i = 0; i < teamsForRound.size(); i += 2) {
-            if (i + 1 < teamsForRound.size()) {
-                Team team1 = teamsForRound.get(i);
-                Team team2 = teamsForRound.get(i + 1);
-
-                MatchDTO match = new MatchDTO();
-                match.setTournamentId(tournament.getTournamentId());
-                match.setTournamentName(tournament.getName());
-                match.setSportId(tournament.getSport().getSportId());
-                match.setSportName(tournament.getSport().getName());
-                match.setTeam1Id(team1.getTeamId());
-                match.setTeam1Name(team1.getTeamName());
-                match.setTeam2Id(team2.getTeamId());
-                match.setTeam2Name(team2.getTeamName());
-                match.setRoundValue(roundValue);
-                match.setRoundName(Round.calculateRoundName(roundValue));
-                match.setStatus(Match.MatchStatus.SCHEDULED);
-
-                matches.add(match);
-            }
-        }
-
-        roundFixture.setMatches(matches);
-        return roundFixture;
+        
+        // Check if all matches are completed
+        return matches.stream()
+                .allMatch(match -> match.getStatus() == Match.MatchStatus.COMPLETED);
     }
-
-    private List<Team> getWinnersFromPreviousRound(List<FixtureDTO.RoundFixtureDTO> previousRounds, int currentRoundValue) {
-        // Find the previous round (higher round value)
-        FixtureDTO.RoundFixtureDTO previousRound = previousRounds.stream()
-                .filter(r -> r.getRoundValue() == currentRoundValue + 1)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Previous round not found for round value: " + currentRoundValue));
-
-        List<Team> winners = new ArrayList<>();
-
-        // For each match in previous round, determine winner
-        // Since matches are DTOs without actual winner data, we'll simulate winners
-        // In a real implementation, this would come from completed matches
-        for (MatchDTO match : previousRound.getMatches()) {
-            // For now, randomly select one of the two teams as winner
-            // In practice, this should be based on actual match results
-            Team winner = Math.random() < 0.5 ?
-                createTeamFromDTO(match.getTeam1Id(), match.getTeam1Name()) :
-                createTeamFromDTO(match.getTeam2Id(), match.getTeam2Name());
-            winners.add(winner);
-        }
-
-        return winners;
+    
+    /**
+     * Get available round types for selection
+     */
+    public List<Round.TournamentType> getAvailableRoundTypes() {
+        return Arrays.asList(Round.TournamentType.KNOCKOUT, Round.TournamentType.ROUND_ROBIN);
     }
-
-    private Team createTeamFromDTO(Long teamId, String teamName) {
-        Team team = new Team();
-        team.setTeamId(teamId);
-        team.setTeamName(teamName);
-        return team;
+    
+    /**
+     * Advance to next round after current round completion
+     * This generates the next round's matches based on winners
+     */
+    public void advanceToNextRound(Long currentRoundId, Round.TournamentType nextRoundType) {
+        Round currentRound = roundRepository.findById(currentRoundId)
+                .orElseThrow(() -> new IllegalArgumentException("Round not found with id: " + currentRoundId));
+        
+        // Verify current round is complete
+        if (!isRoundComplete(currentRoundId)) {
+            throw new IllegalStateException("Cannot advance: Current round is not complete");
+        }
+        
+        // Get the next round (one less in round value)
+        Round nextRound = roundRepository.findByTournament_TournamentIdAndRoundValue(
+                currentRound.getTournament().getTournamentId(),
+                currentRound.getRoundValue() - 1)
+                .orElseThrow(() -> new IllegalStateException("Next round not found. This might be the final round."));
+        
+        // Select type and generate matches for next round
+        selectRoundTypeAndGenerateMatches(nextRound.getRoundId(), nextRoundType);
     }
 }

@@ -1,28 +1,63 @@
 # Fixture Generator Implementation Guide
 
-## Overview
-The fixture generator automatically calculates the number of rounds based on team count and allows configuration of each round as either Knockout or Round Robin format.
+## 🚨 IMPORTANT: This Guide Has Been Updated
+
+This system has been **completely restructured**. Please refer to:
+- **FIXTURE_GENERATION_RESTRUCTURE.md** - Complete system documentation
+- **FRONTEND_INTEGRATION_GUIDE.md** - Frontend integration examples
+- **FIXTURE_GENERATOR_SUMMARY.md** - Quick reference and summary
+
+## New System Overview
+
+The fixture generator now supports **dynamic round-by-round management** where:
+1. Teams are upscaled to nearest power of 2 (e.g., 36 → 64)
+2. Rounds are calculated using log₂ of upscaled value
+3. Round type (Knockout or Round Robin) is selected AFTER each round completes
+4. Winners automatically progress to next round
+
+## Key Changes from Old System
+
+### OLD System (Deprecated):
+- ❌ All rounds generated upfront with fixed types
+- ❌ Limited flexibility
+- ❌ No dynamic type selection
+
+### NEW System (Current):
+- ✅ Rounds created upfront but types selected dynamically
+- ✅ Choose round type after each round completes
+- ✅ Team count upscaled to nearest power of 2
+- ✅ Flexible tournament management
 
 ## Key Features
 
-### 1. Automatic Round Calculation
-- **Formula**: `rounds = ceil(log2(teamCount))`
+### 1. Team Count Upscaling
+- **Process**: Count teams → Upscale to nearest power of 2
 - **Examples**:
-  - 50 teams → 6 rounds (bracket size: 64)
-  - 32 teams → 5 rounds (bracket size: 32)
-  - 16 teams → 4 rounds (bracket size: 16)
-  - 8 teams → 3 rounds (bracket size: 8)
+  - 36 teams → 64 (upscaled)
+  - 50 teams → 64 (upscaled)
+  - 32 teams → 32 (no change)
+  - 10 teams → 16 (upscaled)
 
-### 2. Team Progression
-Each round reduces teams by half:
-- **Round 1**: All participating teams
-- **Round 2**: Winners from Round 1 (50% of previous round)
-- **Round 3**: Winners from Round 2 (25% of original)
-- And so on until the Final
+### 2. Automatic Round Calculation
+- **Formula**: `rounds = log2(upscaledTeamCount)`
+- **Examples**:
+  - 64 teams → 6 rounds (log₂(64) = 6)
+  - 32 teams → 5 rounds (log₂(32) = 5)
+  - 16 teams → 4 rounds (log₂(16) = 4)
+  - 8 teams → 3 rounds (log₂(8) = 3)
 
-### 3. Round Types
-- **Knockout**: Elimination format - each team paired with another, loser is eliminated
-- **Round Robin**: Each team plays every other team in the round
+### 3. Dynamic Round Type Selection
+- Each round type is selected when the round is about to start
+- Admin chooses between **Knockout** or **Round Robin** after previous round completes
+- Allows mixing formats in same tournament
+
+### 4. Team Progression
+- **First Round**: All registered teams
+- **Subsequent Rounds**: Winners from previous round automatically progress
+
+### 5. Round Types
+- **Knockout**: Single elimination - teams paired, winner advances
+- **Round Robin**: Each team plays every other team - top teams advance based on points/wins
 
 ## Backend Implementation
 
