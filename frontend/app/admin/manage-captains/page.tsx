@@ -33,24 +33,24 @@ const USERS_API = "/api/users";
 
 // --- Sport logos mapping ---
 const sportLogos: { [key: string]: string } = {
-  'Football': '/Photos/football_logo.png',
-  'Basketball': '/Photos/basketball_logo.png',
-  'Tennis': '/Photos/tennis_logo.png',
-  'Volleyball': '/Photos/volleyball_logo.png',
+  Football: '/Photos/football_logo.png',
+  Basketball: '/Photos/basketball_logo.png',
+  Tennis: '/Photos/tennis_logo.png',
+  Volleyball: '/Photos/volleyball_logo.png',
   'Table Tennis': '/Photos/tabletennis_logo.png',
-  'Carrom': '/Photos/carrom_logo.png',
-  'Scrabble': '/Photos/scrabble_logo.png',
-  'Chess': '/Photos/chess_logo.png',
-  'Cricket': '/Photos/cricket_logo.png',
-  'Badminton': '/Photos/badminton_logo.png',
+  Carrom: '/Photos/carrom_logo.png',
+  Scrabble: '/Photos/scrabble_logo.png',
+  Chess: '/Photos/chess_logo.png',
+  Cricket: '/Photos/cricket_logo.png',
+  Badminton: '/Photos/badminton_logo.png',
 };
 
 function getDefaultLogo(sportName: string): string {
-  const normalizedSportName = sportName.trim();
-  if (sportLogos[normalizedSportName]) return sportLogos[normalizedSportName];
-  const lowerCaseName = normalizedSportName.toLowerCase();
+  const normalized = sportName.trim();
+  if (sportLogos[normalized]) return sportLogos[normalized];
+  const lower = normalized.toLowerCase();
   for (const [key, value] of Object.entries(sportLogos)) {
-    if (key.toLowerCase() === lowerCaseName) return value;
+    if (key.toLowerCase() === lower) return value;
   }
   return '/Photos/logo1.png';
 }
@@ -59,7 +59,6 @@ export default function ManageCaptains() {
   const [sports, setSports] = useState<Sport[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedSport, setSelectedSport] = useState<Sport | null>(null);
-  const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [loadingSports, setLoadingSports] = useState(true);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -74,14 +73,12 @@ export default function ManageCaptains() {
     setErrorSports(null);
     try {
       const result = await makeAuthenticatedRequest<Sport[]>(SPORTS_API);
-      if (Array.isArray(result)) {
-        setSports(result);
-      } else if (result && Array.isArray((result as any).data)) {
-        setSports((result as any).data);
+      if (result.data && Array.isArray(result.data)) {
+        setSports(result.data);
       } else {
         setSports([]);
       }
-    } catch (err) {
+    } catch {
       setErrorSports("Failed to load sports. Please check backend.");
       setSports([]);
     } finally {
@@ -100,16 +97,12 @@ export default function ManageCaptains() {
       setErrorUsers(null);
       try {
         const result = await makeAuthenticatedRequest<User[]>(USERS_API);
-        if (Array.isArray(result)) {
-          setUsers(result);
-        } else if (result && Array.isArray((result as any).data)) {
-          setUsers((result as any).data);
-        } else if (result && Array.isArray((result as any).users)) {
-          setUsers((result as any).users);
+        if (result.data && Array.isArray(result.data)) {
+          setUsers(result.data);
         } else {
           setUsers([]);
         }
-      } catch (err) {
+      } catch {
         setErrorUsers("Failed to load users. Please check backend.");
         setUsers([]);
       } finally {
@@ -124,41 +117,49 @@ export default function ManageCaptains() {
     if (!selectedSport || !selectedUserId) return;
     setAssigning(true);
     setSuccessMsg(null);
+
     try {
-      // Prepare updated sport object (must match backend DTO)
-      // Only update captainId, keep other fields as is
-      const updatedSport: Sport = {
-        ...selectedSport,
+      // Construct SportDTO for backend
+      const updatedSportDTO = {
+        sportId: selectedSport.sportId,
+        name: selectedSport.name,
+        isTeamGame: selectedSport.isTeamGame,
+        rules: selectedSport.rules ?? "",
         captainId: selectedUserId,
+        recentChampionId: selectedSport.recentChampionId ?? null,
+        recentChampionName: selectedSport.recentChampionName ?? null,
+        recentRunnerUpId: selectedSport.recentRunnerUpId ?? null,
+        recentRunnerUpName: selectedSport.recentRunnerUpName ?? null,
       };
-      // PUT the full sport object as required by backend
-      await makeAuthenticatedRequest<Sport>(
+
+      const response = await makeAuthenticatedRequest<Sport>(
         `${SPORTS_API}/${selectedSport.sportId}`,
-        "PUT",
-        updatedSport
+        {
+          method: "PUT",
+          body: JSON.stringify(updatedSportDTO),
+        }
       );
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
       setSuccessMsg("Captain assigned successfully!");
-      // Refetch sports to get updated data from backend
       await fetchSports();
-      // Update selectedSport to the new value from backend
-      const updated = sports.find(s => s.sportId === selectedSport.sportId);
-      setSelectedSport(updated ?? null);
+
+      // update selected sport
+      const updated = response.data;
+      if (updated) {
+        setSelectedSport(updated);
+      }
     } catch (err) {
+      console.error(err);
       setSuccessMsg(null);
       alert("Error assigning captain. Please try again.");
     } finally {
       setAssigning(false);
     }
   };
-
-  // --- Filter users by search ---
-  const filteredUsers = Array.isArray(users)
-    ? users.filter((u) =>
-        u.name.toLowerCase().includes(search.toLowerCase()) ||
-        u.username.toLowerCase().includes(search.toLowerCase()) ||
-        u.email.toLowerCase().includes(search.toLowerCase())
-      )
-    : [];
 
   return (
     <div className="manage-captains-page">
@@ -215,13 +216,6 @@ export default function ManageCaptains() {
               <p>
                 Selected Sport: <strong>{selectedSport.name}</strong>
               </p>
-              {/* <input
-                type="text"
-                placeholder="Search user..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="search-box"
-              /> */}
 
               {loadingUsers ? (
                 <div className="loading-message">Loading users...</div>
@@ -235,7 +229,7 @@ export default function ManageCaptains() {
                     value={selectedUserId ?? ''}
                   >
                     <option value="">-- Select User --</option>
-                    {filteredUsers.map((user) => (
+                    {users.map((user) => (
                       <option key={user.userId} value={user.userId}>
                         {user.name} ({user.username}) - {user.email}
                       </option>

@@ -44,11 +44,11 @@ public class SportService {
             sport.setName(sportUpdate.getName());
             sport.setIsTeamGame(sportUpdate.getIsTeamGame());
             sport.setRules(sportUpdate.getRules());
-            
-            // Handle captain assignment
+
+            // Handle captain assignment (allow any user)
             if (sportUpdate.getCaptain() != null && sportUpdate.getCaptain().getUserId() != null) {
                 Optional<User> captainUser = userRepository.findById(sportUpdate.getCaptain().getUserId());
-                if (captainUser.isPresent() && captainUser.get().getRole() == User.UserRole.CAPTAIN) {
+                if (captainUser.isPresent()) {
                     sport.setCaptain(captainUser.get());
                 } else {
                     sport.setCaptain(null);
@@ -56,19 +56,19 @@ public class SportService {
             } else {
                 sport.setCaptain(null);
             }
-            
+
             // Note: Recent champion and runner-up are typically updated through tournament completion
             // but we can allow manual updates if needed
             if (sportUpdate.getRecentChampion() != null && sportUpdate.getRecentChampion().getTeamId() != null) {
                 // Validate team exists (assuming TeamRepository is available)
                 sport.setRecentChampion(sportUpdate.getRecentChampion());
             }
-            
+
             if (sportUpdate.getRecentRunnerUp() != null && sportUpdate.getRecentRunnerUp().getTeamId() != null) {
                 // Validate team exists (assuming TeamRepository is available)
                 sport.setRecentRunnerUp(sportUpdate.getRecentRunnerUp());
             }
-            
+
             return sportRepository.save(sport);
         }
         return null;
