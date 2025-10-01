@@ -14,9 +14,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       </button>
       <nav className="sidebar-nav">
         <Link href="/admin/profile" className="sidebar-link">My Profile</Link>
-        <Link href="/admin/teams" className="sidebar-link">Manage Teams</Link>
+        <Link href="/admin/manage-captains" className="sidebar-link">Manage Captains</Link>
         <Link href="/admin/all-games" className="sidebar-link">All Games</Link>
-        <Link href="/admin/dashboard" className="sidebar-link">Dashboard</Link>
       </nav>
     </aside>
   );

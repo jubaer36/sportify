@@ -59,13 +59,19 @@ export default function Topbar() {
       {profile?.role === "PLAYER" && <PlayerSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
       <nav className={`topbar${sidebarOpen ? " sidebar-open" : ""}`}>
-        {/* Sidebar toggle with background shade */}
+        {/* Sidebar toggle with image instead of CSS hamburger */}
         <button
           className="sidebar-toggle shaded-toggle"
           aria-label="Open sidebar"
           onClick={() => setSidebarOpen(true)}
         >
-          <span className="hamburger"></span>
+          <Image
+            src="/Photos/menu.png"
+            alt="Menu"
+            width={34}
+            height={34}
+            className="menu-icon"
+          />
         </button>
 
         <div className="nav-left">
@@ -73,7 +79,7 @@ export default function Topbar() {
           <Link href="/admin/dashboard" className="nav-btn">Ongoing events</Link>
           <Link href="/admin/dashboard?tab=upcoming" className="nav-btn">Upcoming events</Link>
           <Link href="/admin/dashboard?tab=history" className="nav-btn">History</Link>
-          <Link href="/admin/dashboard?tab=tournaments" className="nav-btn">Tournaments</Link>
+          <Link href="/tournaments" className="nav-btn">Tournaments</Link>
         </div>
 
         <div className="nav-right">
