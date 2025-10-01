@@ -19,7 +19,7 @@ public class SportController {
     @Autowired
     private SportService sportService;
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN') or hasRole('PLAYER')")
     public ResponseEntity<List<SportDTO>> getAllSports(@RequestHeader("Authorization") String token) {
         token = token.replace("Bearer ", "");
         List<Sport> sports = sportService.getAllSports();
