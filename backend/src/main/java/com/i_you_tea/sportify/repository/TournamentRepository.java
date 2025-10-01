@@ -18,8 +18,6 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
     
     List<Tournament> findByCreatedBy(User createdBy);
     
-    List<Tournament> findByType(Tournament.TournamentType type);
-    
     List<Tournament> findByStartDateBetween(LocalDate startDate, LocalDate endDate);
     
     List<Tournament> findByNameContainingIgnoreCase(String name);

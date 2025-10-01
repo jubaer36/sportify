@@ -27,10 +27,6 @@ public class Tournament {
     @JoinColumn(name = "sport_id", nullable = false)
     private Sport sport;
     
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false)
-    private TournamentType type;
-    
     @Column(name = "start_date")
     private LocalDate startDate;
     
@@ -51,8 +47,4 @@ public class Tournament {
     
     @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Round> rounds;
-    
-    public enum TournamentType {
-        ROUND_ROBIN, KNOCKOUT
-    }
 }

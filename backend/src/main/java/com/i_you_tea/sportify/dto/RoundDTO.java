@@ -18,6 +18,7 @@ public class RoundDTO {
     private String roundName;
     private Long tournamentId;
     private String tournamentName;
+    private Round.TournamentType type;
     
     /**
      * Convert Round entity to RoundDTO
@@ -31,6 +32,7 @@ public class RoundDTO {
         dto.setRoundId(round.getRoundId());
         dto.setRoundValue(round.getRoundValue());
         dto.setRoundName(round.getRoundName());
+        dto.setType(round.getType());
         
         // Set tournament information
         if (round.getTournament() != null) {
@@ -48,6 +50,7 @@ public class RoundDTO {
         Round round = new Round();
         round.setRoundId(this.roundId);
         round.setRoundValue(this.roundValue);
+        round.setType(this.type);
         // roundName will be automatically calculated when roundValue is set
         // Tournament relationship should be set by the service layer
         return round;

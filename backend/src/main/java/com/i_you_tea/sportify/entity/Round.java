@@ -29,6 +29,10 @@ public class Round {
     @JoinColumn(name = "tournament_id", nullable = false)
     private Tournament tournament;
     
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false)
+    private TournamentType type;
+    
     @OneToMany(mappedBy = "round", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Match> matches;
     
@@ -36,11 +40,27 @@ public class Round {
      * Constructor that automatically calculates round name based on round value
      * @param roundValue The power value (1 = Final, 2 = Semi-final, etc.)
      * @param tournament The tournament this round belongs to
+     * @param type The tournament type (ROUND_ROBIN or KNOCKOUT)
      */
+    public Round(Integer roundValue, Tournament tournament, TournamentType type) {
+        this.roundValue = roundValue;
+        this.roundName = calculateRoundName(roundValue);
+        this.tournament = tournament;
+        this.type = type;
+    }
+    
+    /**
+     * Constructor that automatically calculates round name based on round value
+     * @param roundValue The power value (1 = Final, 2 = Semi-final, etc.)
+     * @param tournament The tournament this round belongs to
+     * @deprecated Use Round(Integer roundValue, Tournament tournament, TournamentType type) instead
+     */
+    @Deprecated
     public Round(Integer roundValue, Tournament tournament) {
         this.roundValue = roundValue;
         this.roundName = calculateRoundName(roundValue);
         this.tournament = tournament;
+        this.type = TournamentType.KNOCKOUT; // Default to KNOCKOUT for backward compatibility
     }
     
     /**
@@ -100,5 +120,9 @@ public class Round {
      */
     public Integer getNumberOfTeams() {
         return (int) Math.pow(2, roundValue);
+    }
+    
+    public enum TournamentType {
+        ROUND_ROBIN, KNOCKOUT
     }
 }

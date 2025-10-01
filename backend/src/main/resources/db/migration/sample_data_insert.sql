@@ -36,15 +36,15 @@ INSERT INTO sports (sport_id, name, is_team_game, rules, captain_id) VALUES
 (5, 'Badminton', false, 'Standard badminton rules, singles match, best of 3 games to 21 points.', NULL);
 
 -- Insert Tournaments (with champions and runners-up for completed tournaments)
-INSERT INTO tournaments (tournament_id, name, sport_id, type, start_date, end_date, created_by, champion_id, runner_up_id) VALUES
-(1, 'Spring Football Championship', 1, 'KNOCKOUT', '2024-03-01', '2024-03-31', 1, NULL, NULL),
-(2, 'Inter-College Basketball League', 2, 'ROUND_ROBIN', '2024-04-01', '2024-04-30', 1, NULL, NULL),
-(3, 'Summer Cricket Tournament', 3, 'KNOCKOUT', '2024-05-01', '2024-05-31', 1, NULL, NULL),
-(4, 'Tennis Masters Cup', 4, 'KNOCKOUT', '2024-06-01', '2024-06-15', 1, NULL, NULL),
-(5, 'Badminton Open Championship', 5, 'ROUND_ROBIN', '2024-07-01', '2024-07-31', 1, NULL, NULL),
-(6, 'Captain''s Football League', 1, 'ROUND_ROBIN', '2024-08-01', '2024-08-31', 6, NULL, NULL),
-(7, 'Elite Cricket Championship', 3, 'KNOCKOUT', '2024-09-01', '2024-09-30', 7, NULL, NULL),
-(8, 'Winter Football Championship 2024', 1, 'KNOCKOUT', '2024-12-01', '2024-12-31', 1, NULL, NULL);
+INSERT INTO tournaments (tournament_id, name, sport_id, start_date, end_date, created_by, champion_id, runner_up_id) VALUES
+(1, 'Spring Football Championship', 1,  '2024-03-01', '2024-03-31', 1, NULL, NULL),
+(2, 'Inter-College Basketball League', 2, '2024-04-01', '2024-04-30', 1, NULL, NULL),
+(3, 'Summer Cricket Tournament', 3, '2024-05-01', '2024-05-31', 1, NULL, NULL),
+(4, 'Tennis Masters Cup', 4, '2024-06-01', '2024-06-15', 1, NULL, NULL),
+(5, 'Badminton Open Championship', 5,  '2024-07-01', '2024-07-31', 1, NULL, NULL),
+(6, 'Captain''s Football League', 1,  '2024-08-01', '2024-08-31', 6, NULL, NULL),
+(7, 'Elite Cricket Championship', 3, '2024-09-01', '2024-09-30', 7, NULL, NULL),
+(8, 'Winter Football Championship 2024', 1, '2024-12-01', '2024-12-31', 1, NULL, NULL);
 
 -- Insert Teams
 INSERT INTO teams (team_id, team_name, sport_id, created_by, logo,tournament_id) VALUES
@@ -83,36 +83,36 @@ UPDATE sports SET recent_champion_id = 7, recent_runner_up_id = 5 WHERE sport_id
 
 
 -- Insert Sample Rounds for Tournaments
-INSERT INTO rounds (round_id, round_value, round_name, tournament_id) VALUES
+INSERT INTO rounds (round_id, round_value, round_name, tournament_id, type) VALUES
 -- Spring Football Championship (KNOCKOUT) - Tournament ID 1
-(1, 5, 'Round of 32', 1),
-(2, 4, 'Round of 16', 1),
-(3, 3, 'Quarter-final', 1),
-(4, 2, 'Semi-final', 1),
-(5, 1, 'Final', 1),
+(1, 5, 'Round of 32', 1 , 'KNOCKOUT'),
+(2, 4, 'Round of 16', 1, 'KNOCKOUT'),
+(3, 3, 'Quarter-final', 1, 'KNOCKOUT'),
+(4, 2, 'Semi-final', 1, 'KNOCKOUT'),
+(5, 1, 'Final', 1, 'KNOCKOUT'),
 
 -- Summer Cricket Tournament (KNOCKOUT) - Tournament ID 3
-(6, 4, 'Round of 16', 3),
-(7, 3, 'Quarter-final', 3),
-(8, 2, 'Semi-final', 3),
-(9, 1, 'Final', 3),
+(6, 4, 'Round of 16', 3, 'KNOCKOUT'),
+(7, 3, 'Quarter-final', 3, 'KNOCKOUT'),
+(8, 2, 'Semi-final', 3, 'KNOCKOUT'),
+(9, 1, 'Final', 3, 'KNOCKOUT'),
 
 -- Tennis Masters Cup (KNOCKOUT) - Tournament ID 4
-(10, 3, 'Quarter-final', 4),
-(11, 2, 'Semi-final', 4),
-(12, 1, 'Final', 4),
+(10, 3, 'Quarter-final', 4,'ROUND_ROBIN'),
+(11, 2, 'Semi-final', 4,'ROUND_ROBIN'),
+(12, 1, 'Final', 4,'ROUND_ROBIN'),
 
 -- Elite Cricket Championship (KNOCKOUT) - Tournament ID 7
-(13, 3, 'Quarter-final', 7),
-(14, 2, 'Semi-final', 7),
-(15, 1, 'Final', 7),
+(13, 3, 'Quarter-final', 7, 'KNOCKOUT'),
+(14, 2, 'Semi-final', 7, 'KNOCKOUT'),
+(15, 1, 'Final', 7,'ROUND_ROBIN'),
 
 -- Winter Football Championship 2024 (KNOCKOUT) - Tournament ID 8
-(16, 5, 'Round of 32', 8),
-(17, 4, 'Round of 16', 8),
-(18, 3, 'Quarter-final', 8),
-(19, 2, 'Semi-final', 8),
-(20, 1, 'Final', 8);
+(16, 5, 'Round of 32', 8,'KNOCKOUT'),
+(17, 4, 'Round of 16', 8,'KNOCKOUT'),
+(18, 3, 'Quarter-final', 8,'KNOCKOUT'),
+(19, 2, 'Semi-final', 8,'KNOCKOUT'),
+(20, 1, 'Final', 8,'KNOCKOUT');
 
 
 

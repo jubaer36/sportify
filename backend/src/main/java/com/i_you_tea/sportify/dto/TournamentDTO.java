@@ -19,7 +19,6 @@ public class TournamentDTO {
     private String name;
     private Long sportId;
     private String sportName;
-    private Tournament.TournamentType type;
     private LocalDate startDate;
     private LocalDate endDate;
     private Long createdById;
@@ -35,7 +34,6 @@ public class TournamentDTO {
             tournament.getName(),
             tournament.getSport() != null ? tournament.getSport().getSportId() : null,
             tournament.getSport() != null ? tournament.getSport().getName() : null,
-            tournament.getType(),
             tournament.getStartDate(),
             tournament.getEndDate(),
             tournament.getCreatedBy() != null ? tournament.getCreatedBy().getUserId() : null,
@@ -51,7 +49,6 @@ public class TournamentDTO {
         Tournament tournament = new Tournament();      
         tournament.setTournamentId(this.tournamentId);       
         tournament.setName(this.name);       
-        tournament.setType(this.type);       
         tournament.setStartDate(this.startDate);       
         tournament.setEndDate(this.endDate);       
         if (this.sportId != null) {           

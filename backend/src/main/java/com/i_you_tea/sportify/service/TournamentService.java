@@ -64,7 +64,6 @@ public class TournamentService {
         if (existingTournament.isPresent()) {
             Tournament tournament = existingTournament.get();
             tournament.setName(tournamentUpdate.getName());
-            tournament.setType(tournamentUpdate.getType());
             tournament.setStartDate(tournamentUpdate.getStartDate());
             tournament.setEndDate(tournamentUpdate.getEndDate());
             
