@@ -33,4 +33,60 @@ public class MatchController {
         Match created = matchService.createMatch(match);
         return ResponseEntity.status(HttpStatus.CREATED).body(MatchDTO.fromEntity(created));
     }
+    
+    @GetMapping("/{matchId}")
+    public ResponseEntity<MatchDTO> getMatchById(@PathVariable Long matchId) {
+        return matchService.getMatchById(matchId)
+                .map(match -> ResponseEntity.ok(MatchDTO.fromEntity(match)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @GetMapping("/round/{roundId}")
+    public ResponseEntity<List<MatchDTO>> getMatchesByRoundId(@PathVariable Long roundId) {
+        List<Match> matches = matchService.getMatchesByRoundId(roundId);
+        List<MatchDTO> matchDTOs = matches.stream()
+                .map(MatchDTO::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(matchDTOs);
+    }
+    
+    @GetMapping("/round-value/{roundValue}")
+    public ResponseEntity<List<MatchDTO>> getMatchesByRoundValue(@PathVariable Integer roundValue) {
+        List<Match> matches = matchService.getMatchesByRoundValue(roundValue);
+        List<MatchDTO> matchDTOs = matches.stream()
+                .map(MatchDTO::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(matchDTOs);
+    }
+    
+    @GetMapping("/round/{roundId}/tournament/{tournamentId}")
+    public ResponseEntity<List<MatchDTO>> getMatchesByRoundAndTournament(
+            @PathVariable Long roundId, 
+            @PathVariable Long tournamentId) {
+        List<Match> matches = matchService.getMatchesByRoundAndTournament(roundId, tournamentId);
+        List<MatchDTO> matchDTOs = matches.stream()
+                .map(MatchDTO::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(matchDTOs);
+    }
+    
+    @PutMapping("/{matchId}")
+    public ResponseEntity<MatchDTO> updateMatch(@PathVariable Long matchId, @RequestBody Match matchDetails) {
+        try {
+            Match updated = matchService.updateMatch(matchId, matchDetails);
+            return ResponseEntity.ok(MatchDTO.fromEntity(updated));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+    
+    @DeleteMapping("/{matchId}")
+    public ResponseEntity<Void> deleteMatch(@PathVariable Long matchId) {
+        try {
+            matchService.deleteMatch(matchId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

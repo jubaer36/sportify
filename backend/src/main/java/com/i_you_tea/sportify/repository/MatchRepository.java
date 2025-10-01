@@ -27,4 +27,13 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     List<Match> findByScheduledTimeBetween(LocalDateTime start, LocalDateTime end);
     
     List<Match> findByWinnerTeam(Team winnerTeam);
+    
+    List<Match> findByRound(com.i_you_tea.sportify.entity.Round round);
+    
+    List<Match> findByRound_RoundId(Long roundId);
+    
+    List<Match> findByRound_RoundValue(Integer roundValue);
+    
+    @Query("SELECT m FROM Match m WHERE m.round.roundId = :roundId AND m.tournament.tournamentId = :tournamentId")
+    List<Match> findByRoundIdAndTournamentId(@Param("roundId") Long roundId, @Param("tournamentId") Long tournamentId);
 }

@@ -82,16 +82,58 @@ UPDATE sports SET recent_champion_id = 7, recent_runner_up_id = 5 WHERE sport_id
 -- Tennis and Badminton remain NULL as no tournaments have been completed yet
 
 
+-- Insert Sample Rounds for Tournaments
+INSERT INTO rounds (round_id, round_value, round_name, tournament_id) VALUES
+-- Spring Football Championship (KNOCKOUT) - Tournament ID 1
+(1, 5, 'Round of 32', 1),
+(2, 4, 'Round of 16', 1),
+(3, 3, 'Quarter-final', 1),
+(4, 2, 'Semi-final', 1),
+(5, 1, 'Final', 1),
 
--- Insert Matches
-INSERT INTO matches (match_id, tournament_id, sport_id, team1_id, team2_id, scheduled_time, venue, status, winner_team_id , round) VALUES
-(1, 1, 1, 1, 2, '2024-03-15 15:00:00', 'Main Football Ground', 'COMPLETED', 1, 'Round of 16'),
-(2, 2, 2, 3, 4, '2024-04-10 18:00:00', 'Basketball Court A', 'COMPLETED', 3 , 'Round of 32'),
-(3, 3, 3, 5, 1, '2024-05-20 14:00:00', 'Cricket Stadium', 'ONGOING', NULL , 'Quarter-Final'),
-(4, 1, 1, 1, 5, '2024-03-20 16:00:00', 'Secondary Ground', 'SCHEDULED', NULL, 'Final'),
-(5, 2, 2, 3, 5, '2024-04-25 19:00:00', 'Basketball Court B', 'COMPLETED', 5, 'Semi-Final'),
-(6, 6, 1, 6, 1, '2024-08-15 16:00:00', 'Captain''s Ground', 'COMPLETED', 6, 'Round of 16'),
-(7, 7, 3, 7, 5, '2024-09-10 14:30:00', 'Elite Cricket Ground', 'COMPLETED', 7 , 'Quarter-Final');
+-- Summer Cricket Tournament (KNOCKOUT) - Tournament ID 3
+(6, 4, 'Round of 16', 3),
+(7, 3, 'Quarter-final', 3),
+(8, 2, 'Semi-final', 3),
+(9, 1, 'Final', 3),
+
+-- Tennis Masters Cup (KNOCKOUT) - Tournament ID 4
+(10, 3, 'Quarter-final', 4),
+(11, 2, 'Semi-final', 4),
+(12, 1, 'Final', 4),
+
+-- Elite Cricket Championship (KNOCKOUT) - Tournament ID 7
+(13, 3, 'Quarter-final', 7),
+(14, 2, 'Semi-final', 7),
+(15, 1, 'Final', 7),
+
+-- Winter Football Championship 2024 (KNOCKOUT) - Tournament ID 8
+(16, 5, 'Round of 32', 8),
+(17, 4, 'Round of 16', 8),
+(18, 3, 'Quarter-final', 8),
+(19, 2, 'Semi-final', 8),
+(20, 1, 'Final', 8);
+
+
+
+-- Insert Matches (using round_id to reference rounds table)
+INSERT INTO matches (match_id, tournament_id, sport_id, team1_id, team2_id, scheduled_time, venue, status, winner_team_id, round_id) VALUES
+-- Spring Football Championship matches (Tournament ID 1)
+(1, 1, 1, 1, 2, '2024-03-15 15:00:00', 'Main Football Ground', 'COMPLETED', 1, 2), -- Round of 16 (round_id = 2)
+(4, 1, 1, 1, 5, '2024-03-20 16:00:00', 'Secondary Ground', 'SCHEDULED', NULL, 5), -- Final (round_id = 5)
+
+-- Inter-College Basketball League matches (Tournament ID 2 - ROUND_ROBIN, no rounds needed)
+(2, 2, 2, 3, 4, '2024-04-10 18:00:00', 'Basketball Court A', 'COMPLETED', 3, NULL),
+(5, 2, 2, 3, 5, '2024-04-25 19:00:00', 'Basketball Court B', 'COMPLETED', 5, NULL),
+
+-- Summer Cricket Tournament matches (Tournament ID 3)
+(3, 3, 3, 5, 1, '2024-05-20 14:00:00', 'Cricket Stadium', 'ONGOING', NULL, 7), -- Quarter-final (round_id = 7)
+
+-- Captain's Football League matches (Tournament ID 6 - ROUND_ROBIN, no rounds needed)
+(6, 6, 1, 6, 1, '2024-08-15 16:00:00', 'Captain''s Ground', 'COMPLETED', 6, NULL),
+
+-- Elite Cricket Championship matches (Tournament ID 7)
+(7, 7, 3, 7, 5, '2024-09-10 14:30:00', 'Elite Cricket Ground', 'COMPLETED', 7, 13); -- Quarter-final (round_id = 13)
 
 -- Insert Scores
 INSERT INTO scores (score_id, match_id, team_id, points, updated_by) VALUES
@@ -298,9 +340,12 @@ INSERT INTO announcements (announcement_id, title, content, posted_by, posted_at
 (9, 'Winter Football Championship Rules & Guidelines', 'Special winter playing conditions and rules have been published for the Winter Football Championship 2024. All 32 participating teams must review the updated guidelines including cold weather protocols.', 1, '2024-11-05 14:00:00', 1, 8),
 (10, 'Winter Football Championship Draw Ceremony', 'The official draw ceremony for the Winter Football Championship 2024 will be held on November 20th. The knockout bracket will be announced with first round matches starting December 1st.', 1, '2024-11-10 11:30:00', 1, 8);
 
+
 -- Update sequences to continue from the next available ID
 SELECT setval('teams_team_id_seq', 32, true);
 SELECT setval('tournaments_tournament_id_seq', 8, true);
+SELECT setval('matches_match_id_seq', 7, true);
 SELECT setval('announcements_announcement_id_seq', 10, true);
+SELECT setval('rounds_round_id_seq', 20, true);
 
 COMMIT;

@@ -49,8 +49,9 @@ public class Match {
     @JoinColumn(name = "winner_team_id")
     private Team winnerTeam;
 
-    @Column(name="Round" , nullable = true)
-    private String round;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "round_id")
+    private Round round;
     
     public enum MatchStatus {
         SCHEDULED, ONGOING, COMPLETED, CANCELLED
