@@ -57,7 +57,6 @@
   transform: scale(1.25);
 }
 
-
 .sidebar-toggle {
   background: none;
   border: none;
@@ -68,32 +67,19 @@
   padding: 0;
 }
 
+/* New menu icon (image-based) */
+.menu-icon {
+  display: block;
+  border-radius: 6px;
+  background: #fff;
+  padding: 4px;
+  border: 2px solid #38bdf8;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
 
-
-.hamburger {
-  width: 28px;
-  height: 3px;
-  background: #000000;
-  border-radius: 2px;
-  position: relative;
-  display: inline-block;
-}
-.hamburger::before,
-.hamburger::after {
-  content: "";
-  position: absolute;
-  width: 28px;
-  height: 3px;
-  background: #000000;
-  border-radius: 2px;
-  left: 0;
-  transition: 0.2s;
-}
-.hamburger::before {
-  top: -8px;
-}
-.hamburger::after {
-  top: 8px;
+.menu-icon:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 3px #bae6fd;
 }
 
 /* Logout button */
