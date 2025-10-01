@@ -43,16 +43,20 @@
 }
 
 .profile-logo {
+  width : 38px;
+  height: 35px;
   border-radius: 50%;
   border: 2px solid #38bdf8;
   background: #fff;
   cursor: pointer;
-  transition: box-shadow 0.18s;
+  transition: box-shadow 0.18s, transform 0.2s ease;
 }
 
 .profile-logo:hover {
   box-shadow: 0 0 0 3px #bae6fd;
+  transform: scale(1.25);
 }
+
 
 .sidebar-toggle {
   background: none;
@@ -64,10 +68,12 @@
   padding: 0;
 }
 
+
+
 .hamburger {
   width: 28px;
   height: 3px;
-  background: #0284c7;
+  background: #000000;
   border-radius: 2px;
   position: relative;
   display: inline-block;
@@ -78,7 +84,7 @@
   position: absolute;
   width: 28px;
   height: 3px;
-  background: #0284c7;
+  background: #000000;
   border-radius: 2px;
   left: 0;
   transition: 0.2s;
@@ -88,4 +94,26 @@
 }
 .hamburger::after {
   top: 8px;
+}
+
+/* Logout button */
+.logout-btn {
+  background: none;
+  border: none;
+  margin-left: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+.logout-btn:hover {
+  box-shadow: 0 0 0 3px #bae6fd;
+  transform: scale(1.25);
+}
+
+.logout-logo {
+  border-radius: 50%;
+  border: 2px solid #f87171;
+  background: #fff;
+  padding: 2px;
 }

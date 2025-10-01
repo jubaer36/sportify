@@ -1,5 +1,5 @@
 import Link from "next/link";
-import "./player_sidebar.css";
+import "../Style/player_sidebar.css";
 
 type SidebarProps = {
   open: boolean;

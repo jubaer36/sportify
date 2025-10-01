@@ -1,5 +1,5 @@
 import Link from "next/link";
-import "./sidebar.css";
+import "../Style/sidebar.css";
 
 type SidebarProps = {
   open: boolean;

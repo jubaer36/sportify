@@ -31,6 +31,23 @@ export default function Topbar() {
     }
   };
 
+  const handleLogout = async () => {
+    const refreshToken = localStorage.getItem("refreshToken");
+    try {
+      await fetch("http://localhost:8090/api/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+      window.location.href = "/"; // redirect to home/login
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
   }, []);
@@ -41,32 +58,46 @@ export default function Topbar() {
       {profile?.role === "CAPTAIN" && <CaptainSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
       {profile?.role === "PLAYER" && <PlayerSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
-      {/* <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} /> */}
       <nav className={`topbar${sidebarOpen ? " sidebar-open" : ""}`}>
+        {/* Sidebar toggle with background shade */}
         <button
-          className="sidebar-toggle"
+          className="sidebar-toggle shaded-toggle"
           aria-label="Open sidebar"
           onClick={() => setSidebarOpen(true)}
         >
           <span className="hamburger"></span>
         </button>
+
         <div className="nav-left">
+          <Link href="/admin/dashboard" className="nav-btn">Home</Link>
           <Link href="/admin/dashboard" className="nav-btn">Ongoing events</Link>
           <Link href="/admin/dashboard?tab=upcoming" className="nav-btn">Upcoming events</Link>
           <Link href="/admin/dashboard?tab=history" className="nav-btn">History</Link>
           <Link href="/admin/dashboard?tab=tournaments" className="nav-btn">Tournaments</Link>
-          <Link href="/admin/all-games" className="nav-btn">All Games</Link>
         </div>
+
         <div className="nav-right">
+          {/* Profile button */}
           <Link href="/admin/profile">
             <Image
-              src="/Photos/logo3.png"
+              src="/Photos/profile.png"
               alt="Profile"
               width={38}
               height={38}
               className="profile-logo"
             />
           </Link>
+
+          {/* Logout button */}
+          <button onClick={handleLogout} className="logout-btn">
+            <Image
+              src="/Photos/logout.png"
+              alt="Logout"
+              width={34}
+              height={34}
+              className="logout-logo"
+            />
+          </button>
         </div>
       </nav>
     </>
