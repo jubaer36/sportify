@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Topbar from "@/Component/topbar";
 import Image from "next/image";
 import { makeAuthenticatedRequest } from "@/utils/api";
-import "./admin_dashboard.css";
+import "./upcoming-events.css";
 
 interface Announcement {
   announcementId: number;
@@ -15,8 +15,6 @@ interface Announcement {
   postedAt: string;
   relatedSportId?: number;
   relatedSportName?: string;
-  relatedTournamentId?: number;
-  relatedTournamentName?: string;
   startDate?: string;
   endDate?: string;
 }
@@ -34,9 +32,7 @@ const sportLogos: { [key: string]: string } = {
   Badminton: "/Photos/badminton_logo.png",
 };
 
-export default function AdminDashboard() {
-  const [searchText, setSearchText] = useState("");
-  const [selectedSport, setSelectedSport] = useState("");
+export default function UpcomingEvents() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,66 +57,32 @@ export default function AdminDashboard() {
     fetchAnnouncements();
   }, []);
 
-  // Filtering logic
-  const filteredAnnouncements = announcements.filter((a) => {
-    const textMatch =
-      a.title.toLowerCase().includes(searchText.toLowerCase()) ||
-      a.content.toLowerCase().includes(searchText.toLowerCase());
-    const tagMatch = selectedSport
-      ? a.relatedSportName === selectedSport
-      : true;
-    return textMatch && tagMatch;
+  // Filter for upcoming events: startDate > today
+  const today = new Date();
+  const upcomingAnnouncements = announcements.filter((a) => {
+    if (!a.startDate) return false;
+    const start = new Date(a.startDate);
+    return start > today;
   });
 
-  // Get unique sports for filter dropdown
-  const uniqueSports = Array.from(
-    new Set(announcements.map((a) => a.relatedSportName).filter(Boolean))
-  );
-
   return (
-    <div className="admin-dashboard-bg">
+    <div className="upcoming-events-bg">
       <Topbar />
-
-      <div className="dashboard-content">
-        <h1 className="dashboard-title">Welcome, Admin!</h1>
-
-        {/* Search bar */}
-        <div className="search-bar">
-          <input
-            type="text"
-            placeholder="Search announcements..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            className="search-input"
-          />
-          <select
-            value={selectedSport}
-            onChange={(e) => setSelectedSport(e.target.value)}
-            className="search-select"
-          >
-            <option value="">All Sports</option>
-            {uniqueSports.map((sport) => (
-              <option key={sport} value={sport}>
-                {sport}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Announcement Cards */}
-        <div className="announcement-list">
+      <div className="upcoming-events-content">
+        <h1 className="upcoming-events-title">Upcoming Events</h1>
+        <div className="upcoming-announcement-list">
           {loading ? (
-            <div>Loading announcements...</div>
+            <div>Loading upcoming events...</div>
           ) : error ? (
             <div style={{ color: "#dc2626" }}>{error}</div>
-          ) : filteredAnnouncements.length === 0 ? (
-            <div>No announcements found.</div>
+          ) : upcomingAnnouncements.length === 0 ? (
+            <div>No upcoming events found.</div>
           ) : (
-            filteredAnnouncements.map((a) => (
-              <div key={a.announcementId} className="announcement-card">
-                <div className="announcement-header">
-                  <h3 className="announcement-title">{a.title}</h3>
-                  <span className="announcement-date">
+            upcomingAnnouncements.map((a) => (
+              <div key={a.announcementId} className="upcoming-announcement-card">
+                <div className="upcoming-announcement-header">
+                  <h3 className="upcoming-announcement-title">{a.title}</h3>
+                  <span className="upcoming-announcement-date">
                     {new Date(a.postedAt).toLocaleDateString(undefined, {
                       year: "numeric",
                       month: "short",
@@ -128,15 +90,12 @@ export default function AdminDashboard() {
                     })}
                   </span>
                 </div>
-                <p className="announcement-desc">{a.content}</p>
-                <div className="announcement-tags">
+                <p className="upcoming-announcement-desc">{a.content}</p>
+                <div className="upcoming-announcement-tags">
                   {a.relatedSportName && (
                     <span className="tag">
                       <Image
-                        src={
-                          sportLogos[a.relatedSportName] ||
-                          "/Photos/logo1.png"
-                        }
+                        src={sportLogos[a.relatedSportName] || "/Photos/logo1.png"}
                         alt={a.relatedSportName}
                         width={18}
                         height={18}
