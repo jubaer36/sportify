@@ -1,11 +1,8 @@
 package com.i_you_tea.sportify.controller;
 
-<<<<<<< HEAD
 import com.i_you_tea.sportify.dto.TournamentDTO;
 import com.i_you_tea.sportify.dto.CreateTournamentDTO;
-=======
 import com.i_you_tea.sportify.entity.Round;
->>>>>>> jubaer
 import com.i_you_tea.sportify.entity.Tournament;
 import com.i_you_tea.sportify.dto.TournamentDTO;
 import com.i_you_tea.sportify.dto.FixtureDTO;
@@ -94,7 +91,7 @@ public class TournamentController {
      * This creates all rounds but doesn't commit to match types yet
      */
     @GetMapping("/{tournamentId}/fixture")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN')")
     public ResponseEntity<FixtureDTO> generateFixture(@PathVariable Long tournamentId) {
         try {
             FixtureDTO fixture = tournamentService.generateFixture(tournamentId);
@@ -109,7 +106,7 @@ public class TournamentController {
      * Use this after matches have been generated to see the real data
      */
     @GetMapping("/{tournamentId}/fixture/existing")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN')")
     public ResponseEntity<FixtureDTO> getExistingFixture(@PathVariable Long tournamentId) {
         try {
             FixtureDTO fixture = tournamentService.getExistingFixture(tournamentId);
@@ -123,7 +120,7 @@ public class TournamentController {
      * Select tournament type for a specific round and generate matches
      */
     @PostMapping("/rounds/{roundId}/select-type")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN')")
     public ResponseEntity<Void> selectRoundType(@PathVariable Long roundId,
                                                  @RequestBody RoundTypeSelection selection) {
         try {
@@ -138,7 +135,7 @@ public class TournamentController {
      * Check if a round is complete
      */
     @GetMapping("/rounds/{roundId}/is-complete")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN')")
     public ResponseEntity<Boolean> isRoundComplete(@PathVariable Long roundId) {
         try {
             boolean isComplete = tournamentService.isRoundComplete(roundId);
@@ -152,7 +149,7 @@ public class TournamentController {
      * Advance to next round after current round completes
      */
     @PostMapping("/rounds/{roundId}/advance")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN')")
     public ResponseEntity<Void> advanceToNextRound(@PathVariable Long roundId,
                                                     @RequestBody RoundTypeSelection selection) {
         try {
@@ -167,14 +164,14 @@ public class TournamentController {
      * Get available tournament types for selection
      */
     @GetMapping("/rounds/available-types")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN')")
     public ResponseEntity<List<Round.TournamentType>> getAvailableRoundTypes() {
         List<Round.TournamentType> types = tournamentService.getAvailableRoundTypes();
         return ResponseEntity.ok(types);
     }
 
     @PostMapping("/{tournamentId}/fixture")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')or hasRole('CAPTAIN')")
     public ResponseEntity<FixtureDTO> generateFixtureWithRoundTypes(@PathVariable Long tournamentId,
                                                                    @RequestBody List<RoundTypeRequest> roundConfigs) {
         try {

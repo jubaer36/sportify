@@ -54,6 +54,18 @@ interface Fixture {
   rounds: RoundFixture[];
 }
 
+interface User {
+  userId: number;
+  name: string;
+  email: string;
+  role: string;
+}
+
+interface Sport {
+  sportId: number;
+  name: string;
+}
+
 export default function FixtureViewer() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
@@ -61,6 +73,8 @@ export default function FixtureViewer() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [userProfile, setUserProfile] = useState<User | null>(null);
+  const [captainSports, setCaptainSports] = useState<Sport[]>([]);
   const [showFixture, setShowFixture] = useState(false);
   const [fixtureExists, setFixtureExists] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
@@ -77,7 +91,7 @@ export default function FixtureViewer() {
   const router = useRouter();
 
   useEffect(() => {
-    fetchTournaments();
+    fetchUserProfileAndTournaments();
   }, []);
 
   useEffect(() => {
@@ -368,15 +382,62 @@ export default function FixtureViewer() {
     return Math.ceil(Math.log2(teamCount)) + 1;
   };
 
-  // All the other existing functions (fetchTournaments, loadFixture, etc.) remain the same...
-  const fetchTournaments = async () => {
+  // Fetch user profile and tournaments filtered by captain's sports
+  const fetchUserProfileAndTournaments = async () => {
     try {
-      const result = await makeAuthenticatedRequest<Tournament[]>('/api/tournaments');
-      if (result.data) {
-        setTournaments(result.data);
-      } else {
-        setError(result.error || 'Failed to fetch tournaments');
+      // First, fetch user profile
+      const userResult = await makeAuthenticatedRequest<User>('/api/users/profile');
+      if (userResult.error) {
+        setError(userResult.error);
+        return;
       }
+      
+      if (!userResult.data) {
+        setError('Failed to fetch user profile');
+        return;
+      }
+
+      setUserProfile(userResult.data);
+      
+      // Then fetch sports managed by this captain
+      const sportsResult = await makeAuthenticatedRequest<Sport[]>(`/api/sports/captain/${userResult.data.userId}`);
+      if (sportsResult.error) {
+        setError(sportsResult.error);
+        return;
+      }
+      
+      if (!sportsResult.data) {
+        setError('Failed to fetch captain sports');
+        return;
+      }
+
+      setCaptainSports(sportsResult.data);
+      
+      // If captain has no sports, show empty tournaments
+      if (sportsResult.data.length === 0) {
+        setTournaments([]);
+        return;
+      }
+      
+      // Fetch all tournaments and filter by captain's sports
+      const tournamentsResult = await makeAuthenticatedRequest<Tournament[]>('/api/tournaments');
+      if (tournamentsResult.error) {
+        setError(tournamentsResult.error);
+        return;
+      }
+      
+      if (!tournamentsResult.data) {
+        setError('Failed to fetch tournaments');
+        return;
+      }
+
+      // Filter tournaments to only include those from sports this captain manages
+      const captainSportNames = sportsResult.data.map(sport => sport.name);
+      const filteredTournaments = tournamentsResult.data.filter(tournament => 
+        captainSportNames.includes(tournament.sportName)
+      );
+      
+      setTournaments(filteredTournaments);
     } catch {
       setError('Error fetching tournaments');
     }
