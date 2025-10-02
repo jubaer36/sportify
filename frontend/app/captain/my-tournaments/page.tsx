@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Topbar from "@/Component/topbar";
 import { makeAuthenticatedRequest } from "@/utils/api";
-import "./tournaments.css";
+import "./my-tournaments.css";
 
 // --- DTOs matching backend ---
 interface Tournament {
@@ -58,7 +58,7 @@ function getSportLogo(sportName: string): string {
   return "/Photos/logo1.png";
 }
 
-export default function TournamentsPage() {
+export default function MyTournamentsPage() {
   const router = useRouter();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [sports, setSports] = useState<Sport[]>([]);
@@ -69,7 +69,6 @@ export default function TournamentsPage() {
   // --- Filters ---
   const [selectedSport, setSelectedSport] = useState<string>("All");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
-  const [showMyTournaments, setShowMyTournaments] = useState<boolean>(false);
 
   // Fetch user profile first
   useEffect(() => {
@@ -80,7 +79,15 @@ export default function TournamentsPage() {
           setError(response.error);
           return;
         }
-        setUserProfile(response.data!);
+        
+        const profile = response.data!;
+        setUserProfile(profile);
+        
+        // Check if user is a captain
+        if (profile.role !== "CAPTAIN") {
+          setError("Access denied. This page is only for captains.");
+          return;
+        }
       } catch (err) {
         setError("Failed to fetch user profile");
       }
@@ -89,7 +96,7 @@ export default function TournamentsPage() {
     fetchUserProfile();
   }, []);
 
-  // Fetch tournaments and sports with authorization
+  // Fetch tournaments created by this captain and sports assigned to this captain
   useEffect(() => {
     if (!userProfile) return;
 
@@ -98,10 +105,10 @@ export default function TournamentsPage() {
       setError(null);
 
       try {
-        // Authenticated request for tournaments
-        const tRes = await makeAuthenticatedRequest<Tournament[]>("/api/tournaments");
-        // Authenticated request for sports
-        const sRes = await makeAuthenticatedRequest<Sport[]>("/api/sports");
+        // Fetch tournaments created by this captain
+        const tRes = await makeAuthenticatedRequest<Tournament[]>(`/api/tournaments/user/${userProfile.userId}`);
+        // Fetch only sports assigned to this captain for filter dropdown
+        const sRes = await makeAuthenticatedRequest<Sport[]>(`/api/sports/captain/${userProfile.userId}`);
 
         if (tRes.status === 401 || sRes.status === 401) {
           setError("Authentication failed. Please login again.");
@@ -152,65 +159,67 @@ export default function TournamentsPage() {
     const sport = getSport(t.sportId);
     const status = getStatus(t);
 
-    // Apply "My Tournaments" filter for captains
-    if (showMyTournaments && userProfile && userProfile.role === "CAPTAIN") {
-      if (t.createdById !== userProfile.userId) {
-        return false;
-      }
-    }
-
     return (
       (selectedSport === "All" || sport?.name === selectedSport) &&
       (selectedStatus === "All" || status === selectedStatus)
     );
   });
 
+  const handleEditTournament = (tournamentId: number) => {
+    router.push(`/tournaments/edit/${tournamentId}`);
+  };
+
+  const handleCreateNew = () => {
+    router.push("/captain/create-tournaments");
+  };
+
   return (
-    <div className="tournaments-bg">
+    <div className="my-tournaments-bg">
       <Topbar />
 
-      <div className="tournaments-content">
-        <h1 className="tournaments-title">Tournaments</h1>
+      <div className="my-tournaments-content">
+        <div className="page-header">
+          <h1 className="my-tournaments-title">My Tournaments</h1>
+          <p className="my-tournaments-subtitle">Tournaments created by you</p>
+          <button onClick={handleCreateNew} className="create-new-btn">
+            + Create New Tournament
+          </button>
+        </div>
 
         {/* --- Filter Section --- */}
-        <div className="filter-bar">
-          <select
-            value={selectedSport}
-            onChange={(e) => setSelectedSport(e.target.value)}
-          >
-            <option value="All">All Sports</option>
-            {sports.map((sport) => (
-              <option key={sport.sportId} value={sport.name}>
-                {sport.name}
-              </option>
-            ))}
-          </select>
+        {sports.length > 0 && (
+          <div className="filter-bar">
+            <select
+              value={selectedSport}
+              onChange={(e) => setSelectedSport(e.target.value)}
+            >
+              <option value="All">All My Sports</option>
+              {sports.map((sport) => (
+                <option key={sport.sportId} value={sport.name}>
+                  {sport.name}
+                </option>
+              ))}
+            </select>
 
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-          >
-            <option value="All">All Status</option>
-            <option value="Ongoing">Ongoing</option>
-            <option value="Ended">Ended</option>
-            <option value="Upcoming">Upcoming</option>
-          </select>
-
-          {/* Captain-specific filter */}
-          {userProfile?.role === "CAPTAIN" && (
-            <div className="captain-filter">
-              <label className="checkbox-container">
-                <input
-                  type="checkbox"
-                  checked={showMyTournaments}
-                  onChange={(e) => setShowMyTournaments(e.target.checked)}
-                />
-                <span className="checkmark"></span>
-                My Tournaments Only
-              </label>
-            </div>
-          )}
-        </div>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+            >
+              <option value="All">All Status</option>
+              <option value="Ongoing">Ongoing</option>
+              <option value="Ended">Ended</option>
+              <option value="Upcoming">Upcoming</option>
+            </select>
+          </div>
+        )}
+        
+        {/* Show message if captain has no assigned sports */}
+        {!loading && !error && sports.length === 0 && tournaments.length === 0 && (
+          <div className="no-sports-message">
+            <p>You are not currently assigned as captain for any sports.</p>
+            <p>Contact an administrator to be assigned to sports before creating tournaments.</p>
+          </div>
+        )}
 
         {/* --- Display Section --- */}
         {loading ? (
@@ -218,7 +227,19 @@ export default function TournamentsPage() {
         ) : error ? (
           <div className="error-message">{error}</div>
         ) : filteredTournaments.length === 0 ? (
-          <div className="no-tournaments-message">No tournaments found.</div>
+          <div className="no-tournaments-section">
+            <div className="no-tournaments-message">
+              {tournaments.length === 0 
+                ? "You haven't created any tournaments yet." 
+                : "No tournaments match your filters."
+              }
+            </div>
+            {tournaments.length === 0 && (
+              <button onClick={handleCreateNew} className="create-first-btn">
+                Create Your First Tournament
+              </button>
+            )}
+          </div>
         ) : (
           <div className="tournaments-list">
             {filteredTournaments.map((tournament) => {
@@ -239,17 +260,13 @@ export default function TournamentsPage() {
                         <span className="tournament-status upcoming">Upcoming</span>
                       )}
                       
-                      {/* Edit button for tournaments created by current captain */}
-                      {userProfile?.role === "CAPTAIN" && 
-                       tournament.createdById === userProfile.userId && (
-                        <button
-                          className="edit-tournament-btn"
-                          onClick={() => router.push(`/tournaments/edit/${tournament.tournamentId}`)}
-                          title="Edit Tournament"
-                        >
-                          ✏️
-                        </button>
-                      )}
+                      <button
+                        className="edit-tournament-btn"
+                        onClick={() => handleEditTournament(tournament.tournamentId)}
+                        title="Edit Tournament"
+                      >
+                        ✏️
+                      </button>
                     </div>
                   </div>
                   <div className="tournament-details">
@@ -281,12 +298,39 @@ export default function TournamentsPage() {
                         />
                         {sport ? sport.name : "Unknown Sport"}
                       </span>
-
                     </div>
                   </div>
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Summary Statistics */}
+        {!loading && !error && tournaments.length > 0 && (
+          <div className="tournament-summary">
+            <div className="summary-card">
+              <div className="summary-number">{tournaments.length}</div>
+              <div className="summary-label">Total Tournaments</div>
+            </div>
+            <div className="summary-card">
+              <div className="summary-number">
+                {tournaments.filter(t => getStatus(t) === "Ongoing").length}
+              </div>
+              <div className="summary-label">Ongoing</div>
+            </div>
+            <div className="summary-card">
+              <div className="summary-number">
+                {tournaments.filter(t => getStatus(t) === "Upcoming").length}
+              </div>
+              <div className="summary-label">Upcoming</div>
+            </div>
+            <div className="summary-card">
+              <div className="summary-number">
+                {tournaments.filter(t => getStatus(t) === "Ended").length}
+              </div>
+              <div className="summary-label">Completed</div>
+            </div>
           </div>
         )}
       </div>
