@@ -6,6 +6,11 @@ import Topbar from '@/Component/topbar';
 import { makeAuthenticatedRequest } from '@/utils/api';
 import './fixture-generator.css';
 
+interface Team {
+  teamId: number;
+  teamName: string;
+}
+
 interface Tournament {
   tournamentId: number;
   name: string;
@@ -57,6 +62,8 @@ export default function FixtureGenerator() {
   const [error, setError] = useState<string | null>(null);
   const [selectedRoundForType, setSelectedRoundForType] = useState<number | null>(null);
   const [availableTypes, setAvailableTypes] = useState<string[]>(['KNOCKOUT', 'ROUND_ROBIN']);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [selectedTypeByRound, setSelectedTypeByRound] = useState<Record<number, 'KNOCKOUT' | 'ROUND_ROBIN'>>({});
   const router = useRouter();
 
   const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
@@ -64,6 +71,14 @@ export default function FixtureGenerator() {
   useEffect(() => {
     fetchTournaments();
   }, []);
+
+  useEffect(() => {
+    if (selectedTournament) {
+      fetchTeams(selectedTournament.tournamentId);
+    } else {
+      setTeams([]);
+    }
+  }, [selectedTournament]);
 
   const fetchTournaments = async () => {
     try {
@@ -75,6 +90,17 @@ export default function FixtureGenerator() {
       }
     } catch {
       setError('Error fetching tournaments');
+    }
+  };
+
+  const fetchTeams = async (tournamentId: number) => {
+    try {
+      const result = await makeAuthenticatedRequest<Team[]>(`/api/teams/tournament/${tournamentId}`);
+      if (result.data) {
+        setTeams(result.data);
+      }
+    } catch {
+      // best-effort; do not block UI
     }
   };
 
@@ -92,6 +118,8 @@ export default function FixtureGenerator() {
         // Auto-expand all rounds
         const roundValues = result.data.rounds.map(r => r.roundValue);
         setExpandedRounds(new Set(roundValues));
+        // ensure teams are loaded as well (first round display)
+        await fetchTeams(selectedTournament.tournamentId);
       } else {
         setError(result.error || 'Failed to generate fixture');
       }
@@ -125,6 +153,7 @@ export default function FixtureGenerator() {
       if (response.ok) {
         await generateFixture();
         setSelectedRoundForType(null);
+        setSelectedTypeByRound(prev => ({ ...prev, [roundId]: type }));
         alert(`Round type selected: ${type}. Matches have been generated!`);
       } else {
         setError('Failed to select round type');
@@ -203,6 +232,22 @@ export default function FixtureGenerator() {
     return 'bg-gray-100 text-gray-600';
   };
 
+  const isHighestRound = (round: RoundFixture, rounds: RoundFixture[]) => {
+    const max = Math.max(...rounds.map(r => r.roundValue));
+    return round.roundValue === max;
+  };
+
+  const upscaleToPowerOfTwo = (n: number) => {
+    if (n <= 1) return 1;
+    let p = 1;
+    while (p < n) p <<= 1;
+    return p;
+  };
+
+  const log2 = (n: number) => {
+    return Math.log(n) / Math.log(2);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Topbar />
@@ -257,10 +302,11 @@ export default function FixtureGenerator() {
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">{fixture.tournamentName}</h2>
                 <p className="text-gray-600 mb-4">Sport: {fixture.sportName}</p>
-                <p className="text-sm text-gray-500">
-                  Total Rounds: {fixture.rounds.length} | 
+                <p className="text-sm text-gray-500 mb-2">
                   Matches Generated: {fixture.rounds.reduce((sum, r) => sum + r.matches.length, 0)}
                 </p>
+                {/* Computed by frontend: upscaled teams and derived rounds */}
+                <ComputedRoundStats teams={teams} />
               </div>
 
               {/* Rounds Display */}
@@ -304,24 +350,51 @@ export default function FixtureGenerator() {
                   {/* Round Content */}
                   {expandedRounds.has(round.roundValue) && (
                     <div className="p-6">
-                      {/* Type Selection */}
+                      {/* Teams in this round */}
+                      <div className="mb-6">
+                        <h4 className="font-semibold text-gray-900 mb-3">Teams in this round</h4>
+                        {isHighestRound(round, fixture.rounds) ? (
+                          teams.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {teams.map((t) => (
+                                <div key={t.teamId} className="px-3 py-2 border border-gray-200 rounded bg-gray-50">
+                                  {t.teamName}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500">No teams found.</p>
+                          )
+                        ) : (
+                          <p className="text-sm text-gray-500">
+                            Teams will be determined from winners of the previous round.
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Type Selection (dropdown + generate button) */}
                       {!round.type && round.roundId && (
                         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                           <h4 className="font-semibold text-blue-900 mb-3">Select Tournament Type</h4>
-                          <div className="flex gap-4">
+                          <div className="flex gap-4 items-end">
+                            <div className="flex-1">
+                              <label className="block text-sm font-medium text-blue-900 mb-2">Round Type</label>
+                              <select
+                                className="w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value={selectedTypeByRound[round.roundId] || ''}
+                                onChange={(e) => setSelectedTypeByRound(prev => ({ ...prev, [round.roundId!]: e.target.value as 'KNOCKOUT' | 'ROUND_ROBIN' }))}
+                              >
+                                <option value="">Select type...</option>
+                                <option value="KNOCKOUT">Knockout</option>
+                                <option value="ROUND_ROBIN">Round Robin</option>
+                              </select>
+                            </div>
                             <button
-                              onClick={() => selectRoundType(round.roundId!, 'KNOCKOUT')}
-                              className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                              disabled={!selectedTypeByRound[round.roundId!] || loading}
+                              onClick={() => selectRoundType(round.roundId!, selectedTypeByRound[round.roundId!] as 'KNOCKOUT' | 'ROUND_ROBIN')}
+                              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              🏆 Knockout
-                              <span className="block text-xs mt-1">Single elimination format</span>
-                            </button>
-                            <button
-                              onClick={() => selectRoundType(round.roundId!, 'ROUND_ROBIN')}
-                              className="flex-1 py-3 px-4 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-                            >
-                              🔄 Round Robin
-                              <span className="block text-xs mt-1">Everyone plays everyone</span>
+                              {loading ? 'Generating...' : 'Generate Matches'}
                             </button>
                           </div>
                         </div>
@@ -329,45 +402,18 @@ export default function FixtureGenerator() {
 
                       {/* Matches Display */}
                       {round.matches.length > 0 ? (
-                        <div className="fixture-grid">
+                        <div className="space-y-2">
                           {round.matches.map((match, index) => (
-                            <div key={index} className="match-card">
-                              <div className="match-header">
-                                <span className="match-number">Match #{index + 1}</span>
-                                <span className={`match-status ${getMatchStatusColor(match.status)}`}>
-                                  {match.status}
-                                </span>
+                            <div key={index} className="flex items-center justify-between px-3 py-2 border border-gray-200 rounded">
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs text-gray-500 w-14">Match {index + 1}</span>
+                                <span className="font-medium">{match.team1Name}</span>
+                                <span className="text-gray-500">vs</span>
+                                <span className="font-medium">{match.team2Name === 'BYE' ? 'BYE (Auto-advance)' : match.team2Name}</span>
                               </div>
-                              <div className="match-body">
-                                <div className="team-row">
-                                  <div className="team-info">
-                                    <span className="team-name">{match.team1Name}</span>
-                                  </div>
-                                  {match.winnerTeamId === match.team1Id && (
-                                    <span className="winner-badge">👑</span>
-                                  )}
-                                </div>
-                                <div className="vs-divider">VS</div>
-                                <div className="team-row">
-                                  <div className="team-info">
-                                    <span className="team-name">
-                                      {match.team2Name === 'BYE' ? (
-                                        <span className="text-gray-400 italic">BYE (Auto-advance)</span>
-                                      ) : (
-                                        match.team2Name
-                                      )}
-                                    </span>
-                                  </div>
-                                  {match.winnerTeamId === match.team2Id && (
-                                    <span className="winner-badge">👑</span>
-                                  )}
-                                </div>
-                              </div>
-                              {match.venue && (
-                                <div className="match-footer">
-                                  📍 {match.venue}
-                                </div>
-                              )}
+                              <span className={`text-xs px-2 py-1 rounded ${getMatchStatusColor(match.status)}`}>
+                                {match.status}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -413,6 +459,25 @@ export default function FixtureGenerator() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ComputedRoundStats({ teams }: { teams: { teamId: number; teamName: string }[] }) {
+  const count = teams.length;
+  const upscaleToPowerOfTwo = (n: number) => {
+    if (n <= 1) return 1;
+    let p = 1;
+    while (p < n) p <<= 1;
+    return p;
+  };
+  const upscaled = upscaleToPowerOfTwo(count);
+  const rounds = Math.log(upscaled) / Math.log(2);
+  return (
+    <div className="text-sm text-gray-600">
+      <div>Registered Teams: {count}</div>
+      <div>Upscaled to power of 2: {upscaled}</div>
+      <div>Total Rounds (log₂): {rounds}</div>
     </div>
   );
 }

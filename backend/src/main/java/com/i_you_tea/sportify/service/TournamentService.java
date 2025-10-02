@@ -7,7 +7,6 @@ import com.i_you_tea.sportify.repository.RoundRepository;
 import com.i_you_tea.sportify.entity.Tournament;
 import com.i_you_tea.sportify.entity.Sport;
 import com.i_you_tea.sportify.entity.Team;
-import com.i_you_tea.sportify.entity.User;
 import com.i_you_tea.sportify.repository.TournamentRepository;
 import com.i_you_tea.sportify.repository.TeamRepository;
 import com.i_you_tea.sportify.repository.SportRepository;
@@ -16,7 +15,6 @@ import com.i_you_tea.sportify.dto.MatchDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.*;
 import lombok.Data;
 import lombok.AllArgsConstructor;
@@ -244,6 +242,58 @@ public class TournamentService {
         private Round.TournamentType type;
     }
 
+        /**
+         * Generate a round fixture for a specific round value with an explicit type (custom flow)
+         * - Persists the round with the provided type
+         * - For the highest round (first to be played), prepare preview matches
+         * - For subsequent rounds, keep matches empty until previous rounds complete
+         */
+        private FixtureDTO.RoundFixtureDTO generateRoundFixture(Tournament tournament,
+                                                                int roundValue,
+                                                                List<Team> participatingTeams,
+                                                                int totalRounds,
+                                                                Round.TournamentType type) {
+            FixtureDTO.RoundFixtureDTO roundFixture = new FixtureDTO.RoundFixtureDTO();
+            roundFixture.setRoundValue(roundValue);
+            roundFixture.setRoundName(Round.calculateRoundName(roundValue));
+            roundFixture.setType(type);
+
+            // Persist round with selected type
+            Round round = new Round();
+            round.setRoundValue(roundValue);
+            round.setTournament(tournament);
+            round.setType(type);
+            Round savedRound = roundRepository.save(round);
+            roundFixture.setRoundId(savedRound.getRoundId());
+
+            // Determine the maximum round value among the configured rounds
+            // totalRounds here is a count; we will instead compute the current maximum from DB
+            // When configs are provided with explicit roundValue (e.g., 6..1), we should treat the highest value as the first round.
+            // Use the passed roundValue relative to tournament scale: preview matches only for the highest roundValue among all rounds in DB
+
+            // Check if this saved round is the highest round for this tournament currently
+            List<Round> existingRounds = roundRepository.findByTournament_TournamentId(tournament.getTournamentId());
+            int currentMax = existingRounds.stream()
+                .mapToInt(Round::getRoundValue)
+                .max()
+                .orElse(roundValue);
+
+            if (roundValue == currentMax) {
+                // Prepare teams for the first (highest) round and create preview matches for the chosen type
+                List<Team> teamsForRound = prepareTeamsForFirstRound(participatingTeams,
+                        upscaleToNearestPowerOf2(participatingTeams.size()));
+
+                List<MatchDTO> previewMatches = (type == Round.TournamentType.KNOCKOUT)
+                        ? generateKnockoutMatches(tournament, roundValue, teamsForRound)
+                        : generateRoundRobinMatches(tournament, roundValue, teamsForRound);
+                roundFixture.setMatches(previewMatches);
+            } else {
+                roundFixture.setMatches(new ArrayList<>());
+            }
+
+            return roundFixture;
+        }
+
     /**
      * Generate round structure with both knockout and round robin options
      * The round is created in the database but matches are not yet committed
@@ -273,7 +323,9 @@ public class TournamentService {
             
             // Generate both knockout and round robin options (not saved yet)
             List<MatchDTO> knockoutMatches = generateKnockoutMatches(tournament, roundNumber, teamsForRound);
-            List<MatchDTO> roundRobinMatches = generateRoundRobinMatches(tournament, roundNumber, teamsForRound);
+            // Also compute round-robin preview to ensure both options are available conceptually
+            // but we will display knockout by default here.
+            generateRoundRobinMatches(tournament, roundNumber, teamsForRound);
             
             // For display purposes, show knockout by default (but nothing is saved yet)
             roundFixture.setType(null); // Type not yet decided
@@ -401,10 +453,17 @@ public class TournamentService {
                 match.setStatus(Match.MatchStatus.SCHEDULED);
                 matches.add(match);
             } else {
-                // Odd number of teams - this team gets a bye
-                // In a knockout, a bye means automatic advancement
-                // We can either not create a match or create a special bye match
-                // For now, we'll skip creating a match and this team advances automatically
+                // Odd number of teams - create a BYE match with automatic advancement
+                Match byeMatch = new Match();
+                byeMatch.setTournament(round.getTournament());
+                byeMatch.setSport(round.getTournament().getSport());
+                byeMatch.setTeam1(teams.get(i));
+                byeMatch.setTeam2(null); // No opponent
+                byeMatch.setRound(round);
+                // Mark as completed with team1 as winner to auto-advance
+                byeMatch.setStatus(Match.MatchStatus.COMPLETED);
+                byeMatch.setWinnerTeam(teams.get(i));
+                matches.add(byeMatch);
             }
         }
         
@@ -511,9 +570,10 @@ public class TournamentService {
      * Check if a round is complete (all matches finished)
      */
     public boolean isRoundComplete(Long roundId) {
-        Round round = roundRepository.findById(roundId)
+        // Validate round existence
+        roundRepository.findById(roundId)
                 .orElseThrow(() -> new IllegalArgumentException("Round not found with id: " + roundId));
-        
+
         List<Match> matches = matchRepository.findByRound_RoundId(roundId);
         
         if (matches.isEmpty()) {
