@@ -70,6 +70,10 @@ export default function FixtureViewer() {
   const [secondRoundType, setSecondRoundType] = useState<'KNOCKOUT' | 'ROUND_ROBIN'>('KNOCKOUT');
   const [secondRoundFixture, setSecondRoundFixture] = useState<RoundFixture | null>(null);
   const [showSecondRound, setShowSecondRound] = useState(false);
+  const [showThirdRoundModal, setShowThirdRoundModal] = useState(false);
+  const [thirdRoundType, setThirdRoundType] = useState<'KNOCKOUT' | 'ROUND_ROBIN'>('KNOCKOUT');
+  const [thirdRoundFixture, setThirdRoundFixture] = useState<RoundFixture | null>(null);
+  const [showThirdRound, setShowThirdRound] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -296,19 +300,42 @@ export default function FixtureViewer() {
     if (!fixture || !fixture.rounds || fixture.rounds.length === 0) return [];
     const firstRound = fixture.rounds[0];
     
-    return firstRound.matches.map((match, index) => {
-      const placeholderName = firstRound.type === 'KNOCKOUT' 
-        ? `Match${index + 1}Winner`
-        : `WinnerTeam${index + 1}Round1`;
+    let winners;
+    
+    if (firstRound.type === 'KNOCKOUT') {
+      // For knockout, get winners from each match
+      winners = firstRound.matches.map((match, index) => {
+        const placeholderName = `Match${index + 1}Winner`;
+        
+        return {
+          teamId: match.winnerTeamId || -(index + 1),
+          teamName: match.status === 'COMPLETED' && match.winnerTeamName 
+            ? match.winnerTeamName 
+            : placeholderName,
+          isActual: match.status === 'COMPLETED' && match.winnerTeamName
+        };
+      });
+    } else {
+      // For round robin, get all participating teams but limit to best half
+      const allTeams = new Set();
+      firstRound.matches.forEach(match => {
+        allTeams.add(match.team1Name);
+        if (match.team2Name !== 'BYE') {
+          allTeams.add(match.team2Name);
+        }
+      });
       
-      return {
-        teamId: match.winnerTeamId || -(index + 1), // Use negative IDs for placeholders
-        teamName: match.status === 'COMPLETED' && match.winnerTeamName 
-          ? match.winnerTeamName 
-          : placeholderName,
-        isActual: match.status === 'COMPLETED' && match.winnerTeamName
-      };
-    });
+      const teamArray = Array.from(allTeams);
+      const bestHalf = Math.ceil(teamArray.length / 2);
+      
+      winners = teamArray.slice(0, bestHalf).map((teamName, index) => ({
+        teamId: -(index + 1),
+        teamName: `Team ${index + 1} Winner Round 1`,
+        isActual: false // These are placeholder names for round robin
+      }));
+    }
+    
+    return winners;
   };
 
   const generateSecondRound = () => {
@@ -317,30 +344,33 @@ export default function FixtureViewer() {
       setError('Need at least 2 winners to generate second round');
       return;
     }
+    
+    // Use all winners from getRound1Winners (it already handles the halving for Round Robin)
+    const selectedWinners = winners;
 
     // Generate second round name based on number of teams
     let roundName = 'Round 2';
-    if (winners.length === 16) roundName = 'Round of 16';
-    else if (winners.length === 8) roundName = 'Quarter Finals';
-    else if (winners.length === 4) roundName = 'Semi Finals';
-    else if (winners.length === 2) roundName = 'Final';
+    if (selectedWinners.length === 16) roundName = 'Round of 16';
+    else if (selectedWinners.length === 8) roundName = 'Quarter Finals';
+    else if (selectedWinners.length === 4) roundName = 'Semi Finals';
+    else if (selectedWinners.length === 2) roundName = 'Final';
 
     // Generate matches for second round
     const matches: Match[] = [];
     
     if (secondRoundType === 'KNOCKOUT') {
       // Pair teams for knockout matches
-      for (let i = 0; i < winners.length; i += 2) {
-        if (i + 1 < winners.length) {
+      for (let i = 0; i < selectedWinners.length; i += 2) {
+        if (i + 1 < selectedWinners.length) {
           matches.push({
             tournamentId: selectedTournament!.tournamentId,
             tournamentName: selectedTournament!.name,
             sportId: 1, // Placeholder
             sportName: selectedTournament!.sportName,
-            team1Id: winners[i].teamId,
-            team1Name: winners[i].teamName,
-            team2Id: winners[i + 1].teamId,
-            team2Name: winners[i + 1].teamName,
+            team1Id: selectedWinners[i].teamId,
+            team1Name: selectedWinners[i].teamName,
+            team2Id: selectedWinners[i + 1].teamId,
+            team2Name: selectedWinners[i + 1].teamName,
             status: 'SCHEDULED',
             roundName: roundName,
             roundValue: 1 // Second round has lower value than first
@@ -349,17 +379,17 @@ export default function FixtureViewer() {
       }
     } else {
       // Round robin - everyone plays everyone
-      for (let i = 0; i < winners.length; i++) {
-        for (let j = i + 1; j < winners.length; j++) {
+      for (let i = 0; i < selectedWinners.length; i++) {
+        for (let j = i + 1; j < selectedWinners.length; j++) {
           matches.push({
             tournamentId: selectedTournament!.tournamentId,
             tournamentName: selectedTournament!.name,
             sportId: 1, // Placeholder
             sportName: selectedTournament!.sportName,
-            team1Id: winners[i].teamId,
-            team1Name: winners[i].teamName,
-            team2Id: winners[j].teamId,
-            team2Name: winners[j].teamName,
+            team1Id: selectedWinners[i].teamId,
+            team1Name: selectedWinners[i].teamName,
+            team2Id: selectedWinners[j].teamId,
+            team2Name: selectedWinners[j].teamName,
             status: 'SCHEDULED',
             roundName: roundName,
             roundValue: 1
@@ -378,6 +408,159 @@ export default function FixtureViewer() {
     setSecondRoundFixture(newSecondRound);
     setShowSecondRound(true);
     setShowSecondRoundModal(false);
+  };
+
+  const getRound2Winners = () => {
+    if (!secondRoundFixture || !secondRoundFixture.matches) return [];
+    
+    let winners;
+    
+    if (secondRoundFixture.type === 'KNOCKOUT') {
+      // For knockout, get winners from each match
+      winners = secondRoundFixture.matches.map((match, index) => {
+        const placeholderName = `Match${index + 1}Winner`;
+        
+        return {
+          teamId: match.winnerTeamId || -(index + 100),
+          teamName: match.status === 'COMPLETED' && match.winnerTeamName 
+            ? match.winnerTeamName 
+            : placeholderName,
+          isActual: match.status === 'COMPLETED' && match.winnerTeamName
+        };
+      });
+    } else {
+      // For round robin, get all participating teams but limit to best half
+      const allTeams = new Set();
+      secondRoundFixture.matches.forEach(match => {
+        allTeams.add(match.team1Name);
+        if (match.team2Name !== 'BYE') {
+          allTeams.add(match.team2Name);
+        }
+      });
+      
+      const teamArray = Array.from(allTeams);
+      const bestHalf = Math.ceil(teamArray.length / 2);
+      
+      winners = teamArray.slice(0, bestHalf).map((teamName, index) => ({
+        teamId: -(index + 100),
+        teamName: `Team ${index + 1} Winner Round 2`,
+        isActual: false // These are placeholder names for round robin
+      }));
+    }
+    
+    return winners;
+  };
+
+  const generateThirdRound = () => {
+    const winners = getRound2Winners();
+    if (winners.length < 2) {
+      setError('Need at least 2 winners from Round 2 to generate Round 3');
+      return;
+    }
+    
+    // Use all winners from getRound2Winners (it already handles the halving for Round Robin)
+    const selectedWinners = winners;
+
+    // Generate third round name based on number of teams
+    let roundName = 'Round 3';
+    if (selectedWinners.length === 8) roundName = 'Quarter Finals';
+    else if (selectedWinners.length === 4) roundName = 'Semi Finals';
+    else if (selectedWinners.length === 2) roundName = 'Final';
+
+    // Generate matches for third round
+    const matches: Match[] = [];
+    
+    if (thirdRoundType === 'KNOCKOUT') {
+      // Pair teams for knockout matches
+      for (let i = 0; i < selectedWinners.length; i += 2) {
+        if (i + 1 < selectedWinners.length) {
+          matches.push({
+            tournamentId: selectedTournament!.tournamentId,
+            tournamentName: selectedTournament!.name,
+            sportId: 1, // Placeholder
+            sportName: selectedTournament!.sportName,
+            team1Id: selectedWinners[i].teamId,
+            team1Name: selectedWinners[i].teamName,
+            team2Id: selectedWinners[i + 1].teamId,
+            team2Name: selectedWinners[i + 1].teamName,
+            status: 'SCHEDULED',
+            roundName: roundName,
+            roundValue: 0 // Third round has lower value than second
+          });
+        }
+      }
+    } else {
+      // Round robin - everyone plays everyone
+      for (let i = 0; i < selectedWinners.length; i++) {
+        for (let j = i + 1; j < selectedWinners.length; j++) {
+          matches.push({
+            tournamentId: selectedTournament!.tournamentId,
+            tournamentName: selectedTournament!.name,
+            sportId: 1, // Placeholder
+            sportName: selectedTournament!.sportName,
+            team1Id: selectedWinners[i].teamId,
+            team1Name: selectedWinners[i].teamName,
+            team2Id: selectedWinners[j].teamId,
+            team2Name: selectedWinners[j].teamName,
+            status: 'SCHEDULED',
+            roundName: roundName,
+            roundValue: 0
+          });
+        }
+      }
+    }
+
+    const newThirdRound: RoundFixture = {
+      roundValue: 0,
+      roundName: roundName,
+      type: thirdRoundType,
+      matches: matches
+    };
+
+    setThirdRoundFixture(newThirdRound);
+    setShowThirdRound(true);
+    setShowThirdRoundModal(false);
+  };
+
+  const getRound3Winners = () => {
+    if (!thirdRoundFixture || !thirdRoundFixture.matches) return [];
+    
+    let winners;
+    
+    if (thirdRoundFixture.type === 'KNOCKOUT') {
+      // For knockout, get winners from each match
+      winners = thirdRoundFixture.matches.map((match, index) => {
+        const placeholderName = `Match${index + 1}Winner`;
+        
+        return {
+          teamId: match.winnerTeamId || -(index + 200),
+          teamName: match.status === 'COMPLETED' && match.winnerTeamName 
+            ? match.winnerTeamName 
+            : placeholderName,
+          isActual: match.status === 'COMPLETED' && match.winnerTeamName
+        };
+      });
+    } else {
+      // For round robin, get all participating teams but limit to best half
+      const allTeams = new Set();
+      thirdRoundFixture.matches.forEach(match => {
+        allTeams.add(match.team1Name);
+        if (match.team2Name !== 'BYE') {
+          allTeams.add(match.team2Name);
+        }
+      });
+      
+      const teamArray = Array.from(allTeams);
+      const bestHalf = Math.ceil(teamArray.length / 2);
+      
+      winners = teamArray.slice(0, bestHalf).map((teamName, index) => ({
+        teamId: -(index + 200),
+        teamName: `Team ${index + 1} Winner Round 3`,
+        isActual: false // These are placeholder names for round robin
+      }));
+    }
+    
+    return winners;
   };
 
   return (
@@ -577,17 +760,12 @@ export default function FixtureViewer() {
 
                   {/* Expected Winners Display - After Matches */}
                   {(() => {
-                    // Generate winner slots based on tournament type and match results
-                    const winners = round.matches.map((match, index) => {
-                      const placeholderName= `Match ${index + 1} Round 1 Winner`;
-                      return {
-                        displayName: match.status === 'COMPLETED' && match.winnerTeamName 
-                          ? match.winnerTeamName 
-                          : placeholderName,
-                        isActualWinner: match.status === 'COMPLETED' && match.winnerTeamName,
-                        matchIndex: index + 1
-                      };
-                    });
+                    // Get winners using the proper function
+                    const winners = getRound1Winners().map((winner, index) => ({
+                      displayName: winner.teamName,
+                      isActualWinner: winner.isActual,
+                      matchIndex: index + 1
+                    }));
 
                     return winners.length > 0 && round.type && (
                       <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -636,7 +814,7 @@ export default function FixtureViewer() {
                                 className={`px-4 py-2 rounded-md font-semibold text-sm ${
                                   allMatchesCompleted
                                     ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'bg-gray-300 text-white-500'
                                 }`}
                                 title={!allMatchesCompleted ? 'Complete all Round 1 matches first' : 'Generate next round'}
                               >
@@ -700,6 +878,172 @@ export default function FixtureViewer() {
                         ))}
                       </div>
                     </div>
+
+                    {/* Round 2 Winners Display */}
+                    {(() => {
+                      // Get winners using the proper function
+                      const winners = getRound2Winners().map((winner, index) => ({
+                        displayName: winner.teamName,
+                        isActualWinner: winner.isActual,
+                        matchIndex: index + 1
+                      }));
+
+                      return winners.length > 0 && secondRoundFixture.type && (
+                        <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                            Round 2 Winners ({winners.length})
+                          </h4>
+                          <p className="text-sm text-gray-600 mb-4">
+                            Winners advancing from this round:
+                          </p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {winners.map((winner, index) => (
+                              <div
+                                key={`winner-slot-round2-${index}`}
+                                className={`px-4 py-2 rounded-md shadow-sm flex items-center gap-2 ${
+                                  winner.isActualWinner 
+                                    ? 'bg-gradient-to-r from-green-50 to-green-100 border border-green-300'
+                                    : 'bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-300'
+                                }`}
+                              >
+                                <span className={`w-2 h-2 rounded-full ${
+                                  winner.isActualWinner ? 'bg-green-500' : 'bg-yellow-500'
+                                }`}></span>
+                                <span className={`font-medium ${
+                                  winner.isActualWinner ? 'text-green-800' : 'text-gray-800'
+                                }`}>
+                                  {winner.displayName}
+                                </span>
+                                {winner.isActualWinner && (
+                                  <span className="text-xs text-green-600 font-medium ml-auto">✓</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {/* Generate Third Round Button */}
+                          {(() => {
+                            const round2Winners = getRound2Winners();
+                            const hasEnoughWinners = round2Winners.length >= 2;
+                            const allRound2MatchesCompleted = secondRoundFixture.matches.every(match => match.status === 'COMPLETED');
+                            
+                            return hasEnoughWinners && (
+                              <div className="mt-4 flex justify-end">
+                                <button
+                                  onClick={() => setShowThirdRoundModal(true)}
+                                
+                                  className={`px-4 py-2 rounded-md font-semibold text-sm ${
+                                  allRound2MatchesCompleted
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                    : 'bg-gray-300 text-white-500'
+                                }`}
+                                title={!allRound2MatchesCompleted ? 'Complete all Round 1 matches first' : 'Generate next round'}
+                              >
+                                Generate Next Round
+                              </button>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
+              
+              {/* Third Round Display */}
+              {showThirdRound && thirdRoundFixture && (
+                <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                  {/* Round Header */}
+                  <div className="bg-gradient-to-r from-green-500 to-green-600 p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <h3 className="text-2xl font-bold text-white">{thirdRoundFixture.roundName}</h3>
+                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getRoundTypeColor(thirdRoundFixture.type)}`}>
+                          {thirdRoundFixture.type?.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-white text-sm">
+                          {thirdRoundFixture.matches.length} {thirdRoundFixture.matches.length === 1 ? 'Match' : 'Matches'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Round Content */}
+                  <div className="p-6">
+                    {/* Matches Display */}
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-3">Matches</h4>
+                      <div className="space-y-2">
+                        {thirdRoundFixture.matches.map((match, matchIndex) => (
+                          <div 
+                            key={`third-round-match-${matchIndex}`} 
+                            className="flex items-center justify-between px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                          >
+                            <div className="flex items-center gap-4">
+                              <span className="text-sm text-gray-500 font-medium min-w-[60px]">
+                                Match {matchIndex + 1}
+                              </span>
+                              <div className="flex items-center gap-3">
+                                <span className="font-semibold text-gray-900">{match.team1Name}</span>
+                                <span className="text-gray-500 font-medium">vs</span>
+                                <span className="font-semibold text-gray-900">{match.team2Name}</span>
+                              </div>
+                            </div>
+                            <span className={`text-xs px-3 py-1 rounded-full font-semibold ${getMatchStatusColor(match.status)}`}>
+                              {match.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Round 3 Winners Display */}
+                    {(() => {
+                      // Get winners using the proper function
+                      const winners = getRound3Winners().map((winner, index) => ({
+                        displayName: winner.teamName,
+                        isActualWinner: winner.isActual,
+                        matchIndex: index + 1
+                      }));
+
+                      return winners.length > 0 && thirdRoundFixture.type && (
+                        <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                            Round 3 Winners ({winners.length})
+                          </h4>
+                          <p className="text-sm text-gray-600 mb-4">
+                            Winners advancing from this round:
+                          </p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {winners.map((winner, index) => (
+                              <div
+                                key={`winner-slot-round3-${index}`}
+                                className={`px-4 py-2 rounded-md shadow-sm flex items-center gap-2 ${
+                                  winner.isActualWinner 
+                                    ? 'bg-gradient-to-r from-green-50 to-green-100 border border-green-300'
+                                    : 'bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-300'
+                                }`}
+                              >
+                                <span className={`w-2 h-2 rounded-full ${
+                                  winner.isActualWinner ? 'bg-green-500' : 'bg-yellow-500'
+                                }`}></span>
+                                <span className={`font-medium ${
+                                  winner.isActualWinner ? 'text-green-800' : 'text-gray-800'
+                                }`}>
+                                  {winner.displayName}
+                                </span>
+                                {winner.isActualWinner && (
+                                  <span className="text-xs text-green-600 font-medium ml-auto">✓</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
@@ -807,6 +1151,61 @@ export default function FixtureViewer() {
                     className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold"
                   >
                     Generate Second Round
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Generate Third Round Modal */}
+          {showThirdRoundModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Generate Third Round</h3>
+                <p className="text-gray-600 mb-4">
+                  Select the tournament type for the third round:
+                </p>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tournament Type
+                  </label>
+                  <select
+                    value={thirdRoundType}
+                    onChange={(e) => setThirdRoundType(e.target.value as 'KNOCKOUT' | 'ROUND_ROBIN')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="KNOCKOUT">Knockout</option>
+                    <option value="ROUND_ROBIN">Round Robin</option>
+                  </select>
+                </div>
+
+                {(() => {
+                  const winners = getRound2Winners();
+                  return (
+                    <div className="mb-4 p-3 bg-purple-50 rounded-md">
+                      <p className="text-sm text-purple-800 font-medium">
+                        Teams advancing from Round 2: {winners.length}
+                      </p>
+                      <p className="text-xs text-purple-600 mt-1">
+                        {winners.filter(w => w.isActual).length} confirmed winners, {winners.filter(w => !w.isActual).length} pending
+                      </p>
+                    </div>
+                  );
+                })()}
+
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setShowThirdRoundModal(false)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={generateThirdRound}
+                    className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-semibold"
+                  >
+                    Generate Third Round
                   </button>
                 </div>
               </div>
