@@ -260,6 +260,15 @@ export default function MyTournamentsPage() {
                         <span className="tournament-status upcoming">Upcoming</span>
                       )}
                       
+                      {/* View Fixture button */}
+                      <button
+                        className="view-fixture-btn"
+                        onClick={() => router.push(`/captain/fixture?tournamentId=${tournament.tournamentId}`)}
+                        title="View Fixture"
+                      >
+                        📅
+                      </button>
+                      
                       <button
                         className="edit-tournament-btn"
                         onClick={() => handleEditTournament(tournament.tournamentId)}

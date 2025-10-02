@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { makeAuthenticatedRequest } from '@/utils/api';
 import { User, Tournament } from '@/types/api';
 import Topbar from '@/Component/topbar';
@@ -11,6 +12,7 @@ export default function MyGames() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     fetchUserProfileAndTournaments();
@@ -171,6 +173,12 @@ export default function MyGames() {
                   )}
 
                   <div className="tournament-card-footer">
+                    <button 
+                      className="view-fixture-btn"
+                      onClick={() => router.push(`/fixture/${tournament.tournamentId}`)}
+                    >
+                      📅 View Fixture
+                    </button>
                     <button className="view-details-btn">
                       View Details
                     </button>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Topbar from '@/Component/topbar';
 import { makeAuthenticatedRequest } from '@/utils/api';
 import './fixture.css';
@@ -89,6 +89,7 @@ export default function FixtureViewer() {
   const [regenerateRoundType, setRegenerateRoundType] = useState<'KNOCKOUT' | 'ROUND_ROBIN'>('KNOCKOUT');
   
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     fetchUserProfileAndTournaments();
@@ -438,6 +439,16 @@ export default function FixtureViewer() {
       );
       
       setTournaments(filteredTournaments);
+      
+      // Check if there's a tournamentId in the query params and pre-select it
+      const tournamentIdParam = searchParams.get('tournamentId');
+      if (tournamentIdParam) {
+        const tournamentId = parseInt(tournamentIdParam);
+        const tournamentToSelect = filteredTournaments.find(t => t.tournamentId === tournamentId);
+        if (tournamentToSelect) {
+          setSelectedTournament(tournamentToSelect);
+        }
+      }
     } catch {
       setError('Error fetching tournaments');
     }

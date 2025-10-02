@@ -239,6 +239,21 @@ export default function TournamentsPage() {
                         <span className="tournament-status upcoming">Upcoming</span>
                       )}
                       
+                      {/* View Fixture button */}
+                      <button
+                        className="view-fixture-btn"
+                        onClick={() => {
+                          if (userProfile?.role === "CAPTAIN" && tournament.createdById === userProfile.userId) {
+                            router.push(`/captain/fixture?tournamentId=${tournament.tournamentId}`);
+                          } else {
+                            router.push(`/fixture/${tournament.tournamentId}`);
+                          }
+                        }}
+                        title="View Fixture"
+                      >
+                        📅
+                      </button>
+                      
                       {/* Edit button for tournaments created by current captain */}
                       {userProfile?.role === "CAPTAIN" && 
                        tournament.createdById === userProfile.userId && (
