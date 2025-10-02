@@ -9,31 +9,33 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserDTO {
-    
+
     private Long userId;
     private String name;
     private String email;
     private String phone;
+    private String address;
     private User.UserRole role;
     private String profilePhoto;
-    
+
     public static UserDTO fromEntity(User user) {
         return new UserDTO(
-            user.getUserId(),
-            user.getName(),
-            user.getEmail(),
-            user.getPhone(),
-            user.getRole(),
-            user.getProfilePhoto()
-        );
+                user.getUserId(),
+                user.getName(),
+                user.getEmail(),
+                user.getPhone(),
+                user.getAddress(),
+                user.getRole(),
+                user.getProfilePhoto());
     }
-    
+
     public User toEntity() {
         User user = new User();
         user.setUserId(this.userId);
         user.setName(this.name);
         user.setEmail(this.email);
         user.setPhone(this.phone);
+        user.setAddress(this.address);
         user.setRole(this.role);
         user.setProfilePhoto(this.profilePhoto);
         return user;
