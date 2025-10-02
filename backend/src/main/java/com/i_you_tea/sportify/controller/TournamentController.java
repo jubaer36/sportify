@@ -99,6 +99,21 @@ public class TournamentController {
     }
 
     /**
+     * Get existing fixture with actual saved matches from database
+     * Use this after matches have been generated to see the real data
+     */
+    @GetMapping("/{tournamentId}/fixture/existing")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<FixtureDTO> getExistingFixture(@PathVariable Long tournamentId) {
+        try {
+            FixtureDTO fixture = tournamentService.getExistingFixture(tournamentId);
+            return ResponseEntity.ok(fixture);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
      * Select tournament type for a specific round and generate matches
      */
     @PostMapping("/rounds/{roundId}/select-type")

@@ -1,37 +1,43 @@
-# Frontend Fixture Generator - Updated
+# Frontend Fixture Viewer - Enhanced
 
 ## Overview
-The fixture generator page has been completely restructured to support the new dynamic round-by-round tournament management system.
+The fixture viewer page provides a streamlined interface for managing tournament fixtures with generation, regeneration capabilities, and focused first-round display.
 
 ## Key Features
 
-### 1. **Fixture Display**
-- Professional fixture card layout
-- Grid-based responsive design
-- Collapsible/expandable rounds
-- Visual status indicators
-- Match-by-match breakdown
+### 1. **Tournament Selection**
+- Dropdown to select tournament
+- Clear tournament identification (name + sport)
+- Automatic fixture existence detection
 
-### 2. **Round Management**
-- Select tournament type for each round
-- Visual type badges (Knockout/Round Robin)
-- Advance round controls
-- Real-time status updates
+### 2. **Team Display**
+- Shows registered teams for selected tournament
+- Team count indicator
+- Grid layout for easy viewing
 
-### 3. **Match Cards**
-- Team names clearly displayed
-- VS divider for clarity
-- Winner indicators (crown icon)
-- Status badges (Scheduled, Ongoing, Completed, Cancelled)
-- Venue information
-- Bye match handling
+### 3. **Fixture Management**
+- **Generate Fixture**: Create new fixture with type selection (Knockout/Round Robin)
+- **Regenerate Fixture**: Replace existing fixture with confirmation and type selection
+- **Show Fixture**: View existing fixture for tournaments that already have fixtures
+- Displays only the first round for focused view
+- Clean match layout with team names and status indicators
 
-### 4. **User Experience**
-- One-click round expansion/collapse
-- Color-coded round types
-- Intuitive type selection buttons
-- Advance to next round workflow
+### 4. **Type Selection**
+- Modal-based type selection for generation/regeneration
+- Support for Knockout and Round Robin tournaments
+- Clear confirmation for regeneration to prevent accidental deletion
+
+### 5. **User Experience**
+- Context-aware buttons (Generate vs Show/Regenerate)
+- Confirmation dialogs for destructive operations
 - Loading states and error handling
+- Clean, intuitive three-step flow: Select → View Teams → Generate/Show Fixture
+
+## Workflow
+
+1. **New Tournament**: Select tournament → View teams → Generate Fixture (with type selection)
+2. **Existing Tournament**: Select tournament → View teams → Show Fixture or Regenerate Fixture
+3. **Regeneration**: Confirmation modal → Type selection → Database cleanup and regeneration
 
 ## File Structure
 

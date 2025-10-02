@@ -366,6 +366,13 @@ public class TournamentService {
         Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new IllegalArgumentException("Round not found with id: " + roundId));
         
+        // Clear any existing matches for this round (important for regeneration)
+        List<Match> existingMatches = matchRepository.findByRound_RoundId(roundId);
+        if (!existingMatches.isEmpty()) {
+            System.out.println("Deleting " + existingMatches.size() + " existing matches for round " + roundId);
+            matchRepository.deleteByRound_RoundId(roundId);
+        }
+        
         // Set the selected type
         round.setType(selectedType);
         roundRepository.save(round);
@@ -379,6 +386,8 @@ public class TournamentService {
         } else if (selectedType == Round.TournamentType.ROUND_ROBIN) {
             generateAndSaveRoundRobinMatches(round, teamsForRound);
         }
+        
+        System.out.println("Generated new matches for round " + roundId + " with type " + selectedType);
     }
     
     /**
@@ -476,6 +485,9 @@ public class TournamentService {
     private void generateAndSaveRoundRobinMatches(Round round, List<Team> teams) {
         List<Match> matches = new ArrayList<>();
         
+        System.out.println("Generating ROUND_ROBIN matches for " + teams.size() + " teams");
+        System.out.println("Expected matches: " + (teams.size() * (teams.size() - 1) / 2));
+        
         // Round-robin: each team plays every other team once
         for (int i = 0; i < teams.size(); i++) {
             for (int j = i + 1; j < teams.size(); j++) {
@@ -490,6 +502,7 @@ public class TournamentService {
             }
         }
         
+        System.out.println("Generated " + matches.size() + " ROUND_ROBIN matches");
         matchRepository.saveAll(matches);
     }
 
@@ -613,5 +626,89 @@ public class TournamentService {
         
         // Select type and generate matches for next round
         selectRoundTypeAndGenerateMatches(nextRound.getRoundId(), nextRoundType);
+    }
+
+    /**
+     * Fetch existing fixture with actual saved matches from database
+     * Unlike generateFixture(), this returns the real matches that have been saved
+     */
+    public FixtureDTO getExistingFixture(Long tournamentId) {
+        // Fetch tournament
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new IllegalArgumentException("Tournament not found with id: " + tournamentId));
+
+        FixtureDTO fixture = new FixtureDTO();
+        fixture.setTournamentId(tournament.getTournamentId());
+        fixture.setTournamentName(tournament.getName());
+        fixture.setSportName(tournament.getSport().getName());
+
+        // Get all rounds for this tournament
+        List<Round> rounds = roundRepository.findByTournament_TournamentId(tournamentId);
+        
+        if (rounds.isEmpty()) {
+            // No rounds exist yet, return empty fixture
+            fixture.setRounds(new ArrayList<>());
+            return fixture;
+        }
+
+        // Sort rounds by round value descending (highest round first)
+        rounds.sort((r1, r2) -> r2.getRoundValue().compareTo(r1.getRoundValue()));
+
+        List<FixtureDTO.RoundFixtureDTO> roundFixtures = new ArrayList<>();
+
+        for (Round round : rounds) {
+            FixtureDTO.RoundFixtureDTO roundFixture = new FixtureDTO.RoundFixtureDTO();
+            roundFixture.setRoundId(round.getRoundId());
+            roundFixture.setRoundValue(round.getRoundValue());
+            roundFixture.setRoundName(Round.calculateRoundName(round.getRoundValue()));
+            roundFixture.setType(round.getType());
+
+            // Fetch actual saved matches for this round (ordered by matchId for consistency)
+            List<Match> matches = matchRepository.findByRound_RoundId(round.getRoundId());
+            // Sort matches by matchId to ensure consistent ordering
+            matches.sort((m1, m2) -> m1.getMatchId().compareTo(m2.getMatchId()));
+            List<MatchDTO> matchDTOs = new ArrayList<>();
+
+            for (Match match : matches) {
+                MatchDTO matchDTO = new MatchDTO();
+                matchDTO.setMatchId(match.getMatchId());
+                matchDTO.setTournamentId(tournament.getTournamentId());
+                matchDTO.setTournamentName(tournament.getName());
+                matchDTO.setSportId(tournament.getSport().getSportId());
+                matchDTO.setSportName(tournament.getSport().getName());
+                
+                if (match.getTeam1() != null) {
+                    matchDTO.setTeam1Id(match.getTeam1().getTeamId());
+                    matchDTO.setTeam1Name(match.getTeam1().getTeamName());
+                }
+                
+                if (match.getTeam2() != null) {
+                    matchDTO.setTeam2Id(match.getTeam2().getTeamId());
+                    matchDTO.setTeam2Name(match.getTeam2().getTeamName());
+                } else {
+                    matchDTO.setTeam2Name("BYE");
+                }
+                
+                matchDTO.setRoundId(round.getRoundId());
+                matchDTO.setRoundValue(round.getRoundValue());
+                matchDTO.setRoundName(Round.calculateRoundName(round.getRoundValue()));
+                matchDTO.setStatus(match.getStatus());
+                matchDTO.setScheduledTime(match.getScheduledTime());
+                matchDTO.setVenue(match.getVenue());
+                
+                if (match.getWinnerTeam() != null) {
+                    matchDTO.setWinnerTeamId(match.getWinnerTeam().getTeamId());
+                    matchDTO.setWinnerTeamName(match.getWinnerTeam().getTeamName());
+                }
+                
+                matchDTOs.add(matchDTO);
+            }
+
+            roundFixture.setMatches(matchDTOs);
+            roundFixtures.add(roundFixture);
+        }
+
+        fixture.setRounds(roundFixtures);
+        return fixture;
     }
 }
