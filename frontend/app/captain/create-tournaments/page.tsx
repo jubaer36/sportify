@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import './create-tournaments.css';
+import Topbar from "@/Component/topbar";
+
 
 // Interfaces
 interface Sport {
@@ -204,7 +206,10 @@ const CreateTournaments: React.FC = () => {
   }
 
   return (
+    <div>      <Topbar />
     <div className="create-tournaments-container">
+    
+
       <div className="create-tournaments-content">
         <div className="tournaments-header">
           <h1 className="tournaments-title">Create New Tournament</h1>
@@ -310,6 +315,8 @@ const CreateTournaments: React.FC = () => {
         )}
       </div>
     </div>
+    </div>
+
   );
 };
 
