@@ -26,33 +26,7 @@ public class TournamentService {
     }
 
     public Tournament createTournament(Tournament tournament) {
-        // Validate champion and runner-up if provided
-        if (tournament.getChampion() != null && tournament.getChampion().getTeamId() != null) {
-            Optional<Team> championTeam = teamRepository.findById(tournament.getChampion().getTeamId());
-            if (championTeam.isPresent()) {
-                tournament.setChampion(championTeam.get());
-            } else {
-                tournament.setChampion(null);
-            }
-        }
-        
-        if (tournament.getRunnerUp() != null && tournament.getRunnerUp().getTeamId() != null) {
-            Optional<Team> runnerUpTeam = teamRepository.findById(tournament.getRunnerUp().getTeamId());
-            if (runnerUpTeam.isPresent()) {
-                tournament.setRunnerUp(runnerUpTeam.get());
-            } else {
-                tournament.setRunnerUp(null);
-            }
-        }
-        
-        Tournament savedTournament = tournamentRepository.save(tournament);
-        
-        // Update sport's recent champion and runner-up if this tournament has results
-        if (savedTournament.getChampion() != null && savedTournament.getSport() != null) {
-            updateSportRecentResults(savedTournament);
-        }
-        
-        return savedTournament;
+        return tournamentRepository.save(tournament);
     }
     
     public Optional<Tournament> getTournamentById(Long id) {

@@ -1,6 +1,7 @@
 package com.i_you_tea.sportify.controller;
 
 import com.i_you_tea.sportify.dto.TournamentDTO;
+import com.i_you_tea.sportify.dto.CreateTournamentDTO;
 import com.i_you_tea.sportify.entity.Tournament;
 import com.i_you_tea.sportify.service.TournamentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,9 +32,10 @@ public class TournamentController {
     }
 
     @PostMapping
-    public ResponseEntity<TournamentDTO> createTournament(@RequestBody TournamentDTO tournamentDTO) {
-        Tournament created = tournamentService.createTournament(tournamentDTO.toEntity());
-        return ResponseEntity.status(HttpStatus.CREATED).body(TournamentDTO.fromEntity(created));
+    public ResponseEntity<TournamentDTO> createTournament(@RequestBody CreateTournamentDTO createTournamentDTO) {
+        Tournament tournament = createTournamentDTO.toEntity();
+        Tournament createdTournament = tournamentService.createTournament(tournament);
+        return ResponseEntity.status(HttpStatus.CREATED).body(TournamentDTO.fromEntity(createdTournament));
     }
 
     @GetMapping("/{id}")
