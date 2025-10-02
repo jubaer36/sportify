@@ -5,9 +5,11 @@ import com.i_you_tea.sportify.entity.Tournament;
 import com.i_you_tea.sportify.entity.Team;
 import com.i_you_tea.sportify.entity.Sport;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,4 +38,11 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     
     @Query("SELECT m FROM Match m WHERE m.round.roundId = :roundId AND m.tournament.tournamentId = :tournamentId")
     List<Match> findByRoundIdAndTournamentId(@Param("roundId") Long roundId, @Param("tournamentId") Long tournamentId);
+    
+    /**
+     * Delete all matches for a specific round
+     */
+    @Modifying
+    @Transactional
+    void deleteByRound_RoundId(Long roundId);
 }
