@@ -45,7 +45,13 @@ public class MatchService {
     public List<Match> getMatchesByRoundAndTournament(Long roundId, Long tournamentId) {
         return matchRepository.findByRoundIdAndTournamentId(roundId, tournamentId);
     }
-    
+
+    // Fetch matches by tournament ID
+    public List<Match> getMatchesByTournamentId(Long tournamentId) {
+        return matchRepository.findByTournament_TournamentId(tournamentId);
+    }
+
+
     public Match updateMatch(Long matchId, Match matchDetails) {
         Match existingMatch = matchRepository.findById(matchId)
                 .orElseThrow(() -> new IllegalArgumentException("Match not found with id: " + matchId));

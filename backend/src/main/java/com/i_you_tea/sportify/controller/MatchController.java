@@ -89,4 +89,19 @@ public class MatchController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    // Get all matches for a specific tournament
+    @GetMapping("/tournament/{tournamentId}")
+    public ResponseEntity<List<MatchDTO>> getMatchesByTournamentId(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long tournamentId) {
+        // Remove Bearer prefix if necessary (like in TeamController)
+//        token = token.replace("Bearer ", "");
+        List<Match> matches = matchService.getMatchesByTournamentId(tournamentId);
+        List<MatchDTO> matchDTOs = matches.stream()
+                .map(MatchDTO::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(matchDTOs);
+    }
+
 }

@@ -20,6 +20,7 @@ export default function CaptainSidebar({ open, onClose }: SidebarProps) {
         <Link href="/captain/create-tournaments" className="sidebar-link">Create Tournament</Link>
         <Link href="/captain/my-tournaments" className="sidebar-link">My Tournaments</Link>
         <Link href="/captain/fixture" className="sidebar-link">Fixtures</Link>
+        <Link href="/captain/conduct-match" className="sidebar-link">Conduct Matches</Link>
       </nav>
     </aside>
   );

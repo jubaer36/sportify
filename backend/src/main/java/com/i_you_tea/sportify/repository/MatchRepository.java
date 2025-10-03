@@ -31,6 +31,8 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     List<Match> findByWinnerTeam(Team winnerTeam);
     
     List<Match> findByRound(com.i_you_tea.sportify.entity.Round round);
+
+    List<Match> findByTournament_TournamentId(Long tournamentId);
     
     List<Match> findByRound_RoundId(Long roundId);
     
