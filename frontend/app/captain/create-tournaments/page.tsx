@@ -28,6 +28,15 @@ interface TournamentFormData {
   runnerUpId: null;
 }
 
+interface AnnouncementFormData {
+  title: string;
+  content: string;
+  relatedSportId: number | null;
+  relatedTournamentId: number | null;
+  startDate: string;
+  endDate: string;
+}
+
 interface ApiResponse {
   tournamentId: number;
   name: string;
@@ -50,6 +59,8 @@ const CreateTournaments: React.FC = () => {
     runnerUpId: null
   });
 
+  const [announcementContent, setAnnouncementContent] = useState('');
+  const [createAnnouncement, setCreateAnnouncement] = useState(false);
   const [sports, setSports] = useState<Sport[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
@@ -122,12 +133,57 @@ const CreateTournaments: React.FC = () => {
     }));
   };
 
+  // Create announcement after tournament creation
+  const createTournamentAnnouncement = async (tournamentResponse: ApiResponse) => {
+    if (!createAnnouncement || !announcementContent.trim()) {
+      return;
+    }
+
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      const announcementData: AnnouncementFormData = {
+        title: `New Tournament: ${tournamentResponse.name}`,
+        content: announcementContent,
+        relatedSportId: tournamentResponse.sportId,
+        relatedTournamentId: tournamentResponse.tournamentId,
+        startDate: tournamentResponse.startDate+"T09:00:00",
+        endDate: tournamentResponse.endDate+"T09:00:00"
+      };
+
+      console.log('Creating announcement with data:', announcementData);
+
+      const response = await fetch('http://localhost:8090/api/announcements', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(announcementData)
+      });
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: `Tournament "${tournamentResponse.name}" created successfully with announcement!` });
+      } else {
+        setMessage({ type: 'success', text: `Tournament "${tournamentResponse.name}" created successfully, but announcement failed.` });
+      }
+    } catch {
+      setMessage({ type: 'success', text: `Tournament "${tournamentResponse.name}" created successfully, but announcement failed.` });
+    }
+  };
+
   // Submit tournament creation
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.sportId || !formData.startDate || !formData.endDate) {
       setMessage({ type: 'error', text: 'Please fill in all required fields' });
+      return;
+    }
+
+    if (createAnnouncement && !announcementContent.trim()) {
+      setMessage({ type: 'error', text: 'Please enter announcement content or uncheck the announcement option' });
       return;
     }
 
@@ -158,7 +214,9 @@ const CreateTournaments: React.FC = () => {
 
       if (response.ok) {
         const result: ApiResponse = await response.json();
-        setMessage({ type: 'success', text: `Tournament "${result.name}" created successfully!` });
+        
+        // Create announcement if requested
+        await createTournamentAnnouncement(result);
         
         // Reset form
         setFormData({
@@ -170,6 +228,8 @@ const CreateTournaments: React.FC = () => {
           championId: null,
           runnerUpId: null
         });
+        setAnnouncementContent('');
+        setCreateAnnouncement(false);
       } else {
         const errorData = await response.json();
         setMessage({ type: 'error', text: errorData.message || 'Failed to create tournament' });
@@ -285,6 +345,39 @@ const CreateTournaments: React.FC = () => {
                 required
               />
             </div>
+          </div>
+
+          <div className="announcement-section">
+            <div className="form-group checkbox-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={createAnnouncement}
+                  onChange={(e) => setCreateAnnouncement(e.target.checked)}
+                  className="form-checkbox"
+                />
+                <span className="checkmark"></span>
+                Create announcement for this tournament
+              </label>
+            </div>
+
+            {createAnnouncement && (
+              <div className="form-group">
+                <label htmlFor="announcementContent" className="form-label">Announcement Content *</label>
+                <textarea
+                  id="announcementContent"
+                  value={announcementContent}
+                  onChange={(e) => setAnnouncementContent(e.target.value)}
+                  className="form-textarea"
+                  placeholder="Enter announcement content (e.g., Registration is now open for this exciting tournament!)"
+                  rows={4}
+                  required={createAnnouncement}
+                />
+                <small className="form-hint">
+                  This will create an announcement titled &quot;New Tournament: {formData.name || '[Tournament Name]'}&quot;
+                </small>
+              </div>
+            )}
           </div>
 
           <div className="form-actions">

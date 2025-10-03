@@ -431,6 +431,74 @@ select.form-select::-ms-expand {
   }
 }
 
+/* Announcement Section Styles */
+.announcement-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.checkbox-group {
+  margin-bottom: 1rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+  color: #374151;
+  font-size: 1rem;
+  user-select: none;
+}
+
+.form-checkbox {
+  margin-right: 0.75rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: #4A90E2;
+  cursor: pointer;
+}
+
+.form-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 1rem 1.25rem;
+  border: 2px solid #E5E7EB;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #374151;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  resize: vertical;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: #4A90E2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+}
+
+.form-textarea::placeholder {
+  color: #9CA3AF;
+}
+
+.form-hint {
+  display: block;
+  margin-top: 0.5rem;
+  color: #6B7280;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
 /* Dark mode support (if implemented) */
 @media (prefers-color-scheme: dark) {
   .form-label {
@@ -447,5 +515,27 @@ select.form-select::-ms-expand {
   
   .user-info strong {
     color: #E5E7EB;
+  }
+  
+  .announcement-section {
+    background: rgba(55, 65, 81, 0.7);
+  }
+  
+  .checkbox-label {
+    color: #E5E7EB;
+  }
+  
+  .form-textarea {
+    background: rgba(55, 65, 81, 0.9);
+    color: #E5E7EB;
+    border-color: #4B5563;
+  }
+  
+  .form-textarea:focus {
+    background: rgba(55, 65, 81, 1);
+  }
+  
+  .form-hint {
+    color: #9CA3AF;
   }
 }
