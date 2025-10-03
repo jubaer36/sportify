@@ -1,9 +1,11 @@
 package com.i_you_tea.sportify.controller;
 
+import com.i_you_tea.sportify.dto.CreateTeamDTO;
 import com.i_you_tea.sportify.dto.TeamDTO;
 import com.i_you_tea.sportify.dto.UserTeamsRequestDTO;
 import com.i_you_tea.sportify.entity.Team;
 import com.i_you_tea.sportify.service.TeamService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,11 +44,7 @@ public class TeamController {
         return ResponseEntity.ok(teamDTOs);
     }
 
-    @PostMapping
-    public ResponseEntity<TeamDTO> createTeam(@RequestBody Team team) {
-        Team created = teamService.createTeam(team);
-        return ResponseEntity.status(HttpStatus.CREATED).body(TeamDTO.fromEntity(created));
-    }
+    
 
     @PostMapping("/user-teams")
     public ResponseEntity<?> getUserTeams(@RequestBody UserTeamsRequestDTO request) {
@@ -78,6 +76,28 @@ public class TeamController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error retrieving user teams: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping
+    public ResponseEntity<?> createTeam(@RequestHeader("Authorization") String token,
+                                        @Valid @RequestBody CreateTeamDTO createTeamDTO) {
+        try {
+            Team createdTeam = teamService.createTeam(createTeamDTO);
+            TeamDTO teamDTO = TeamDTO.fromEntity(createdTeam);
+            
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of(
+                        "message", "Team created successfully",
+                        "team", teamDTO
+                    ));
+                    
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error creating team: " + e.getMessage()));
         }
     }
 }

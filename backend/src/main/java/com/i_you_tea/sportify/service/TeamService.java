@@ -1,12 +1,16 @@
 package com.i_you_tea.sportify.service;
 
+import com.i_you_tea.sportify.dto.CreateTeamDTO;
 import com.i_you_tea.sportify.entity.Team;
 import com.i_you_tea.sportify.entity.TeamMember;
 import com.i_you_tea.sportify.entity.Sport;
 import com.i_you_tea.sportify.entity.User;
+import com.i_you_tea.sportify.entity.Tournament;
 import com.i_you_tea.sportify.repository.TeamRepository;
 import com.i_you_tea.sportify.repository.TeamMemberRepository;
 import com.i_you_tea.sportify.repository.UserRepository;
+import com.i_you_tea.sportify.repository.SportRepository;
+import com.i_you_tea.sportify.repository.TournamentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +24,8 @@ public class TeamService {
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final UserRepository userRepository;
+    private final SportRepository sportRepository;
+    private final TournamentRepository tournamentRepository;
     public List<Team> getAllTeams() {
         return teamRepository.findAll();
     }
@@ -30,9 +36,7 @@ public class TeamService {
         return teamRepository.findByTournamentTournamentId(tournamentId);
     }
 
-    public Team createTeam(Team team) {
-        return teamRepository.save(team);
-    }
+
 
     public List<Team> getTeamsByUserId(Long userId) {
         // Find user by ID
@@ -50,5 +54,33 @@ public class TeamService {
         return teamMembers.stream()
                 .map(TeamMember::getTeam)
                 .collect(Collectors.toList());
+    }
+
+    public Team createTeam(CreateTeamDTO createTeamDTO) {
+        // Validate that the sport exists
+        Sport sport = sportRepository.findById(createTeamDTO.getSportId())
+                .orElseThrow(() -> new RuntimeException("Sport not found with ID: " + createTeamDTO.getSportId()));
+        
+        // Validate that the user exists
+        User createdBy = userRepository.findById(createTeamDTO.getCreatedById())
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + createTeamDTO.getCreatedById()));
+        
+        // Optional: Validate tournament if provided
+        Tournament tournament = null;
+        if (createTeamDTO.getTournamentId() != null) {
+            tournament = tournamentRepository.findById(createTeamDTO.getTournamentId())
+                    .orElseThrow(() -> new RuntimeException("Tournament not found with ID: " + createTeamDTO.getTournamentId()));
+        }
+        
+        // Create new team entity
+        Team team = new Team();
+        team.setTeamName(createTeamDTO.getTeamName());
+        team.setSport(sport);
+        team.setCreatedBy(createdBy);
+        team.setTournament(tournament);
+        team.setLogo(createTeamDTO.getLogo());
+        
+        // Save and return the team
+        return teamRepository.save(team);
     }
 }
