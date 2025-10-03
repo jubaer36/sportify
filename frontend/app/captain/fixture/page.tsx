@@ -223,10 +223,10 @@ export default function FixtureViewer() {
   };
 
   // Regenerate a specific round and delete all subsequent rounds
-  const regenerateRound = (roundNumber: number) => {
+  const regenerateRound = async (roundNumber: number) => {
     if (roundNumber === 1) {
       // For Round 1, use the existing regenerateFixture function
-      regenerateFixture();
+      await regenerateFixture();
       return;
     }
 
@@ -335,10 +335,10 @@ export default function FixtureViewer() {
     // If no fixture exists, calculate expected round name based on previous round
     if (roundNumber === 1) {
       // For round 1, calculate based on total teams
-      if (fixture?.rounds?.[0]) {
-        const firstRound = fixture.rounds[0];
+      const round = getRoundFixture(1);
+      if (round) {
         const allTeams = new Set<string>();
-        firstRound.matches.forEach(match => {
+        round.matches.forEach(match => {
           allTeams.add(match.team1Name);
           if (match.team2Name !== 'BYE') {
             allTeams.add(match.team2Name);
@@ -368,11 +368,11 @@ export default function FixtureViewer() {
   };
 
   const getMaxRoundNumber = () => {
-    if (!fixture?.rounds?.[0]) return 1;
-    const firstRound = fixture.rounds[0];
+    const round = getRoundFixture(1);
+    if (!round) return 1;
     
     const allTeams = new Set<string>();
-    firstRound.matches.forEach(match => {
+    round.matches.forEach(match => {
       allTeams.add(match.team1Name);
       if (match.team2Name !== 'BYE') {
         allTeams.add(match.team2Name);
@@ -484,34 +484,36 @@ export default function FixtureViewer() {
       const existingResult = await makeAuthenticatedRequest<Fixture>(`/api/tournaments/${selectedTournament.tournamentId}/fixture/existing`);
       
       if (existingResult.data && existingResult.data.rounds && existingResult.data.rounds.length > 0) {
-        const rounds = existingResult.data.rounds;
-        const firstRound = rounds.find(round => 
-          round.roundValue === Math.max(...rounds.map(r => r.roundValue))
-        );
-        if (firstRound) {
-          const filteredFixture = {
-            ...existingResult.data,
-            rounds: [firstRound]
-          };
-          setFixture(filteredFixture);
-          setShowFixture(true);
-        }
+        const allRounds = existingResult.data.rounds.sort((a, b) => b.roundValue - a.roundValue); // sort by roundValue descending (round 1 first)
+        
+        // Only load the first round (highest roundValue) from the database
+        // Additional rounds are generated in memory and not persisted
+        const firstRound = allRounds[0];
+        
+        const filteredFixture = {
+          ...existingResult.data,
+          rounds: [firstRound]
+        };
+        setFixture(filteredFixture);
+        setAdditionalRounds([]); // Clear any additional rounds since they're not persisted
+        setShowFixture(true);
       } else {
         const generateResult = await makeAuthenticatedRequest<Fixture>(`/api/tournaments/${selectedTournament.tournamentId}/fixture`);
         
         if (generateResult.data && generateResult.data.rounds && generateResult.data.rounds.length > 0) {
-          const rounds = generateResult.data.rounds;
-          const firstRound = rounds.find(round => 
-            round.roundValue === Math.max(...rounds.map(r => r.roundValue))
-          );
-          if (firstRound) {
-            const filteredFixture = {
-              ...generateResult.data,
-              rounds: [firstRound]
-            };
-            setFixture(filteredFixture);
-            setShowFixture(true);
-          }
+          const allRounds = generateResult.data.rounds.sort((a, b) => b.roundValue - a.roundValue);
+          
+          // For newly generated fixtures, just include the first round
+          const firstRound = allRounds[0];
+          const additionalRoundsData: RoundFixture[] = []; // No additional rounds yet
+          
+          const filteredFixture = {
+            ...generateResult.data,
+            rounds: [firstRound]
+          };
+          setFixture(filteredFixture);
+          setAdditionalRounds(additionalRoundsData);
+          setShowFixture(true);
         } else {
           setError(generateResult.error || 'Failed to load fixture');
         }
@@ -535,13 +537,13 @@ export default function FixtureViewer() {
       
       if (structureResult.data && structureResult.data.rounds && structureResult.data.rounds.length > 0) {
         const rounds = structureResult.data.rounds;
-        const firstRound = rounds.find(round => 
+        const round = rounds.find(round => 
           round.roundValue === Math.max(...rounds.map(r => r.roundValue))
         );
         
-        if (firstRound && firstRound.roundId) {
+        if (round && round.roundId) {
           const token = localStorage.getItem('token');
-          const response = await fetch(`http://localhost:8090/api/tournaments/rounds/${firstRound.roundId}/select-type`, {
+          const response = await fetch(`http://localhost:8090/api/tournaments/rounds/${round.roundId}/select-type`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -578,13 +580,14 @@ export default function FixtureViewer() {
     setError(null);
 
     try {
+      // Get existing fixture to get all roundIds and types
       const existingResult = await makeAuthenticatedRequest<Fixture>(`/api/tournaments/${selectedTournament.tournamentId}/fixture/existing`);
       
       if (existingResult.data && existingResult.data.rounds && existingResult.data.rounds.length > 0) {
-        const rounds = existingResult.data.rounds;
-        const firstRound = rounds.find(round => 
-          round.roundValue === Math.max(...rounds.map(r => r.roundValue))
-        );
+        const allRounds = existingResult.data.rounds.sort((a, b) => b.roundValue - a.roundValue);
+        
+        // Only regenerate the first round (highest roundValue) since additional rounds are not persisted
+        const firstRound = allRounds[0];
         
         if (firstRound && firstRound.roundId) {
           const token = localStorage.getItem('token');
@@ -598,16 +601,22 @@ export default function FixtureViewer() {
           });
 
           if (response.ok) {
-            // Clear all additional rounds when regenerating Round 1
+            // Clear additional rounds since they need to be regenerated based on new winners
             setAdditionalRounds([]);
             await new Promise(resolve => setTimeout(resolve, 500));
             await loadFixture();
             setShowRegenerateModal(false);
-            alert(`Fixture regenerated successfully with ${selectedType} format! All subsequent rounds have been deleted.`);
+            alert(`Fixture regenerated successfully with ${selectedType} format!`);
           } else {
-            throw new Error('Failed to regenerate matches');
+            throw new Error('Failed to regenerate fixture');
           }
         }
+        
+        // Reload the fixture to get updated data
+        await loadFixture();
+        
+        setShowRegenerateModal(false);
+        alert(`Fixture regenerated successfully with ${selectedType} format! All rounds have been updated.`);
       }
     } catch (error) {
       setError('Error regenerating fixture');
