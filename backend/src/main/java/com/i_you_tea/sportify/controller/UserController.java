@@ -35,12 +35,12 @@ public class UserController {
     public ResponseEntity<?> getCurrentUserProfile(@RequestHeader("Authorization") String token) {
         try {
             Optional<User> userOptional = userService.getCurrentUserFromToken(token);
-            
+
             if (userOptional.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "Invalid or expired token"));
             }
-            
+
             User currentUser = userOptional.get();
             UserDTO userDTO = UserDTO.fromEntity(currentUser);
             return ResponseEntity.ok(userDTO);
@@ -55,20 +55,26 @@ public class UserController {
             @RequestBody UserDTO updateRequest) {
         try {
             Optional<User> userOptional = userService.getCurrentUserFromToken(token);
-            
+
             if (userOptional.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "Invalid or expired token"));
             }
-            
+
             User currentUser = userOptional.get();
 
-            // Update only allowed fields (not password, email, username)
+            // Update only allowed fields
             if (updateRequest.getName() != null) {
                 currentUser.setName(updateRequest.getName());
             }
+            if (updateRequest.getEmail() != null) {
+                currentUser.setEmail(updateRequest.getEmail());
+            }
             if (updateRequest.getPhone() != null) {
                 currentUser.setPhone(updateRequest.getPhone());
+            }
+            if (updateRequest.getAddress() != null) {
+                currentUser.setAddress(updateRequest.getAddress());
             }
             if (updateRequest.getProfilePhoto() != null) {
                 currentUser.setProfilePhoto(updateRequest.getProfilePhoto());
