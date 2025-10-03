@@ -28,6 +28,15 @@ public class TeamMember {
     @Column(name = "role_in_team")
     private String roleInTeam;
     
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private TeamMemberStatus status = TeamMemberStatus.PENDING;
+    
+    public enum TeamMemberStatus {
+        PENDING,
+        ACCEPTED
+    }
+    
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

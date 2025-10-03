@@ -56,22 +56,22 @@ INSERT INTO teams (team_id, team_name, sport_id, created_by, logo,tournament_id)
 (7, 'Silver Sharks', 3, 7, 'silver_sharks_logo.png',7);
 
 -- Insert Team Members
-INSERT INTO team_members (team_id, user_id, role_in_team) VALUES
-(1, 2, 'Captain'),
-(1, 3, 'Forward'),
-(1, 4, 'Midfielder'),
-(2, 5, 'Captain'),
-(2, 4, 'Defender'),
-(3, 3, 'Point Guard'),
-(3, 5, 'Shooting Guard'),
-(4, 2, 'Captain'),
-(4, 4, 'Power Forward'),
-(5, 5, 'Captain'),
-(6, 6, 'Captain'),
-(6, 3, 'Striker'),
-(7, 7, 'Captain'),
-(7, 4, 'Wicket Keeper'),
-(7, 2, 'All Rounder');
+INSERT INTO team_members (team_id, user_id, role_in_team, status) VALUES
+(1, 2, 'Captain', 'ACCEPTED'),
+(1, 3, 'Forward', 'ACCEPTED'),
+(1, 4, 'Midfielder', 'ACCEPTED'),
+(2, 5, 'Captain', 'ACCEPTED'),
+(2, 4, 'Defender', 'ACCEPTED'),
+(3, 3, 'Point Guard', 'ACCEPTED'),
+(3, 5, 'Shooting Guard', 'ACCEPTED'),
+(4, 2, 'Captain', 'ACCEPTED'),
+(4, 4, 'Power Forward', 'ACCEPTED'),
+(5, 5, 'Captain', 'ACCEPTED'),
+(6, 6, 'Captain', 'ACCEPTED'),
+(6, 3, 'Striker', 'ACCEPTED'),
+(7, 7, 'Captain', 'ACCEPTED'),
+(7, 4, 'Wicket Keeper', 'ACCEPTED'),
+(7, 2, 'All Rounder', 'ACCEPTED');
 
 -- Update Sports table with recent champion and runner-up information (after teams are inserted)
 -- Based on the most recent tournament results for each sport
@@ -209,131 +209,131 @@ INSERT INTO teams (team_id, team_name, sport_id, created_by, logo , tournament_i
 (32, 'Frost Vipers FC', 1, 6, 'frost_vipers_logo.png',8);
 
 -- Insert team members for the new teams (captain and key players for each team)
-INSERT INTO team_members (team_id, user_id, role_in_team) VALUES
+INSERT INTO team_members (team_id, user_id, role_in_team, status) VALUES
 -- Winter Wolves FC
-(8, 6, 'Captain'),
-(8, 2, 'Striker'),
-(8, 3, 'Midfielder'),
+(8, 6, 'Captain', 'ACCEPTED'),
+(8, 2, 'Striker', 'ACCEPTED'),
+(8, 3, 'Midfielder', 'ACCEPTED'),
 
 -- Frost Giants United
-(9, 7, 'Captain'),
-(9, 4, 'Defender'),
-(9, 5, 'Goalkeeper'),
+(9, 7, 'Captain', 'ACCEPTED'),
+(9, 4, 'Defender', 'ACCEPTED'),
+(9, 5, 'Goalkeeper', 'ACCEPTED'),
 
 -- Arctic Avalanche
-(10, 2, 'Captain'),
-(10, 6, 'Forward'),
-(10, 7, 'Midfielder'),
+(10, 2, 'Captain', 'ACCEPTED'),
+(10, 6, 'Forward', 'ACCEPTED'),
+(10, 7, 'Midfielder', 'ACCEPTED'),
 
 -- Blizzard Bombers
-(11, 3, 'Captain'),
-(11, 4, 'Striker'),
-(11, 5, 'Defender'),
+(11, 3, 'Captain', 'ACCEPTED'),
+(11, 4, 'Striker', 'ACCEPTED'),
+(11, 5, 'Defender', 'ACCEPTED'),
 
 -- Ice Storm FC
-(12, 4, 'Captain'),
-(12, 2, 'Midfielder'),
-(12, 3, 'Wing'),
+(12, 4, 'Captain', 'ACCEPTED'),
+(12, 2, 'Midfielder', 'ACCEPTED'),
+(12, 3, 'Wing', 'ACCEPTED'),
 
 -- Polar Panthers
-(13, 5, 'Captain'),
-(13, 6, 'Forward'),
-(13, 7, 'Defender'),
+(13, 5, 'Captain', 'ACCEPTED'),
+(13, 6, 'Forward', 'ACCEPTED'),
+(13, 7, 'Defender', 'ACCEPTED'),
 
 -- Snowfall Strikers
-(14, 6, 'Captain'),
-(14, 2, 'Striker'),
-(14, 4, 'Midfielder'),
+(14, 6, 'Captain', 'ACCEPTED'),
+(14, 2, 'Striker', 'ACCEPTED'),
+(14, 4, 'Midfielder', 'ACCEPTED'),
 
 -- Glacier Gladiators
-(15, 7, 'Captain'),
-(15, 3, 'Forward'),
-(15, 5, 'Defender'),
+(15, 7, 'Captain', 'ACCEPTED'),
+(15, 3, 'Forward', 'ACCEPTED'),
+(15, 5, 'Defender', 'ACCEPTED'),
 
 -- Frozen Thunder FC
-(16, 2, 'Captain'),
-(16, 3, 'Midfielder'),
-(16, 4, 'Defender'),
+(16, 2, 'Captain', 'ACCEPTED'),
+(16, 3, 'Midfielder', 'ACCEPTED'),
+(16, 4, 'Defender', 'ACCEPTED'),
 
 -- Ice Hawks United
-(17, 3, 'Captain'),
-(17, 5, 'Striker'),
-(17, 6, 'Goalkeeper'),
+(17, 3, 'Captain', 'ACCEPTED'),
+(17, 5, 'Striker', 'ACCEPTED'),
+(17, 6, 'Goalkeeper', 'ACCEPTED'),
 
 -- Winter Warriors FC
-(18, 4, 'Captain'),
-(18, 7, 'Forward'),
-(18, 2, 'Midfielder'),
+(18, 4, 'Captain', 'ACCEPTED'),
+(18, 7, 'Forward', 'ACCEPTED'),
+(18, 2, 'Midfielder', 'ACCEPTED'),
 
 -- Frost Fire FC
-(19, 5, 'Captain'),
-(19, 6, 'Defender'),
-(19, 7, 'Wing'),
+(19, 5, 'Captain', 'ACCEPTED'),
+(19, 6, 'Defender', 'ACCEPTED'),
+(19, 7, 'Wing', 'ACCEPTED'),
 
 -- Arctic Lions
-(20, 6, 'Captain'),
-(20, 2, 'Striker'),
-(20, 3, 'Midfielder'),
+(20, 6, 'Captain', 'ACCEPTED'),
+(20, 2, 'Striker', 'ACCEPTED'),
+(20, 3, 'Midfielder', 'ACCEPTED'),
 
 -- Snow Leopards FC
-(21, 7, 'Captain'),
-(21, 4, 'Forward'),
-(21, 5, 'Defender'),
+(21, 7, 'Captain', 'ACCEPTED'),
+(21, 4, 'Forward', 'ACCEPTED'),
+(21, 5, 'Defender', 'ACCEPTED'),
 
 -- Blizzard Eagles
-(22, 2, 'Captain'),
-(22, 3, 'Midfielder'),
-(22, 6, 'Striker'),
+(22, 2, 'Captain', 'ACCEPTED'),
+(22, 3, 'Midfielder', 'ACCEPTED'),
+(22, 6, 'Striker', 'ACCEPTED'),
 
 -- Polar Storm FC
-(23, 3, 'Captain'),
-(23, 4, 'Defender'),
-(23, 7, 'Goalkeeper'),
+(23, 3, 'Captain', 'ACCEPTED'),
+(23, 4, 'Defender', 'ACCEPTED'),
+(23, 7, 'Goalkeeper', 'ACCEPTED'),
 
 -- Frost Titans
-(24, 4, 'Captain'),
-(24, 5, 'Forward'),
-(24, 2, 'Midfielder'),
+(24, 4, 'Captain', 'ACCEPTED'),
+(24, 5, 'Forward', 'ACCEPTED'),
+(24, 2, 'Midfielder', 'ACCEPTED'),
 
 -- Winter Phoenix FC
-(25, 5, 'Captain'),
-(25, 6, 'Striker'),
-(25, 7, 'Wing'),
+(25, 5, 'Captain', 'ACCEPTED'),
+(25, 6, 'Striker', 'ACCEPTED'),
+(25, 7, 'Wing', 'ACCEPTED'),
 
 -- Ice Demons United
-(26, 6, 'Captain'),
-(26, 2, 'Midfielder'),
-(26, 3, 'Defender'),
+(26, 6, 'Captain', 'ACCEPTED'),
+(26, 2, 'Midfielder', 'ACCEPTED'),
+(26, 3, 'Defender', 'ACCEPTED'),
 
 -- Arctic Sharks FC
-(27, 7, 'Captain'),
-(27, 4, 'Forward'),
-(27, 5, 'Goalkeeper'),
+(27, 7, 'Captain', 'ACCEPTED'),
+(27, 4, 'Forward', 'ACCEPTED'),
+(27, 5, 'Goalkeeper', 'ACCEPTED'),
 
 -- Frozen Falcons
-(28, 2, 'Captain'),
-(28, 3, 'Striker'),
-(28, 6, 'Midfielder'),
+(28, 2, 'Captain', 'ACCEPTED'),
+(28, 3, 'Striker', 'ACCEPTED'),
+(28, 6, 'Midfielder', 'ACCEPTED'),
 
 -- Snow Dragons FC
-(29, 3, 'Captain'),
-(29, 4, 'Defender'),
-(29, 7, 'Wing'),
+(29, 3, 'Captain', 'ACCEPTED'),
+(29, 4, 'Defender', 'ACCEPTED'),
+(29, 7, 'Wing', 'ACCEPTED'),
 
 -- Glacier Bulls
-(30, 4, 'Captain'),
-(30, 5, 'Forward'),
-(30, 2, 'Midfielder'),
+(30, 4, 'Captain', 'ACCEPTED'),
+(30, 5, 'Forward', 'ACCEPTED'),
+(30, 2, 'Midfielder', 'ACCEPTED'),
 
 -- Winter Stallions
-(31, 5, 'Captain'),
-(31, 6, 'Defender'),
-(31, 7, 'Striker'),
+(31, 5, 'Captain', 'ACCEPTED'),
+(31, 6, 'Defender', 'ACCEPTED'),
+(31, 7, 'Striker', 'ACCEPTED'),
 
 -- Frost Vipers FC
-(32, 6, 'Captain'),
-(32, 2, 'Goalkeeper'),
-(32, 3, 'Forward');
+(32, 6, 'Captain', 'ACCEPTED'),
+(32, 2, 'Goalkeeper', 'ACCEPTED'),
+(32, 3, 'Forward', 'ACCEPTED');
 
 -- Additional announcements
 INSERT INTO announcements (announcement_id, title, content, posted_by, posted_at, related_sport_id, related_tournament_id, start_date, end_date) VALUES
