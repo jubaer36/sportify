@@ -4,6 +4,7 @@ import com.i_you_tea.sportify.dto.ScoreDTO;
 import com.i_you_tea.sportify.service.ScoreService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class ScoreController {
     }
 
     @PostMapping("/createSet")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN') or hasRole('PLAYER')")
     public ResponseEntity<ScoreDTO> createScore(@RequestBody ScoreDTO scoreDTO) {
         ScoreDTO saved = scoreService.saveScore(scoreDTO);
         return ResponseEntity.ok(saved);
