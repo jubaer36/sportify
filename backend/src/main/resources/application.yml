@@ -3,8 +3,8 @@ spring:
     name: sportify
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/sportify}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:secret}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:mrr12345678}
   jpa:
     show-sql: true
     hibernate:
