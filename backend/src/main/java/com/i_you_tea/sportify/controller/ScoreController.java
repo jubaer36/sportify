@@ -21,7 +21,7 @@ public class ScoreController {
         return ResponseEntity.ok(scores);
     }
 
-    @PostMapping
+    @PostMapping("/createSet")
     public ResponseEntity<ScoreDTO> createScore(@RequestBody ScoreDTO scoreDTO) {
         ScoreDTO saved = scoreService.saveScore(scoreDTO);
         return ResponseEntity.ok(saved);
@@ -32,4 +32,17 @@ public class ScoreController {
         scoreService.deleteScore(scoreId);
         return ResponseEntity.noContent().build();
     }
+
+    // Inside ScoreController class
+
+    @PutMapping("/{scoreId}")
+    public ResponseEntity<ScoreDTO> updateScore(
+            @PathVariable Long scoreId,
+            @RequestBody ScoreDTO scoreDTO
+    ) {
+        ScoreDTO updatedScore = scoreService.updateScore(scoreId, scoreDTO);
+        return ResponseEntity.ok(updatedScore);
+    }
+
+
 }

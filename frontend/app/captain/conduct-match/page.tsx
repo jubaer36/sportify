@@ -25,7 +25,7 @@ interface Match {
 
 interface Team {
   teamId: number;
-  name: string;
+  teamName: string;
 }
 
 interface Round {
@@ -45,6 +45,10 @@ export default function ConductMatchPage() {
   const [matchLoading, setMatchLoading] = useState(false);
   const [teamsLoading, setTeamsLoading] = useState(false);
   const [roundsLoading, setRoundsLoading] = useState(false);
+
+  // Custom dropdown state
+  const [tournamentDropdownOpen, setTournamentDropdownOpen] = useState(false);
+  const [matchDropdownOpen, setMatchDropdownOpen] = useState(false);
 
   // Fetch tournaments and sports on mount
   useEffect(() => {
@@ -69,17 +73,13 @@ export default function ConductMatchPage() {
       return;
     }
 
-    // Fetch matches
     const fetchMatches = async () => {
       setMatchLoading(true);
-      const mRes = await makeAuthenticatedRequest<Match[]>(
-        `/api/matches/tournament/${selectedTournamentId}`
-      );
+      const mRes = await makeAuthenticatedRequest<Match[]>(`/api/matches/tournament/${selectedTournamentId}`);
       setMatches(Array.isArray(mRes.data) ? mRes.data : []);
       setMatchLoading(false);
     };
 
-    // Fetch teams for the selected tournament
     const fetchTeams = async () => {
       setTeamsLoading(true);
       const teamRes = await makeAuthenticatedRequest<Team[]>(`/api/teams/tournament/${selectedTournamentId}`);
@@ -87,7 +87,6 @@ export default function ConductMatchPage() {
       setTeamsLoading(false);
     };
 
-    // Fetch rounds for the selected tournament
     const fetchRounds = async () => {
       setRoundsLoading(true);
       const roundRes = await makeAuthenticatedRequest<Round[]>(`/api/tournaments/${selectedTournamentId}/rounds`);
@@ -106,27 +105,21 @@ export default function ConductMatchPage() {
 
   // Helper: get team name by teamId
   const getTeamName = (teamId: number) =>
-    teams.find((t) => t.teamId === teamId)?.name || `Team ${teamId}`;
+    teams.find((t) => t.teamId === teamId)?.teamName || `Team ${teamId}`;
 
   // Helper: get round name by roundId
   const getRoundName = (roundId: number) =>
     rounds.find((r) => r.roundId === roundId)?.name || `Round ${roundId}`;
 
-  // Get selected tournament's sport name
-  const selectedTournament = tournaments.find(
-    (t) => t.tournamentId === selectedTournamentId
-  );
-  const selectedSportName = selectedTournament
-    ? getSportName(selectedTournament.sportId)
-    : "";
+  const selectedTournament = tournaments.find(t => t.tournamentId === selectedTournamentId);
+  const selectedSportName = selectedTournament ? getSportName(selectedTournament.sportId) : "";
 
-  // Proceed button handler
   const handleProceed = () => {
     if (!selectedTournament || !selectedMatchId) return;
     if (selectedSportName.toLowerCase() === "cricket") {
-      window.location.href = "/captain/conduct-cricket-match";
+      window.location.href = `/captain/conduct-cricket-match?tournamentId=${selectedTournament.tournamentId}&matchId=${selectedMatchId}`;
     } else {
-      window.location.href = "/captain/conduct-all-match";
+      window.location.href = `/captain/conduct-all-match?tournamentId=${selectedTournament.tournamentId}&matchId=${selectedMatchId}`;
     }
   };
 
@@ -137,54 +130,72 @@ export default function ConductMatchPage() {
         <h1 className="conduct-match-title">Conduct Match</h1>
 
         {/* Tournament Selection */}
-        <div className="section">
-          <label htmlFor="tournament-select" className="section-label">
-            Select Tournament
-          </label>
-          <select
-            id="tournament-select"
-            className="dropdown"
-            value={selectedTournamentId ?? ""}
-            onChange={(e) =>
-              setSelectedTournamentId(
-                e.target.value ? Number(e.target.value) : null
-              )
-            }
-            disabled={loading}
-          >
-            <option value="">-- Select Tournament --</option>
-            {tournaments.map((t) => (
-              <option key={t.tournamentId} value={t.tournamentId}>
-                {t.name} [{getSportName(t.sportId)}]
-              </option>
-            ))}
-          </select>
+        <div className="section dropdown-section">
+          <label className="section-label">Select Tournament</label>
+          <div className="custom-dropdown">
+            <div
+              className="custom-dropdown-selected"
+              onClick={() => setTournamentDropdownOpen(!tournamentDropdownOpen)}
+            >
+              {selectedTournament ? selectedTournament.name : "-- Select Tournament --"}
+              <span className="arrow">{tournamentDropdownOpen ? "▲" : "▼"}</span>
+            </div>
+            {tournamentDropdownOpen && (
+              <ul className="custom-dropdown-list">
+                {tournaments.map((t) => (
+                  <li
+                    key={t.tournamentId}
+                    className="custom-dropdown-item"
+                    onClick={() => {
+                      setSelectedTournamentId(t.tournamentId);
+                      setTournamentDropdownOpen(false);
+                    }}
+                  >
+                    <span className="tournament-name">{t.name}</span>
+                    <span className="sport-tag">{getSportName(t.sportId)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
         {/* Match Selection */}
         {selectedTournamentId && (
-          <div className="section">
-            <label htmlFor="match-select" className="section-label">
-              Select Match
-            </label>
-            <select
-              id="match-select"
-              className="dropdown"
-              value={selectedMatchId ?? ""}
-              onChange={(e) =>
-                setSelectedMatchId(
-                  e.target.value ? Number(e.target.value) : null
-                )
-              }
-              disabled={matchLoading}
-            >
-              <option value="">-- Select Match --</option>
-              {matches.map((m) => (
-                <option key={m.matchId} value={m.matchId}>
-                  {getTeamName(m.team1Id)} vs {getTeamName(m.team2Id)} [{getRoundName(m.roundId)}]
-                </option>
-              ))}
-            </select>
+          <div className="section dropdown-section">
+            <label className="section-label">Select Match</label>
+            <div className="custom-dropdown">
+              <div
+                className="custom-dropdown-selected"
+                onClick={() => setMatchDropdownOpen(!matchDropdownOpen)}
+              >
+                {selectedMatchId
+                  ? (() => {
+                      const match = matches.find(m => m.matchId === selectedMatchId);
+                      if (!match) return "-- Select Match --";
+                      return `${getTeamName(match.team1Id)} vs ${getTeamName(match.team2Id)}`;
+                    })()
+                  : "-- Select Match --"}
+                <span className="arrow">{matchDropdownOpen ? "▲" : "▼"}</span>
+              </div>
+              {matchDropdownOpen && (
+                <ul className="custom-dropdown-list">
+                  {matches.map((m) => (
+                    <li
+                      key={m.matchId}
+                      className="custom-dropdown-item"
+                      onClick={() => {
+                        setSelectedMatchId(m.matchId);
+                        setMatchDropdownOpen(false);
+                      }}
+                    >
+                      <span className="team-names">{getTeamName(m.team1Id)} vs {getTeamName(m.team2Id)}</span>
+                      <span className="round-tag">{getRoundName(m.roundId)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         )}
 

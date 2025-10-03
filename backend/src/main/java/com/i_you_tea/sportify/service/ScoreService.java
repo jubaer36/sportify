@@ -41,4 +41,29 @@ public class ScoreService {
     public void deleteScore(Long scoreId) {
         scoreRepository.deleteById(scoreId);
     }
+
+    // Inside ScoreService class
+
+    // New method for updating a score
+    public ScoreDTO updateScore(Long scoreId, ScoreDTO scoreDTO) {
+        Score score = scoreRepository.findById(scoreId)
+                .orElseThrow(() -> new RuntimeException("Score not found"));
+
+        // Update match if provided
+        if (scoreDTO.getMatchId() != null) {
+            Match match = matchRepository.findById(scoreDTO.getMatchId())
+                    .orElseThrow(() -> new RuntimeException("Match not found"));
+            score.setMatch(match);
+        }
+
+        // Update team and points
+        score.setTeamAId(scoreDTO.getTeamAId());
+        score.setTeamAPoints(scoreDTO.getTeamAPoints());
+        score.setTeamBId(scoreDTO.getTeamBId());
+        score.setTeamBPoints(scoreDTO.getTeamBPoints());
+
+        Score updated = scoreRepository.save(score);
+        return ScoreDTO.fromEntity(updated);
+    }
+
 }
