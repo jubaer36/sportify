@@ -26,6 +26,9 @@ public class Sport {
     @Column(name = "rules", columnDefinition = "TEXT")
     private String rules;
     
+    @Column(name = "player_count")
+    private Integer playerCount;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "captain_id")
     private User captain;

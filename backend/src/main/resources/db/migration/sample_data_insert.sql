@@ -17,7 +17,6 @@
 
 
 
-
 -- Insert Roles (assuming role table exists, extending MasterEntity)
 INSERT INTO role (id, name, is_active, created_on, updated_on) VALUES
 (1, 'ADMIN', true, NOW(), NOW()),
@@ -28,12 +27,12 @@ INSERT INTO role (id, name, is_active, created_on, updated_on) VALUES
 (6, 'CAPTAIN', true, NOW(), NOW());
 
 -- Insert Sports (with captain assignments only, champion/runner-up will be updated after teams are inserted)
-INSERT INTO sports (sport_id, name, is_team_game, rules, captain_id) VALUES
-(1, 'Football', true, 'Standard FIFA football rules with 11 players per team, 90-minute match duration.', 6),
-(2, 'Basketball', true, 'Standard basketball rules with 5 players per team, 4 quarters of 12 minutes each.', 7),
-(3, 'Cricket', true, 'T20 format cricket rules with 11 players per team, 20 overs per innings.', 7),
-(4, 'Tennis', false, 'Standard tennis rules, singles match, best of 3 sets.', 6),
-(5, 'Badminton', false, 'Standard badminton rules, singles match, best of 3 games to 21 points.', NULL);
+INSERT INTO sports (sport_id, name, is_team_game, rules, captain_id, player_count) VALUES
+(1, 'Football', true, 'Standard FIFA football rules with 11 players per team, 90-minute match duration.', 6, 11),
+(2, 'Basketball', true, 'Standard basketball rules with 5 players per team, 4 quarters of 12 minutes each.', 7, 5),
+(3, 'Cricket', true, 'T20 format cricket rules with 11 players per team, 20 overs per innings.', 7, 11),
+(4, 'Tennis', false, 'Standard tennis rules, singles match, best of 3 sets.', 6, 1),
+(5, 'Badminton', false, 'Standard badminton rules, singles match, best of 3 games to 21 points.', NULL, 1);
 
 -- Insert Tournaments (with champions and runners-up for completed tournaments)
 INSERT INTO tournaments (tournament_id, name, sport_id, start_date, end_date, created_by, champion_id, runner_up_id) VALUES

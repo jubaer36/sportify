@@ -16,6 +16,7 @@ public class SportDTO {
     private String name;
     private Boolean isTeamGame;
     private String rules;
+    private Integer playerCount;
     private Long captainId;
     private String captainName;
     private Long recentChampionId;
@@ -29,6 +30,7 @@ public class SportDTO {
             sport.getName(),
             sport.getIsTeamGame(),
             sport.getRules(),
+            sport.getPlayerCount(),
             sport.getCaptain() != null ? sport.getCaptain().getUserId() : null,
             sport.getCaptain() != null ? sport.getCaptain().getName() : null,
             sport.getRecentChampion() != null ? sport.getRecentChampion().getTeamId() : null,
@@ -44,6 +46,7 @@ public class SportDTO {
         sport.setName(this.name);
         sport.setIsTeamGame(this.isTeamGame);
         sport.setRules(this.rules);
+        sport.setPlayerCount(this.playerCount);
         if (this.captainId != null) {
             User captain = new User();
             captain.setUserId(this.captainId);
