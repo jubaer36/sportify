@@ -18,7 +18,7 @@ public class CricketScoreController {
 
     private final CricketScoreService cricketScoreService;
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<CricketScoreDTO> create(@Valid @RequestBody CricketScoreDTO dto) {
         CricketScoreDTO created = cricketScoreService.create(dto);
         return new ResponseEntity<>(created, HttpStatus.CREATED);
