@@ -116,35 +116,48 @@ INSERT INTO rounds (round_id, round_value, round_name, tournament_id, type) VALU
 
 
 -- Insert Matches (using round_id to reference rounds table)
-INSERT INTO matches (match_id, tournament_id, sport_id, team1_id, team2_id, scheduled_time, venue, status, winner_team_id, round_id) VALUES
+-- ==============================
+-- INSERT INTO MATCHES
+-- ==============================
+INSERT INTO matches
+(match_id, tournament_id, sport_id, team1_id, team2_id, scheduled_time, venue, status, winner_team_id, round_id, team_a_final_score, team_b_final_score)
+VALUES
 -- Spring Football Championship matches (Tournament ID 1)
-(1, 1, 1, 1, 2, '2024-03-15 15:00:00', 'Main Football Ground', 'COMPLETED', 1, 2), -- Round of 16 (round_id = 2)
-(4, 1, 1, 1, 5, '2024-03-20 16:00:00', 'Secondary Ground', 'SCHEDULED', NULL, 5), -- Final (round_id = 5)
+(1, 1, 1, 1, 2, '2024-03-15 15:00:00', 'Main Football Ground', 'COMPLETED', 1, 2, NULL, NULL), -- Round of 16 (round_id = 2)
+(4, 1, 1, 1, 5, '2024-03-20 16:00:00', 'Secondary Ground', 'SCHEDULED', NULL, 5, NULL, NULL), -- Final (round_id = 5)
 
 -- Inter-College Basketball League matches (Tournament ID 2 - ROUND_ROBIN, no rounds needed)
-(2, 2, 2, 3, 4, '2024-04-10 18:00:00', 'Basketball Court A', 'COMPLETED', 3, NULL),
-(5, 2, 2, 3, 5, '2024-04-25 19:00:00', 'Basketball Court B', 'COMPLETED', 5, NULL),
+(2, 2, 2, 3, 4, '2024-04-10 18:00:00', 'Basketball Court A', 'COMPLETED', 3, NULL, NULL, NULL),
+(5, 2, 2, 3, 5, '2024-04-25 19:00:00', 'Basketball Court B', 'COMPLETED', 5, NULL, NULL, NULL),
 
 -- Summer Cricket Tournament matches (Tournament ID 3)
-(3, 3, 3, 5, 1, '2024-05-20 14:00:00', 'Cricket Stadium', 'ONGOING', NULL, 7), -- Quarter-final (round_id = 7)
+(3, 3, 4, 5, 1, '2024-05-20 14:00:00', 'Cricket Stadium', 'ONGOING', NULL, 7, NULL, NULL),
 
 -- Captain's Football League matches (Tournament ID 6 - ROUND_ROBIN, no rounds needed)
-(6, 6, 1, 6, 1, '2024-08-15 16:00:00', 'Captain''s Ground', 'COMPLETED', 6, NULL),
+(6, 6, 3, 6, 1, '2024-08-15 16:00:00', 'Captain''s Ground', 'COMPLETED', 6, NULL, NULL, NULL),
 
 -- Elite Cricket Championship matches (Tournament ID 7)
-(7, 7, 3, 7, 5, '2024-09-10 14:30:00', 'Elite Cricket Ground', 'COMPLETED', 7, 13); -- Quarter-final (round_id = 13)
+(7, 7, 3, 7, 5, '2024-09-10 14:30:00', 'Elite Cricket Ground', 'COMPLETED', 7, 13, NULL, NULL);
 
--- Insert Scores
-INSERT INTO scores (score_id, match_id, team_id, points, updated_by) VALUES
-(1, 1, 1, 3, 1),
-(2, 1, 2, 1, 1),
-(3, 2, 3, 85, 1),
-(4, 2, 4, 78, 1),
-(5, 5, 3, 92, 1),
-(6, 6, 6, 2, 6),
-(7, 6, 1, 1, 6),
-(8, 7, 7, 185, 7),
-(9, 7, 5, 167, 7);
+
+-- ==============================
+-- INSERT INTO SCORES
+-- ==============================
+INSERT INTO scores (score_id, match_id, team_a_id, team_a_points, team_b_id, team_b_points) VALUES
+-- Match 1 (Football: Team 1 vs Team 2)
+(1, 1, 1, 3, 2, 1),
+
+-- Match 2 (Basketball: Team 3 vs Team 4)
+(2, 2, 3, 85, 4, 78),
+
+-- Match 3 (Cricket: Team 5 vs Team 1)
+(3, 3, 5, 250, 1, 240),
+
+-- Match 4 (Football: Team 1 vs Team 5)
+(4, 4, 1, 2, 5, 2),
+
+-- Match 5 (Basketball: Team 3 vs Team 5)
+(5, 5, 3, 92, 5, 87);
 
 -- Insert Hall of Fame entries
 INSERT INTO hall_of_fame (hof_id, user_id, sport_id, title, stats, photo, match_id, tournament_id) VALUES
@@ -342,6 +355,18 @@ INSERT INTO announcements (announcement_id, title, content, posted_by, posted_at
                                                                                                                                                      (13, 'Cricket Tournament Team Registration', 'Team registration for the upcoming cricket tournament is now open. Last date for registration is April 25th, 2024.', 1, '2024-04-15 09:00:00', 3, 3, '2024-04-15 00:00:00', '2024-04-25 23:59:59'),
                                                                                                                                                      (14, 'Tennis Coaching Camp Announcement', 'Special tennis coaching camp for beginners will be conducted from June 1st to June 15th. Limited seats available!', 1, '2024-05-20 11:00:00', 4, NULL, '2024-06-01 00:00:00', '2024-06-15 23:59:59'),
                                                                                                                                                      (15, 'Captain''s Football League Playoffs', 'Playoff matches for Captain''s Football League will begin on September 15th. Top 8 teams will compete for the championship.', 6, '2024-09-10 16:00:00', 1, 6, '2024-09-15 00:00:00', '2024-09-25 23:59:59');
+
+
+--Insert into cricket-scores
+
+INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team_b_innings, team_a_total_run, team_b_total_run, team_a_total_wicket, team_b_total_wicket, team_a_overs, team_b_overs) VALUES (6, 101, 102, 1, 0, 275, NULL, 7, NULL, '50.0', NULL);
+
+INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team_b_innings, team_a_total_run, team_b_total_run, team_a_total_wicket, team_b_total_wicket, team_a_overs, team_b_overs) VALUES (6, 101, 102, 1, 2, 275, 260, 7, 9, '50.0', '49.2');
+
+INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team_b_innings, team_a_total_run, team_b_total_run, team_a_total_wicket, team_b_total_wicket, team_a_overs, team_b_overs) VALUES (7, 201, 202, 1, 0, 180, NULL, 10, NULL, '45.3', NULL);
+
+
+
 -- Update sequences to continue from the next available ID
 SELECT setval('teams_team_id_seq', 32, true);
 SELECT setval('tournaments_tournament_id_seq', 8, true);

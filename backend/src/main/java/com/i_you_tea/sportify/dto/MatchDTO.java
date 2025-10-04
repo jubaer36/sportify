@@ -29,7 +29,9 @@ public class MatchDTO {
     private Long roundId;
     private String roundName;
     private Integer roundValue;
-    
+    private Integer teamAFinalScore;
+    private Integer teamBFinalScore;
+
     public static MatchDTO fromEntity(Match match) {
         return new MatchDTO(
             match.getMatchId(),
@@ -48,7 +50,9 @@ public class MatchDTO {
             match.getWinnerTeam() != null ? match.getWinnerTeam().getTeamName() : null,
             match.getRound() != null ? match.getRound().getRoundId() : null,
             match.getRound() != null ? match.getRound().getRoundName() : null,
-            match.getRound() != null ? match.getRound().getRoundValue() : null
+            match.getRound() != null ? match.getRound().getRoundValue() : null,
+            match.getTeamAFinalScore(), 
+            match.getTeamBFinalScore()  
         );
     }
     
@@ -58,7 +62,9 @@ public class MatchDTO {
         match.setScheduledTime(this.scheduledTime);
         match.setVenue(this.venue);
         match.setStatus(this.status);
-        // Tournament, Sport, Teams, WinnerTeam, and Round relationships should be set by the service layer
+        match.setTeamAFinalScore(this.teamAFinalScore); 
+        match.setTeamBFinalScore(this.teamBFinalScore); 
+    
         return match;
     }
 }

@@ -5,30 +5,31 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity
-@Table(name = "scores")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
+@Table(name = "scores")
 public class Score {
-    
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // Auto-generate scoreId if needed
     @Column(name = "score_id")
     private Long scoreId;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "match_id", nullable = false)
+    @JoinColumn(name = "match_id", nullable = false, referencedColumnName = "match_id")
     private Match match;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id", nullable = false)
-    private Team team;
-    
-    @Column(name = "points", nullable = false)
-    private Integer points;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "updated_by", nullable = false)
-    private User updatedBy;
+
+    @Column(name = "team_a_id", nullable = false)
+    private Long teamAId;
+
+    @Column(name = "team_a_points", nullable = false)
+    private Integer teamAPoints;
+
+    @Column(name = "team_b_id", nullable = false)
+    private Long teamBId;
+
+    @Column(name = "team_b_points", nullable = false)
+    private Integer teamBPoints;
 }
