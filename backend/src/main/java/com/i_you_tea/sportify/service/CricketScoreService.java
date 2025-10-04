@@ -3,95 +3,109 @@ package com.i_you_tea.sportify.service;
 import com.i_you_tea.sportify.dto.CricketScoreDTO;
 import com.i_you_tea.sportify.entity.CricketScore;
 import com.i_you_tea.sportify.entity.Match;
-import com.i_you_tea.sportify.exception.ResourceNotFoundException;
 import com.i_you_tea.sportify.repository.CricketScoreRepository;
 import com.i_you_tea.sportify.repository.MatchRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
-
-public interface CricketScoreService {
-    CricketScoreDTO create(CricketScoreDTO dto);
-    CricketScoreDTO update(Long id, CricketScoreDTO dto);
-    CricketScoreDTO findById(Long id);
-    List<CricketScoreDTO> findAll();
-    List<CricketScoreDTO> findByMatchId(Long matchId);
-    void delete(Long id);
-}
 
 @Service
 @RequiredArgsConstructor
 @Transactional
-class CricketScoreServiceImpl implements CricketScoreService {
+public class CricketScoreService {
 
     private final CricketScoreRepository cricketScoreRepository;
     private final MatchRepository matchRepository;
 
-    @Override
+    /**
+     * Create a new cricket score
+     */
     public CricketScoreDTO create(CricketScoreDTO dto) {
-        CricketScore entity = dto.toEntity();
-        Match match = matchRepository.findById(dto.getMatchId())
-                .orElseThrow(() -> new ResourceNotFoundException("Match not found with id " + dto.getMatchId()));
-        entity.setMatch(match);
-
-        CricketScore saved = cricketScoreRepository.save(entity);
-        return CricketScoreDTO.fromEntity(saved);
-    }
-
-    @Override
-    public CricketScoreDTO update(Long id, CricketScoreDTO dto) {
-        CricketScore existing = cricketScoreRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("CricketScore not found with id " + id));
-
+        CricketScore cricketScore = dto.toEntity();
+        
+        // Set the match relationship if matchId is provided
         if (dto.getMatchId() != null) {
             Match match = matchRepository.findById(dto.getMatchId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Match not found with id " + dto.getMatchId()));
-            existing.setMatch(match);
+                    .orElseThrow(() -> new RuntimeException("Match not found with id: " + dto.getMatchId()));
+            cricketScore.setMatch(match);
         }
-
-        existing.setTeamAId(dto.getTeamAId());
-        existing.setTeamBId(dto.getTeamBId());
-        existing.setTeamAInnings(dto.getTeamAInnings());
-        existing.setTeamBInnings(dto.getTeamBInnings());
-        existing.setTeamATotalRun(dto.getTeamATotalRun());
-        existing.setTeamBTotalRun(dto.getTeamBTotalRun());
-        existing.setTeamATotalWicket(dto.getTeamATotalWicket());
-        existing.setTeamBTotalWicket(dto.getTeamBTotalWicket());
-        existing.setTeamAOvers(dto.getTeamAOvers());
-        existing.setTeamBOvers(dto.getTeamBOvers());
-
-        CricketScore saved = cricketScoreRepository.save(existing);
+        
+        CricketScore saved = cricketScoreRepository.save(cricketScore);
         return CricketScoreDTO.fromEntity(saved);
     }
 
-    @Override
-    public CricketScoreDTO findById(Long id) {
-        CricketScore cs = cricketScoreRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("CricketScore not found with id " + id));
-        return CricketScoreDTO.fromEntity(cs);
-    }
-
-    @Override
+    /**
+     * Find all cricket scores
+     */
+    @Transactional(readOnly = true)
     public List<CricketScoreDTO> findAll() {
-        return cricketScoreRepository.findAll().stream()
+        return cricketScoreRepository.findAll()
+                .stream()
                 .map(CricketScoreDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
-    @Override
+    /**
+     * Find cricket score by ID
+     */
+    @Transactional(readOnly = true)
+    public CricketScoreDTO findById(Long id) {
+        CricketScore cricketScore = cricketScoreRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Cricket score not found with id: " + id));
+        return CricketScoreDTO.fromEntity(cricketScore);
+    }
+
+    /**
+     * Find cricket scores by match ID
+     */
+    @Transactional(readOnly = true)
     public List<CricketScoreDTO> findByMatchId(Long matchId) {
-        return cricketScoreRepository.findByMatch_MatchId(matchId).stream()
+        return cricketScoreRepository.findByMatch_MatchId(matchId)
+                .stream()
                 .map(CricketScoreDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
-    @Override
+    /**
+     * Update an existing cricket score
+     */
+    public CricketScoreDTO update(Long id, CricketScoreDTO dto) {
+        CricketScore existingScore = cricketScoreRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Cricket score not found with id: " + id));
+
+        // Update fields
+        existingScore.setTeamAId(dto.getTeamAId());
+        existingScore.setTeamBId(dto.getTeamBId());
+        existingScore.setTeamAInnings(dto.getTeamAInnings());
+        existingScore.setTeamBInnings(dto.getTeamBInnings());
+        existingScore.setTeamATotalRun(dto.getTeamATotalRun());
+        existingScore.setTeamBTotalRun(dto.getTeamBTotalRun());
+        existingScore.setTeamATotalWicket(dto.getTeamATotalWicket());
+        existingScore.setTeamBTotalWicket(dto.getTeamBTotalWicket());
+        existingScore.setTeamAOvers(dto.getTeamAOvers());
+        existingScore.setTeamBOvers(dto.getTeamBOvers());
+
+        // Update match relationship if matchId is provided and different
+        if (dto.getMatchId() != null && 
+            (existingScore.getMatch() == null || !existingScore.getMatch().getMatchId().equals(dto.getMatchId()))) {
+            Match match = matchRepository.findById(dto.getMatchId())
+                    .orElseThrow(() -> new RuntimeException("Match not found with id: " + dto.getMatchId()));
+            existingScore.setMatch(match);
+        }
+
+        CricketScore updated = cricketScoreRepository.save(existingScore);
+        return CricketScoreDTO.fromEntity(updated);
+    }
+
+    /**
+     * Delete a cricket score by ID
+     */
     public void delete(Long id) {
         if (!cricketScoreRepository.existsById(id)) {
-            throw new ResourceNotFoundException("CricketScore not found with id " + id);
+            throw new RuntimeException("Cricket score not found with id: " + id);
         }
         cricketScoreRepository.deleteById(id);
     }

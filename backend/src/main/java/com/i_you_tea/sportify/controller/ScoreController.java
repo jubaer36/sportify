@@ -23,10 +23,9 @@ public class ScoreController {
     }
 
     @PostMapping("/createSet")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN') or hasRole('PLAYER')")
-    public ResponseEntity<ScoreDTO> createScore(@RequestBody ScoreDTO scoreDTO) {
-        ScoreDTO saved = scoreService.saveScore(scoreDTO);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<ScoreDTO> createSet(@RequestBody ScoreDTO scoreDTO) {
+        ScoreDTO createdScore = scoreService.createSet(scoreDTO);
+        return ResponseEntity.ok(createdScore);
     }
 
     @DeleteMapping("/{scoreId}")

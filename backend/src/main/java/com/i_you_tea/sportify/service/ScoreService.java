@@ -30,13 +30,7 @@ public class ScoreService {
         return List.of();
     }
 
-    public ScoreDTO saveScore(ScoreDTO scoreDTO) {
-        Score score = scoreDTO.toEntity();
-        Match match = matchRepository.findById(scoreDTO.getMatchId()).orElse(null);
-        score.setMatch(match);
-        Score saved = scoreRepository.save(score);
-        return ScoreDTO.fromEntity(saved);
-    }
+
 
     public void deleteScore(Long scoreId) {
         scoreRepository.deleteById(scoreId);
@@ -66,4 +60,23 @@ public class ScoreService {
         return ScoreDTO.fromEntity(updated);
     }
 
+    public ScoreDTO saveScore(ScoreDTO scoreDTO) {
+        Score score = scoreDTO.toEntity();
+        Match match = matchRepository.findById(scoreDTO.getMatchId()).orElse(null);
+        score.setMatch(match);
+        Score saved = scoreRepository.save(score);
+        return ScoreDTO.fromEntity(saved);
+    }
+
+    // New method for creating a score set
+    public ScoreDTO createSet(ScoreDTO scoreDTO) {
+        Score score = scoreDTO.toEntity();
+        if (scoreDTO.getMatchId() != null) {
+            Match match = matchRepository.findById(scoreDTO.getMatchId())
+                    .orElseThrow(() -> new RuntimeException("Match not found with id: " + scoreDTO.getMatchId()));
+            score.setMatch(match);
+        }
+        Score saved = scoreRepository.save(score);
+        return ScoreDTO.fromEntity(saved);
+    }
 }
