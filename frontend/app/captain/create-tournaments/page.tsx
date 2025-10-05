@@ -31,6 +31,7 @@ interface TournamentFormData {
 interface AnnouncementFormData {
   title: string;
   content: string;
+  postedByUserId: number | undefined;
   relatedSportId: number | null;
   relatedTournamentId: number | null;
   startDate: string;
@@ -146,6 +147,7 @@ const CreateTournaments: React.FC = () => {
       const announcementData: AnnouncementFormData = {
         title: `New Tournament: ${tournamentResponse.name}`,
         content: announcementContent,
+        postedByUserId: userProfile?.userId ,
         relatedSportId: tournamentResponse.sportId,
         relatedTournamentId: tournamentResponse.tournamentId,
         startDate: tournamentResponse.startDate+"T09:00:00",
@@ -154,7 +156,7 @@ const CreateTournaments: React.FC = () => {
 
       console.log('Creating announcement with data:', announcementData);
 
-      const response = await fetch('http://localhost:8090/api/announcements', {
+      const response = await fetch('http://localhost:8090/api/announcements/make', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
