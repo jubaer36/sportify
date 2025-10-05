@@ -27,7 +27,9 @@ public class TournamentDTO {
     private String championName;
     private Long runnerUpId;
     private String runnerUpName;
-    
+    private Boolean fixtureGenerated;
+
+
     public static TournamentDTO fromEntity(Tournament tournament) {
         return new TournamentDTO(
             tournament.getTournamentId(),
@@ -41,7 +43,8 @@ public class TournamentDTO {
             tournament.getChampion() != null ? tournament.getChampion().getTeamId() : null,
             tournament.getChampion() != null ? tournament.getChampion().getTeamName() : null,
             tournament.getRunnerUp() != null ? tournament.getRunnerUp().getTeamId() : null,
-            tournament.getRunnerUp() != null ? tournament.getRunnerUp().getTeamName() : null
+            tournament.getRunnerUp() != null ? tournament.getRunnerUp().getTeamName() : null,
+                tournament.getFixtureGenerated() != null ? tournament.getFixtureGenerated() : false
         );
     }
     
@@ -70,6 +73,8 @@ public class TournamentDTO {
             Team runnerUp = new Team();            
             runnerUp.setTeamId(this.runnerUpId);            
             tournament.setRunnerUp(runnerUp);        
-        }        return tournament;    
+        }
+        tournament.setFixtureGenerated(this.fixtureGenerated != null ? this.fixtureGenerated : false);
+        return tournament;
     }
 }

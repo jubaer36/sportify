@@ -47,4 +47,8 @@ public class Tournament {
     
     @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Round> rounds;
+
+    @Column(name = "fixture_generated", nullable = true)
+    private Boolean fixtureGenerated = false;
+   
 }

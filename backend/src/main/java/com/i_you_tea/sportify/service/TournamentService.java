@@ -158,6 +158,11 @@ public class TournamentService {
         }
 
         fixture.setRounds(roundFixtures);
+        
+        // Mark tournament as having generated fixture
+        tournament.setFixtureGenerated(true);
+        tournamentRepository.save(tournament);
+        
         return fixture;
     }
     
@@ -206,6 +211,11 @@ public class TournamentService {
         }
 
         fixture.setRounds(roundFixtures);
+        
+        // Mark tournament as having generated fixture
+        tournament.setFixtureGenerated(true);
+        tournamentRepository.save(tournament);
+        
         return fixture;
     }
 

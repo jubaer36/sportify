@@ -34,12 +34,16 @@ public class CreateTournamentDTO {
     
     private Long championId;
     private Long runnerUpId;
+
+    private Boolean fixtureGenerated = false;
     
     public Tournament toEntity() {
         Tournament tournament = new Tournament();
         tournament.setName(this.name);
         tournament.setStartDate(this.startDate);
         tournament.setEndDate(this.endDate);
+        tournament.setFixtureGenerated(this.fixtureGenerated != null ? this.fixtureGenerated : false);
+        
         
         if (this.sportId != null) {
             Sport sport = new Sport();
