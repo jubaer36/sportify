@@ -1,7 +1,6 @@
 package com.i_you_tea.sportify.controller;
 
 import com.i_you_tea.sportify.dto.AnnouncementDTO;
-import com.i_you_tea.sportify.dto.CreateAnnouncementDTO;
 import com.i_you_tea.sportify.entity.Announcement;
 import com.i_you_tea.sportify.service.AnnouncementService;
 import jakarta.validation.Valid;
@@ -31,18 +30,21 @@ public class AnnouncementController {
         return ResponseEntity.ok(announcementDTOs);
     }
 
-    @PostMapping
-    public ResponseEntity<AnnouncementDTO> createAnnouncement(
-            @Valid @RequestBody CreateAnnouncementDTO createAnnouncementDTO,
-            @RequestHeader("Authorization") String token) {
-        // Remove "Bearer " prefix from token
-        token = token.replace("Bearer ", "");
-        
-        Announcement created = announcementService.createAnnouncement(createAnnouncementDTO, token);
-        AnnouncementDTO responseDTO = AnnouncementDTO.fromEntity(created);
-        
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+    @PostMapping("/make")
+    public ResponseEntity<AnnouncementDTO> makeAnnouncement(@RequestBody @Valid com.i_you_tea.sportify.dto.AnnouncementMakeDTO dto) {
+        Announcement created = announcementService.makeAnnouncement(
+                dto.getTitle(),
+                dto.getContent(),
+                dto.getPostedByUserId(),
+                dto.getRelatedSportId(),
+                dto.getRelatedTournamentId(),
+                dto.getStartDate(),
+                dto.getEndDate()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(AnnouncementDTO.fromEntity(created));
     }
+
+   
 
     // Keep the old method for backward compatibility if needed
     @PostMapping("/direct")

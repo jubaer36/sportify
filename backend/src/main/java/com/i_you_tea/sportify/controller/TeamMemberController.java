@@ -71,7 +71,6 @@ public class TeamMemberController {
     
     // Remove a team member
     @DeleteMapping("/team/{teamId}/user/{userId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN')")
     public ResponseEntity<?> removeTeamMember(@RequestHeader("Authorization") String token,
                                               @PathVariable Long teamId,
                                               @PathVariable Long userId) {
