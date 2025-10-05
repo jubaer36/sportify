@@ -44,7 +44,23 @@ public class TeamController {
         return ResponseEntity.ok(teamDTOs);
     }
 
-    
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN') or hasRole('PLAYER')")
+    public ResponseEntity<?> deleteTeam(@RequestHeader("Authorization") String token,
+                                        @PathVariable Long id) {
+        try {
+            boolean deleted = teamService.deleteTeam(id);
+            if (deleted) {
+                return ResponseEntity.ok(Map.of("message", "Team deleted successfully"));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Team not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error deleting team: " + e.getMessage()));
+        }
+    }
 
     @PostMapping("/user-teams")
     public ResponseEntity<?> getUserTeams(@RequestBody UserTeamsRequestDTO request) {
@@ -98,6 +114,19 @@ public class TeamController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error creating team: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/dummy")
+    @PreAuthorize("hasRole('CAPTAIN')")
+    public ResponseEntity<?> createDummyTeam(@RequestHeader("Authorization") String token,
+                                             @Valid @RequestBody CreateDummyTeamDTO createDummyTeamDTO) {
+        try {
+            Team team = teamService.createDummyTeam(createDummyTeamDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(TeamDTO.fromEntity(team));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error creating dummy team: " + e.getMessage()));
         }
     }
 }

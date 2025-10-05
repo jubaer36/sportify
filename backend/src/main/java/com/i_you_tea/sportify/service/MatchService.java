@@ -6,17 +6,22 @@ import com.i_you_tea.sportify.entity.Team;
 import com.i_you_tea.sportify.entity.Sport;
 import com.i_you_tea.sportify.entity.Round;
 import com.i_you_tea.sportify.repository.MatchRepository;
+import com.i_you_tea.sportify.repository.TeamRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class MatchService {
     private final MatchRepository matchRepository;
+    private final TeamRepository teamRepository;
     
     public List<Match> getAllMatches() {
         return matchRepository.findAll();
@@ -24,6 +29,67 @@ public class MatchService {
 
     public Match createMatch(Match match) {
         return matchRepository.save(match);
+    }
+
+    public void generateMatchesForRound(Round round) {
+        Tournament tournament = round.getTournament();
+        List<Team> teams = teamRepository.findByTournamentTournamentId(tournament.getTournamentId());
+
+        // Clear existing matches for this round
+        List<Match> existingMatches = matchRepository.findByRound(round);
+        matchRepository.deleteAll(existingMatches);
+
+        if (round.getType() == Round.TournamentType.KNOCKOUT) {
+            generateKnockoutMatches(round, teams);
+        } else if (round.getType() == Round.TournamentType.ROUND_ROBIN) {
+            generateRoundRobinMatches(round, teams);
+        }
+    }
+
+    private void generateKnockoutMatches(Round round, List<Team> teams) {
+        Tournament tournament = round.getTournament();
+        List<Team> shuffledTeams = new ArrayList<>(teams);
+        Collections.shuffle(shuffledTeams);
+
+        for (int i = 0; i < shuffledTeams.size() / 2; i++) {
+            Match match = new Match();
+            match.setTournament(tournament);
+            match.setSport(tournament.getSport());
+            match.setRound(round);
+            match.setTeam1(shuffledTeams.get(i * 2));
+            match.setTeam2(shuffledTeams.get(i * 2 + 1));
+            match.setStatus(Match.MatchStatus.valueOf("SCHEDULED"));
+            matchRepository.save(match);
+        }
+
+        if (shuffledTeams.size() % 2 != 0) {
+            // Handle odd number of teams, give a bye to the last team
+            Match match = new Match();
+            match.setTournament(tournament);
+            match.setSport(tournament.getSport());
+            match.setRound(round);
+            match.setTeam1(shuffledTeams.get(shuffledTeams.size() - 1));
+            match.setTeam2(null); // Represents a bye
+            match.setStatus(Match.MatchStatus.valueOf("COMPLETED")); // Bye match is instantly completed
+            match.setWinnerTeam(shuffledTeams.get(shuffledTeams.size() - 1));
+            matchRepository.save(match);
+        }
+    }
+
+    private void generateRoundRobinMatches(Round round, List<Team> teams) {
+        Tournament tournament = round.getTournament();
+        for (int i = 0; i < teams.size(); i++) {
+            for (int j = i + 1; j < teams.size(); j++) {
+                Match match = new Match();
+                match.setTournament(tournament);
+                match.setSport(tournament.getSport());
+                match.setRound(round);
+                match.setTeam1(teams.get(i));
+                match.setTeam2(teams.get(j));
+                match.setStatus(Match.MatchStatus.valueOf("SCHEDULED"));
+                matchRepository.save(match);
+            }
+        }
     }
     
     public Optional<Match> getMatchById(Long matchId) {

@@ -18,7 +18,7 @@ public class TeamDTO {
     private String createdByName;
     private String logo;
     private Long tournamentId;
-
+    private Boolean dummy = false;
 
 
     public static TeamDTO fromEntity(Team team) {
@@ -30,7 +30,8 @@ public class TeamDTO {
             team.getCreatedBy() != null ? team.getCreatedBy().getUserId() : null,
             team.getCreatedBy() != null ? team.getCreatedBy().getName() : null,
             team.getLogo(),
-            team.getTournament() != null ? team.getTournament().getTournamentId() : null
+            team.getTournament() != null ? team.getTournament().getTournamentId() : null,
+                team.getDummy() != null ? team.getDummy() : false
         );
     }
 }

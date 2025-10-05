@@ -83,4 +83,35 @@ public class TeamService {
         // Save and return the team
         return teamRepository.save(team);
     }
+
+    public boolean deleteTeam(Long id) {
+        if (teamRepository.existsById(id)) {
+            teamRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
+    public Team createDummyTeam(CreateTeamDTO createDummyTeamDTO) {
+        Sport sport = sportRepository.findById(createDummyTeamDTO.getSportId())
+                .orElseThrow(() -> new RuntimeException("Sport not found with ID: " + createDummyTeamDTO.getSportId()));
+
+        User createdBy = userRepository.findById(createDummyTeamDTO.getCreatedById())
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + createDummyTeamDTO.getCreatedById()));
+
+        Tournament tournament = null;
+        if (createDummyTeamDTO.getTournamentId() != null) {
+            tournament = tournamentRepository.findById(createDummyTeamDTO.getTournamentId())
+                    .orElseThrow(() -> new RuntimeException("Tournament not found with ID: " + createDummyTeamDTO.getTournamentId()));
+        }
+
+        Team team = new Team();
+        team.setTeamName(createDummyTeamDTO.getTeamName());
+        team.setSport(sport);
+        team.setCreatedBy(createdBy);
+        team.setTournament(tournament);
+        team.setDummy(true);
+
+        return teamRepository.save(team);
+    }
 }

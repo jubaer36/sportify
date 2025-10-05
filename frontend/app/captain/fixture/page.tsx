@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Topbar from "@/Component/topbar";
-import { makeAuthenticatedRequest } from "@/utils/api";
-import "./fixture.css";
+import { makeAuthenticatedRequest } from "../../../../utils/api";
+import Topbar from "../../../../Component/topbar";
+import Sidebar from "../../../../Component/captain_sidebar";
 
 interface Team {
   teamId: number;
@@ -96,6 +96,8 @@ export default function FixtureViewer() {
   const [regenerateRoundType, setRegenerateRoundType] = useState<
     "KNOCKOUT" | "ROUND_ROBIN"
   >("KNOCKOUT");
+  const [currentRoundValue, setCurrentRoundValue] = useState<number>(1);
+  const [nextRoundWinners, setNextRoundWinners] = useState<{ teamId: number; teamName: string; isActual: boolean; }[]>([]);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -117,11 +119,19 @@ export default function FixtureViewer() {
       setShowFixture(false);
       setFixtureExists(false);
       setAdditionalRounds([]);
+      setCurrentRoundValue(1);
     }
   }, [selectedTournament]);
 
+  // Update currentRoundValue when teams are loaded
+  useEffect(() => {
+    if (teams.length > 0) {
+      setCurrentRoundValue(getMaxRoundNumber());
+    }
+  }, [teams]);
+
   // Generic function to get winners from any round
-  const getRoundWinners = (roundNumber: number) => {
+  const getRoundWinners = async (roundNumber: number) => {
     let roundFixture: RoundFixture | null = null;
 
     if (roundNumber === 1) {
@@ -132,46 +142,99 @@ export default function FixtureViewer() {
 
     if (!roundFixture || !roundFixture.matches) return [];
 
-    let winners;
+    const winners: { teamId: number; teamName: string; isActual: boolean }[] = [];
 
     if (roundFixture.type === "KNOCKOUT") {
-      winners = roundFixture.matches.map((match, index) => {
-        const placeholderName = `Match${index + 1}Winner`;
-
-        return {
-          teamId: match.winnerTeamId || -(index + roundNumber * 100),
-          teamName:
-            match.status === "COMPLETED" && match.winnerTeamName
-              ? match.winnerTeamName
-              : placeholderName,
-          isActual: match.status === "COMPLETED" && match.winnerTeamName,
-        };
-      });
-    } else {
+      for (const match of roundFixture.matches) {
+        if (match.winnerTeamId) {
+          winners.push({
+            teamId: match.winnerTeamId,
+            teamName: match.winnerTeamName!,
+            isActual: true,
+          });
+        } else {
+          const dummyTeamName = `Winner of ${match.team1Name} vs ${match.team2Name || "TBD"}`;
+          const dummyTeam = await createDummyTeam(dummyTeamName);
+          if (dummyTeam) {
+            winners.push({
+              teamId: dummyTeam.teamId,
+              teamName: dummyTeam.teamName,
+              isActual: false,
+            });
+          }
+        }
+      }
+    } else { // ROUND_ROBIN or other types
       const allTeams = new Set<string>();
       roundFixture.matches.forEach((match) => {
-        allTeams.add(match.team1Name);
-        if (match.team2Name !== "BYE") {
-          allTeams.add(match.team2Name);
-        }
+        if (match.team1Name) allTeams.add(match.team1Name);
+        if (match.team2Name) allTeams.add(match.team2Name);
       });
 
       const teamArray = Array.from(allTeams);
       const bestHalf = Math.ceil(teamArray.length / 2);
+      const roundRobinWinners = teamArray.slice(0, bestHalf);
 
-      winners = teamArray.slice(0, bestHalf).map((teamName, index) => ({
-        teamId: -(index + roundNumber * 100),
-        teamName: `Team ${index + 1} Winner Round ${roundNumber}`,
-        isActual: false,
-      }));
+      for (let i = 0; i < roundRobinWinners.length; i++) {
+        const dummyTeamName = `Round ${roundNumber} Winner ${i + 1}`;
+        const dummyTeam = await createDummyTeam(dummyTeamName);
+        if (dummyTeam) {
+          winners.push({
+            teamId: dummyTeam.teamId,
+            teamName: dummyTeam.teamName,
+            isActual: false,
+          });
+        }
+      }
     }
 
     return winners;
   };
 
+  const createDummyTeam = async (teamName: string) => {
+    if (!selectedTournament || !userProfile) return null;
+
+    const sport = captainSports.find(s => s.name === selectedTournament.sportName);
+    if (!sport) {
+      setError("Could not find sport to create dummy team.");
+      return null;
+    }
+
+    const dummyTeamData = {
+      teamName: teamName,
+      sportId: sport.sportId,
+      tournamentId: selectedTournament.tournamentId,
+      createdById: userProfile.userId,
+    };
+
+    try {
+      console.log("[fixture] Creating dummy team:", dummyTeamData);
+      const result = await makeAuthenticatedRequest<{ team: Team }>(
+        "/api/teams/dummy",
+        {
+          method: "POST",
+          body: JSON.stringify(dummyTeamData),
+        }
+      );
+
+      if (result.data && result.data.team) {
+        console.log("[fixture] Dummy team created:", result.data.team);
+        return result.data.team;
+      } else {
+        setError("Failed to create dummy team.");
+        console.error("Dummy team creation error:", result.error);
+        return null;
+      }
+    } catch (error) {
+      setError("Error creating dummy team.");
+      console.error("Dummy team creation exception:", error);
+      return null;
+    }
+  };
+
   // Generic function to generate any round
-  const generateNextRound = (roundNumber: number) => {
-    const winners = getRoundWinners(roundNumber - 1);
+  const generateNextRound = async (roundNumber: number) => {
+    const winners = await getRoundWinners(roundNumber - 1);
     if (winners.length < 2) {
       setError(
         `Need at least 2 winners to generate ${getUIRoundName(roundNumber)}`
@@ -179,70 +242,55 @@ export default function FixtureViewer() {
       return;
     }
 
+    setLoading(true);
     const roundName = getRoundName(roundNumber, winners.length);
+    const roundValue = getRoundValue(roundNumber);
 
-    const matches: Match[] = [];
+    try {
+      // Create the round data structure
+      const roundData = {
+        roundValue: roundValue,
+        roundName: roundName,
+        type: selectedRoundType,
+      };
 
-    if (selectedRoundType === "KNOCKOUT") {
-      for (let i = 0; i < winners.length; i += 2) {
-        if (i + 1 < winners.length) {
-          matches.push({
-            tournamentId: selectedTournament!.tournamentId,
-            tournamentName: selectedTournament!.name,
-            sportId: 1,
-            sportName: selectedTournament!.sportName,
-            team1Id: winners[i].teamId,
-            team1Name: winners[i].teamName,
-            team2Id: winners[i + 1].teamId,
-            team2Name: winners[i + 1].teamName,
-            status: "SCHEDULED",
-            roundName: roundName,
-            roundValue: getRoundValue(roundNumber),
-          });
+      console.log(
+        `[fixture] Creating round ${roundNumber}: POST /api/tournaments/${selectedTournament!.tournamentId}/rounds/value/${roundValue}`
+      );
+      
+      const result = await makeAuthenticatedRequest<RoundFixture>(
+        `/api/tournaments/${selectedTournament!.tournamentId}/rounds/value/${roundValue}`,
+        {
+          method: 'POST',
+          body: JSON.stringify(roundData),
         }
+      );
+      
+      if (result.data) {
+        // Reload all rounds to get the updated state
+        await loadAllRounds();
+        setShowRoundModal(null);
+        alert(`${getUIRoundName(roundNumber)} generated successfully!`);
+      } else {
+        throw new Error(`Failed to create ${getUIRoundName(roundNumber)}`);
       }
-    } else {
-      for (let i = 0; i < winners.length; i++) {
-        for (let j = i + 1; j < winners.length; j++) {
-          matches.push({
-            tournamentId: selectedTournament!.tournamentId,
-            tournamentName: selectedTournament!.name,
-            sportId: 1,
-            sportName: selectedTournament!.sportName,
-            team1Id: winners[i].teamId,
-            team1Name: winners[i].teamName,
-            team2Id: winners[j].teamId,
-            team2Name: winners[j].teamName,
-            status: "SCHEDULED",
-            roundName: roundName,
-            roundValue: getRoundValue(roundNumber),
-          });
-        }
-      }
+    } catch (error) {
+      setError(`Error generating ${getUIRoundName(roundNumber)}`);
+      console.error("Generate round error:", error);
+    } finally {
+      setLoading(false);
     }
-
-    const newRound: RoundFixture = {
-      roundValue: getRoundValue(roundNumber),
-      roundName: roundName,
-      type: selectedRoundType,
-      matches: matches,
-    };
-
-    const newAdditionalRounds = [...additionalRounds];
-    newAdditionalRounds[roundNumber - 2] = newRound;
-    setAdditionalRounds(newAdditionalRounds);
-    setShowRoundModal(null);
   };
 
   // Regenerate a specific round and delete all subsequent rounds
   const regenerateRound = async (roundNumber: number) => {
     if (roundNumber === 1) {
-      // For Round 1, use the existing regenerateFixture function
-      await regenerateFixture();
+      // For Round 1, use the regenerateFirstRound function
+      await regenerateFirstRound();
       return;
     }
 
-    const winners = getRoundWinners(roundNumber - 1);
+    const winners = await getRoundWinners(roundNumber - 1);
     if (winners.length < 2) {
       setError(
         `Need at least 2 winners to regenerate ${getUIRoundName(roundNumber)}`
@@ -250,83 +298,61 @@ export default function FixtureViewer() {
       return;
     }
 
-    const roundName = getRoundName(roundNumber, winners.length);
-    const matches: Match[] = [];
+    setLoading(true);
 
-    if (regenerateRoundType === "KNOCKOUT") {
-      for (let i = 0; i < winners.length; i += 2) {
-        if (i + 1 < winners.length) {
-          matches.push({
-            tournamentId: selectedTournament!.tournamentId,
-            tournamentName: selectedTournament!.name,
-            sportId: 1,
-            sportName: selectedTournament!.sportName,
-            team1Id: winners[i].teamId,
-            team1Name: winners[i].teamName,
-            team2Id: winners[i + 1].teamId,
-            team2Name: winners[i + 1].teamName,
-            status: "SCHEDULED",
-            roundName: roundName,
-            roundValue: getRoundValue(roundNumber),
-          });
+    try {
+      const roundValue = getRoundValue(roundNumber);
+      const maxRounds = getMaxRoundNumber();
+      
+      // Delete all rounds from this round onwards
+      for (let rNum = roundNumber; rNum <= maxRounds; rNum++) {
+        const rValue = getRoundValue(rNum);
+        try {
+          console.log(
+            `[fixture] Deleting round ${rNum}: DELETE /api/tournaments/${selectedTournament!.tournamentId}/rounds/value/${rValue}`
+          );
+          await makeAuthenticatedRequest(
+            `/api/tournaments/${selectedTournament!.tournamentId}/rounds/value/${rValue}`,
+            { method: 'DELETE' }
+          );
+        } catch {
+          // Continue even if delete fails (round might not exist)
         }
       }
-    } else {
-      for (let i = 0; i < winners.length; i++) {
-        for (let j = i + 1; j < winners.length; j++) {
-          matches.push({
-            tournamentId: selectedTournament!.tournamentId,
-            tournamentName: selectedTournament!.name,
-            sportId: 1,
-            sportName: selectedTournament!.sportName,
-            team1Id: winners[i].teamId,
-            team1Name: winners[i].teamName,
-            team2Id: winners[j].teamId,
-            team2Name: winners[j].teamName,
-            status: "SCHEDULED",
-            roundName: roundName,
-            roundValue: getRoundValue(roundNumber),
-          });
+
+      // Create the new round
+      const roundData = {
+        roundValue: roundValue,
+        roundName: getRoundName(roundNumber, winners.length),
+        type: regenerateRoundType,
+      };
+
+      console.log(
+        `[fixture] Creating new round ${roundNumber}: POST /api/tournaments/${selectedTournament!.tournamentId}/rounds/value/${roundValue}`
+      );
+      
+      const result = await makeAuthenticatedRequest<RoundFixture>(
+        `/api/tournaments/${selectedTournament!.tournamentId}/rounds/value/${roundValue}`,
+        {
+          method: 'POST',
+          body: JSON.stringify(roundData),
         }
+      );
+      
+      if (result.data) {
+        // Reload all rounds to get the updated state
+        await loadAllRounds();
+        setShowRegenerateRoundModal(null);
+        alert(`${getUIRoundName(roundNumber)} regenerated successfully! All subsequent rounds have been deleted.`);
+      } else {
+        throw new Error(`Failed to regenerate ${getUIRoundName(roundNumber)}`);
       }
+    } catch (error) {
+      setError(`Error regenerating ${getUIRoundName(roundNumber)}`);
+      console.error("Regenerate round error:", error);
+    } finally {
+      setLoading(false);
     }
-
-    const newRound: RoundFixture = {
-      roundValue: getRoundValue(roundNumber),
-      roundName: roundName,
-      type: regenerateRoundType,
-      matches: matches,
-    };
-
-    // Delete all rounds from this round onwards (cascade deletion)
-    const newAdditionalRounds = [...additionalRounds];
-    // Keep only rounds before the regenerated round
-    const roundsToKeep = Math.max(0, roundNumber - 2); // -2 because additionalRounds starts from round 2
-    newAdditionalRounds.splice(roundsToKeep); // Remove from this index onwards
-
-    // Add the regenerated round at the correct position
-    const targetIndex = roundNumber - 2;
-    if (targetIndex >= 0) {
-      newAdditionalRounds[targetIndex] = newRound;
-    }
-
-    // Count how many rounds were deleted for the success message
-    const deletedRounds = additionalRounds.length - newAdditionalRounds.length;
-
-    setAdditionalRounds(newAdditionalRounds);
-    setShowRegenerateRoundModal(null);
-
-    const deletionMessage =
-      deletedRounds > 0
-        ? ` ${deletedRounds} subsequent round${
-            deletedRounds === 1 ? "" : "s"
-          } have been deleted.`
-        : "";
-    alert(
-      `${getUIRoundName(
-        roundNumber
-      )} regenerated successfully!${deletionMessage}`
-    );
   };
 
   // Helper functions
@@ -370,10 +396,12 @@ export default function FixtureViewer() {
       return "First Round";
     }
 
-    const winners = getRoundWinners(roundNumber - 1);
-    if (winners.length > 0) {
-      return getRoundName(roundNumber, winners.length);
-    }
+    // This part can't be async, so we'll just show a generic name if we don't have the fixture.
+    // The actual round name will be correct when generated.
+    // const winners = await getRoundWinners(roundNumber - 1);
+    // if (winners.length > 0) {
+    //   return getRoundName(roundNumber, winners.length);
+    // }
 
     return `Round ${roundNumber}`;
   };
@@ -389,33 +417,13 @@ export default function FixtureViewer() {
   };
 
   const getMaxRoundNumber = () => {
-    // Compute max rounds based on the next power of two for the
-    // number of teams in Round 1. Example: 38 teams -> next power 64 -> log2(64)=6
-    const round = getRoundFixture(1);
-    if (!round) return 1;
-
-    const allTeams = new Set<string>();
-    round.matches.forEach((match) => {
-      allTeams.add(match.team1Name);
-      if (match.team2Name !== "BYE") {
-        allTeams.add(match.team2Name);
-      }
-    });
-
-    const teamCount = allTeams.size;
-
-    const nextPowerOfTwo = (n: number) => {
-      if (n <= 1) return 1;
-      return 2 ** Math.ceil(Math.log2(n));
-    };
-
-    const getMaxRoundsFromTeamCount = (n: number) => {
-      if (!n || n <= 1) return 1;
-      const np = nextPowerOfTwo(n);
-      return Math.max(1, Math.round(Math.log2(np)));
-    };
-
-    return getMaxRoundsFromTeamCount(teamCount);
+  
+    const teamCount = teams.length;
+    let maxRounds = Math.ceil(Math.log2(teamCount));
+    if(teamCount<2)maxRounds=1;
+    console.log(`Team Count ${teamCount} and max rounds: ${maxRounds}`)
+    return maxRounds;
+    
   };
 
   // Map a UI roundNumber (1-based) to a descending roundValue so that
@@ -532,184 +540,227 @@ export default function FixtureViewer() {
     }
   };
 
-  const checkFixtureExists = async (tournamentId: number) => {
+  const checkRoundExists = async (tournamentId: number, roundValue: number) => {
     try {
       console.log(
-        `[fixture] Checking existing fixture: GET /api/tournaments/${tournamentId}/fixture/existing`
+        `[fixture] Checking existing round: GET /api/tournaments/${tournamentId}/rounds/value/${roundValue}`
       );
-      const result = await makeAuthenticatedRequest<Fixture>(
-        `/api/tournaments/${tournamentId}/fixture/existing`
+      const result = await makeAuthenticatedRequest<RoundFixture>(
+        `/api/tournaments/${tournamentId}/rounds/value/${roundValue}`
       );
-      console.log("[fixture] Existing fixture response:", result);
-      setFixtureExists(
-        !!(result.data && result.data.rounds && result.data.rounds.length > 0)
-      );
+      console.log("[fixture] Existing round response:", result);
+      return !!(result.data && result.data.matches && result.data.matches.length > 0);
+    } catch {
+      return false;
+    }
+  };
+
+  const checkFixtureExists = async (tournamentId: number) => {
+    try {
+      // Check if the first round exists
+      const exists = await checkRoundExists(tournamentId, getMaxRoundNumber());
+      setFixtureExists(exists);
     } catch {
       setFixtureExists(false);
     }
   };
 
-  const loadFixture = async () => {
+  const loadRound = async (roundValue: number) => {
+    if (!selectedTournament) return null;
+
+    try {
+      console.log(
+        `[fixture] Loading round: GET /api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`
+      );
+      const result = await makeAuthenticatedRequest<RoundFixture>(
+        `/api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`
+      );
+      console.log("[fixture] Round response:", result);
+      
+      if (result.data && result.data.matches && result.data.matches.length > 0) {
+        return result.data;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const loadAllRounds = async () => {
     if (!selectedTournament) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      console.log(
-        `[fixture] Loading existing fixture: GET /api/tournaments/${selectedTournament.tournamentId}/fixture/existing`
-      );
-      const existingResult = await makeAuthenticatedRequest<Fixture>(
-        `/api/tournaments/${selectedTournament.tournamentId}/fixture/existing`
-      );
-      console.log("[fixture] loadFixture - existing result:", existingResult);
-
-      if (
-        existingResult.data &&
-        existingResult.data.rounds &&
-        existingResult.data.rounds.length > 0
-      ) {
-        const allRounds = existingResult.data.rounds.sort(
-          (a, b) => b.roundValue - a.roundValue
-        ); // sort by roundValue descending (round 1 first)
-
-        // Only load the first round (highest roundValue) from the database
-        // Additional rounds are generated in memory and not persisted
-        const firstRound = allRounds[0];
-
-        const filteredFixture = {
-          ...existingResult.data,
-          rounds: [firstRound],
-        };
-        setFixture(filteredFixture);
-        setAdditionalRounds([]); // Clear any additional rounds since they're not persisted
-        setShowFixture(true);
-      } else {
-        console.log(
-          `[fixture] No existing fixture, requesting generation: GET /api/tournaments/${selectedTournament.tournamentId}/fixture`
-        );
-        const generateResult = await makeAuthenticatedRequest<Fixture>(
-          `/api/tournaments/${selectedTournament.tournamentId}/fixture`
-        );
-        console.log("[fixture] loadFixture - generate result:", generateResult);
-
-        if (
-          generateResult.data &&
-          generateResult.data.rounds &&
-          generateResult.data.rounds.length > 0
-        ) {
-          const allRounds = generateResult.data.rounds.sort(
-            (a, b) => b.roundValue - a.roundValue
-          );
-
-          // For newly generated fixtures, just include the first round
-          const firstRound = allRounds[0];
-          const additionalRoundsData: RoundFixture[] = []; // No additional rounds yet
-
-          const filteredFixture = {
-            ...generateResult.data,
-            rounds: [firstRound],
-          };
-          setFixture(filteredFixture);
-          setAdditionalRounds(additionalRoundsData);
-          setShowFixture(true);
+      const maxRounds = getMaxRoundNumber();
+      const loadedRounds: RoundFixture[] = [];
+      
+      // Load all existing rounds
+      for (let roundNum = 1; roundNum <= maxRounds; roundNum++) {
+        const roundValue = roundNum;
+        const roundData = await loadRound(roundValue);
+        if (roundData) {
+          loadedRounds.push({ ...roundData, roundValue });
         } else {
-          setError(generateResult.error || "Failed to load fixture");
+          break; // Stop loading if a round doesn't exist
         }
       }
+
+      if (loadedRounds.length > 0) {
+        // Set the first round as the main fixture
+        const firstRound = loadedRounds[0];
+        const mockFixture: Fixture = {
+          tournamentId: selectedTournament.tournamentId,
+          tournamentName: selectedTournament.name,
+          sportName: selectedTournament.sportName,
+          rounds: [firstRound],
+        };
+        
+        setFixture(mockFixture);
+        setAdditionalRounds(loadedRounds.slice(1)); // Store additional rounds
+        setShowFixture(true);
+      } else {
+        setError("No rounds found for this tournament");
+      }
     } catch {
-      setError("Error loading fixture");
+      setError("Error loading rounds");
     } finally {
       setLoading(false);
     }
   };
 
-  // Rest of the existing functions...
-  const generateFixture = async () => {
+  const generateFirstRound = async () => {
     if (!selectedTournament) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      console.log(
-        `[fixture] Generating fixture structure: GET /api/tournaments/${selectedTournament.tournamentId}/fixture`
-      );
-      const structureResult = await makeAuthenticatedRequest<Fixture>(
-        `/api/tournaments/${selectedTournament.tournamentId}/fixture`
-      );
-      console.log("[fixture] structureResult:", structureResult);
+      const roundValue = 1; // Get round value for first round
+      
+      // Create the round data structure
+      const roundData = {
+        roundValue: roundValue,
+        roundName: getRoundName(1, teams.length),
+        type: selectedType,
+      };
+      console.log(roundData);
 
-      if (
-        structureResult.data &&
-        structureResult.data.rounds &&
-        structureResult.data.rounds.length > 0
-      ) {
-        const rounds = structureResult.data.rounds;
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        await loadFixture();
-        setFixtureExists(true);
-        setShowGenerateModal(false);
-        alert(
-          `Fixture generated successfully with ${selectedType} format!`
+      // First check if the round already exists
+      console.log(
+        `[fixture] Checking if first round exists: GET /api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`
+      );
+      
+      const existingRoundResult = await makeAuthenticatedRequest<RoundFixture>(
+        `/api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`
+      );
+      console.log(`Exisiting round Values: ${existingRoundResult.data}`);
+      let result;
+      if (existingRoundResult.data) {
+        // Round exists, update it with PUT request
+        console.log(
+          `[fixture] Updating existing first round: PUT /api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`
+        );
+        
+        result = await makeAuthenticatedRequest<RoundFixture>(
+          `/api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`,
+          {
+            method: 'PUT',
+            body: JSON.stringify(roundData),
+          }
         );
       } else {
-        throw new Error("Failed to create fixture structure");
+        // Round doesn't exist, create it with POST request
+        console.log(
+          `[fixture] Creating first round: POST /api/tournaments/${selectedTournament.tournamentId}/rounds/`
+        );
+        
+        result = await makeAuthenticatedRequest<RoundFixture>(
+          `/api/tournaments/${selectedTournament.tournamentId}/rounds`,
+          {
+            method: 'POST',
+            body: JSON.stringify(roundData),
+          }
+        );
+      }
+      getMaxRoundNumber();
+      
+      console.log("[fixture] Round operation result:", result);
+
+      if (result.data) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await loadAllRounds();
+        setFixtureExists(true);
+        setShowGenerateModal(false);
+        const actionText = existingRoundResult.data ? "updated" : "generated";
+        alert(
+          `First round ${actionText} successfully with ${selectedType} format!`
+        );
+      } else {
+        throw new Error(`Failed to ${existingRoundResult.data ? "update" : "create"} first round`);
       }
     } catch (error) {
-      setError("Error generating fixture");
-      console.error("Generate fixture error:", error);
+      setError("Error generating first round");
+      console.error("Generate first round error:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const regenerateFixture = async () => {
+  const regenerateFirstRound = async () => {
     if (!selectedTournament) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      // Get existing fixture to get all roundIds and types
+      const roundValue = getRoundValue(1); // Get round value for first round
+      
+      // Delete the existing first round
       console.log(
-        `[fixture] Fetching existing fixture for regenerate: GET /api/tournaments/${selectedTournament.tournamentId}/fixture/existing`
+        `[fixture] Deleting existing first round: DELETE /api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`
       );
-      const existingResult = await makeAuthenticatedRequest<Fixture>(
-        `/api/tournaments/${selectedTournament.tournamentId}/fixture/existing`
+      
+      await makeAuthenticatedRequest(
+        `/api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`,
+        { method: 'DELETE' }
       );
-      console.log("[fixture] regenerate - existingResult:", existingResult);
-      console.log(`Existing rounds length: ${existingResult.data?.rounds.length}`)
 
-      if (
-        existingResult.data &&
-        existingResult.data.rounds &&
-        existingResult.data.rounds.length > 0
-      ) {
-        const allRounds = existingResult.data.rounds.sort(
-          (a, b) => b.roundValue - a.roundValue
-        );
+      // Create new first round
+      const roundData = {
+        roundValue: roundValue,
+        roundName: getRoundName(1, teams.length),
+        type: selectedType,
+      };
 
-        // Clear additional rounds since they need to be regenerated based on new winners
+      console.log(
+        `[fixture] Creating new first round: POST /api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`
+      );
+      
+      const result = await makeAuthenticatedRequest<RoundFixture>(
+        `/api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`,
+        {
+          method: 'POST',
+          body: JSON.stringify(roundData),
+        }
+      );
+      
+      if (result.data) {
+        // Clear additional rounds since they need to be regenerated
         setAdditionalRounds([]);
         await new Promise((resolve) => setTimeout(resolve, 500));
-        await loadFixture();
+        await loadAllRounds();
         setShowRegenerateModal(false);
         alert(
-          `Fixture regenerated successfully with ${selectedType} format!`
+          `First round regenerated successfully with ${selectedType} format!`
         );
-
-        // Reload the fixture to get updated data
-        await loadFixture();
-
-        setShowRegenerateModal(false);
-        alert(
-          `Fixture regenerated successfully with ${selectedType} format! All rounds have been updated.`
-        );
+      } else {
+        throw new Error("Failed to regenerate first round");
       }
     } catch (error) {
-      setError("Error regenerating fixture");
-      console.error("Regenerate fixture error:", error);
+      setError("Error regenerating first round");
+      console.error("Regenerate first round error:", error);
     } finally {
       setLoading(false);
     }
@@ -729,224 +780,267 @@ export default function FixtureViewer() {
   };
 
   const getRoundTypeColor = (type: string | null) => {
-    if (type === "KNOCKOUT") return "bg-blue-100 text-blue-800";
-    if (type === "ROUND_ROBIN") return "bg-purple-100 text-purple-800";
+    if (type === "KNOCKOUT") return "bg-blue-100 text-blue-600";
+    if (type === "ROUND_ROBIN") return "bg-green-100 text-green-600";
     return "bg-gray-100 text-gray-600";
   };
 
   // Render a single round component
+  const RoundCard = ({ roundFixture, roundNumber }: { roundFixture: RoundFixture, roundNumber: number }) => {
+    const [winners, setWinners] = useState<{ teamId: number; teamName: string; isActual: boolean; }[]>([]);
+    const [isLoadingWinners, setIsLoadingWinners] = useState(true);
+
+    useEffect(() => {
+      const fetchWinners = async () => {
+        setIsLoadingWinners(true);
+        const fetchedWinners = await getRoundWinners(roundNumber);
+        setWinners(fetchedWinners);
+        setIsLoadingWinners(false);
+      };
+      fetchWinners();
+    }, [roundFixture, roundNumber]);
+
+
+    const headerColors = [
+      "from-blue-500 to-blue-600",
+      "from-purple-500 to-purple-600",
+      "from-green-500 to-green-600",
+      "from-red-500 to-red-600",
+      "from-yellow-500 to-yellow-600",
+      "from-indigo-500 to-indigo-600",
+      "from-pink-500 to-pink-600",
+    ];
+    const colorIndex = Math.min(roundNumber - 1, headerColors.length - 1);
+
+    const canGenerateNextRound = winners.length >= 2;
+    const nextRoundNumber = roundNumber + 1;
+    const nextRoundValue = getRoundValue(nextRoundNumber);
+    const nextUIRoundName = getUIRoundName(nextRoundNumber);
+
+    return (
+      <div
+        key={roundFixture.roundId || `round-${roundNumber}`}
+        className="bg-white rounded-lg shadow-lg mb-8 overflow-hidden"
+      >
+        <div
+          className={`p-4 bg-gradient-to-r ${headerColors[colorIndex]} text-white flex justify-between items-center`}
+        >
+          <h3 className="text-2xl font-bold">
+            {getUIRoundName(roundNumber)}
+          </h3>
+          <div className="flex items-center space-x-4">
+            {roundFixture.type && (
+              <span
+                className={`px-3 py-1 text-sm font-semibold rounded-full ${getRoundTypeColor(
+                  roundFixture.type
+                )}`}
+              >
+                {roundFixture.type.replace("_", " ")}
+              </span>
+            )}
+            <button
+              onClick={() => setShowRegenerateRoundModal(roundNumber)}
+              className="text-white hover:text-yellow-300 transition-colors"
+              title={`Regenerate ${getUIRoundName(roundNumber)}`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h5M20 20v-5h-5M4 4l16 16"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {roundFixture.matches.map((match, index) => (
+              <div
+                key={match.matchId || `match-${index}`}
+                className="border rounded-lg p-3 bg-gray-50"
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm text-gray-500">
+                    Match {index + 1}
+                  </p>
+                  <span
+                    className={`px-2 py-1 text-xs font-bold rounded-full text-white ${getMatchStatusColor(
+                      match.status
+                    )}`}
+                  >
+                    {match.status}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">{match.team1Name}</span>
+                    <span className="font-bold">vs</span>
+                    <span className="font-semibold">
+                      {match.team2Name || "TBD"}
+                    </span>
+                  </div>
+                  {match.winnerTeamName && (
+                    <div className="text-center text-sm text-green-600 font-semibold pt-1">
+                      Winner: {match.winnerTeamName}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Generate Next Round Section */}
+        {roundNumber < getMaxRoundNumber() && (
+          <div className="p-4 bg-gray-50 border-t">
+            <h4 className="font-bold text-lg mb-2">
+              Next Round: {nextUIRoundName}
+            </h4>
+            {isLoadingWinners ? (
+              <p>Calculating winners...</p>
+            ) : (
+              <>
+                <p className="text-sm text-gray-600 mb-3">
+                  {canGenerateNextRound
+                    ? `Ready to generate with ${winners.length} teams.`
+                    : `Need at least 2 teams to proceed. Found ${winners.length}.`}
+                </p>
+                {canGenerateNextRound && (
+                  <button
+                    onClick={() => setShowRoundModal(nextRoundNumber)}
+                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                  >
+                    Generate {nextUIRoundName}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderRound = (roundFixture: RoundFixture, roundNumber: number) => {
     const headerColors = [
-      "from-blue-500 to-blue-600", // Round 1
-      "from-purple-500 to-purple-600", // Round 2
-      "from-green-500 to-green-600", // Round 3
-      "from-red-500 to-red-600", // Round 4
-      "from-yellow-500 to-yellow-600", // Round 5
-      "from-indigo-500 to-indigo-600", // Round 6
-      "from-pink-500 to-pink-600", // Round 7+
+      "from-blue-500 to-blue-600",
+      "from-purple-500 to-purple-600",
+      "from-green-500 to-green-600",
+      "from-red-500 to-red-600",
+      "from-yellow-500 to-yellow-600",
+      "from-indigo-500 to-indigo-600",
+      "from-pink-500 to-pink-600",
     ];
     const colorIndex = Math.min(roundNumber - 1, headerColors.length - 1);
 
     return (
       <div
-        key={`round-${roundNumber}`}
-        className="bg-white rounded-lg shadow-md overflow-hidden"
+        key={roundFixture.roundId || `round-${roundNumber}`}
+        className="bg-white rounded-lg shadow-lg mb-8 overflow-hidden"
       >
-        {/* Round Header */}
-        <div className={`bg-gradient-to-r ${headerColors[colorIndex]} p-6`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h3 className="text-2xl font-bold text-black">
-                {roundFixture.roundName}
-              </h3>
-              {roundFixture.type && (
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-semibold ${getRoundTypeColor(
-                    roundFixture.type
-                  )}`}
-                >
-                  {roundFixture.type.replace("_", " ")}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-white text-sm">
-                {roundFixture.matches.length}{" "}
-                {roundFixture.matches.length === 1 ? "Match" : "Matches"}
-              </span>
-              <button
-                onClick={() => setShowRegenerateRoundModal(roundNumber)}
-                className="px-4 py-2 bg-green-500 hover:bg-red-600 text-white text-sm font-bold rounded-md transition-colors shadow-md"
-                title={`Regenerate ${getUIRoundName(roundNumber)}`}
+        <div
+          className={`p-4 bg-gradient-to-r ${headerColors[colorIndex]} text-white flex justify-between items-center`}
+        >
+          <h3 className="text-2xl font-bold">
+            {getUIRoundName(roundNumber)}
+          </h3>
+          <div className="flex items-center space-x-4">
+            {roundFixture.type && (
+              <span
+                className={`px-3 py-1 text-sm font-semibold rounded-full ${getRoundTypeColor(
+                  roundFixture.type
+                )}`}
               >
-                🔄 Regenerate
-              </button>
-            </div>
+                {roundFixture.type.replace("_", " ")}
+              </span>
+            )}
+            <button
+              onClick={() => setShowRegenerateRoundModal(roundNumber)}
+              className="text-white hover:text-yellow-300 transition-colors"
+              title={`Regenerate ${getUIRoundName(roundNumber)}`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h5M20 20v-5h-5M4 4l16 16"
+                />
+              </svg>
+            </button>
           </div>
         </div>
 
-        {/* Round Content */}
-        <div className="p-6">
-          {/* Matches Display */}
-          {roundFixture.matches.length > 0 ? (
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-3">Matches</h4>
-              <div className="space-y-2">
-                {roundFixture.matches.map((match, matchIndex) => (
-                  <div
-                    key={`round-${roundNumber}-match-${matchIndex}`}
-                    className={`flex items-center justify-between px-4 py-3 border rounded-lg transition-colors ${
-                      match.status === "COMPLETED"
-                        ? "border-green-300 bg-green-50 hover:bg-green-100"
-                        : "border-gray-200 bg-gray-50 hover:bg-gray-100"
-                    }`}
+        <div className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {roundFixture.matches.map((match, index) => (
+              <div
+                key={match.matchId || `match-${index}`}
+                className="border rounded-lg p-3 bg-gray-50"
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm text-gray-500">
+                    Match {index + 1}
+                  </p>
+                  <span
+                    className={`px-2 py-1 text-xs font-bold rounded-full text-white ${getMatchStatusColor(
+                      match.status
+                    )}`}
                   >
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm text-gray-500 font-medium min-w-[60px]">
-                        Match {matchIndex + 1}
-                      </span>
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`font-semibold ${
-                            match.status === "COMPLETED" &&
-                            match.winnerTeamId === match.team1Id
-                              ? "text-green-700"
-                              : "text-gray-900"
-                          }`}
-                        >
-                          {match.team1Name}
-                        </span>
-                        <span className="text-gray-500 font-medium">vs</span>
-                        <span
-                          className={`font-semibold ${
-                            match.team2Name === "BYE"
-                              ? "text-gray-500 italic"
-                              : match.status === "COMPLETED" &&
-                                match.winnerTeamId === match.team2Id
-                              ? "text-green-700"
-                              : "text-gray-900"
-                          }`}
-                        >
-                          {match.team2Name === "BYE"
-                            ? "BYE (Auto-advance)"
-                            : match.team2Name}
-                        </span>
-                      </div>
-                      {match.status === "COMPLETED" && match.winnerTeamName && (
-                        <div className="flex items-center gap-2 ml-4">
-                          <span className="text-xs text-green-600 font-medium">
-                            Winner:
-                          </span>
-                          <span className="text-sm font-semibold text-green-700">
-                            {match.winnerTeamName}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <span
-                      className={`text-xs px-3 py-1 rounded-full font-semibold ${getMatchStatusColor(
-                        match.status
-                      )}`}
-                    >
-                      {match.status}
+                    {match.status}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">{match.team1Name}</span>
+                    <span className="font-bold">vs</span>
+                    <span className="font-semibold">
+                      {match.team2Name || "TBD"}
                     </span>
                   </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p className="text-lg">No matches available yet</p>
-            </div>
-          )}
-
-          {/* Round Winners Display */}
-          {(() => {
-            const winners = getRoundWinners(roundNumber).map(
-              (winner, index) => ({
-                displayName: winner.teamName,
-                isActualWinner: winner.isActual,
-                matchIndex: index + 1,
-              })
-            );
-
-            return (
-              winners.length > 0 &&
-              roundFixture.type && (
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                    Round {roundNumber} Winners ({winners.length})
-                  </h4>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Winners advancing from this round:
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {winners.map((winner, index) => (
-                      <div
-                        key={`winner-slot-round${roundNumber}-${index}`}
-                        className={`px-4 py-2 rounded-md shadow-sm flex items-center gap-2 ${
-                          winner.isActualWinner
-                            ? "bg-gradient-to-r from-green-50 to-green-100 border border-green-300"
-                            : "bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-300"
-                        }`}
-                      >
-                        <span
-                          className={`w-2 h-2 rounded-full ${
-                            winner.isActualWinner
-                              ? "bg-green-500"
-                              : "bg-yellow-500"
-                          }`}
-                        ></span>
-                        <span
-                          className={`font-medium ${
-                            winner.isActualWinner
-                              ? "text-green-800"
-                              : "text-gray-800"
-                          }`}
-                        >
-                          {winner.displayName}
-                        </span>
-                        {winner.isActualWinner && (
-                          <span className="text-xs text-green-600 font-medium ml-auto">
-                            ✓
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Generate Next Round Button */}
-                  {(() => {
-                    const currentRoundWinners = getRoundWinners(roundNumber);
-                    const hasEnoughWinners = currentRoundWinners.length >= 2;
-                    const nextRoundExists =
-                      getRoundFixture(roundNumber + 1) !== null;
-                    const maxRounds = getMaxRoundNumber();
-
-                    return (
-                      hasEnoughWinners &&
-                      !nextRoundExists &&
-                      roundNumber < maxRounds &&
-                      currentRoundWinners.length > 1 && (
-                        <div className="mt-4 flex justify-end">
-                          <button
-                            onClick={() => setShowRoundModal(roundNumber + 1)}
-                            className="px-4 py-2 rounded-md font-semibold text-sm bg-purple-600 text-white hover:bg-purple-700"
-                            title={`Generate ${getUIRoundName(
-                              roundNumber + 1
-                            )}`}
-                          >
-                            Generate {getUIRoundName(roundNumber + 1)}
-                          </button>
-                        </div>
-                      )
-                    );
-                  })()}
+                  {match.winnerTeamName && (
+                    <div className="text-center text-sm text-green-600 font-semibold pt-1">
+                      Winner: {match.winnerTeamName}
+                    </div>
+                  )}
                 </div>
-              )
-            );
-          })()}
+              </div>
+            ))}
+          </div>
         </div>
+
+        {/* Generate Next Round Section */}
+        {roundNumber < getMaxRoundNumber() && (
+          <div className="p-4 bg-gray-50 border-t">
+            <h4 className="font-bold text-lg mb-2">
+              Next Round: {getUIRoundName(roundNumber + 1)}
+            </h4>
+            <p className="text-sm text-gray-600 mb-3">
+              Click here to generate the next round.
+            </p>
+            <button
+              onClick={() => setShowRoundModal(roundNumber + 1)}
+              className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+            >
+              Generate {getUIRoundName(roundNumber + 1)}
+            </button>
+          </div>
+        )}
       </div>
     );
   };
@@ -954,412 +1048,356 @@ export default function FixtureViewer() {
   return (
     <div className="min-h-screen bg-gray-100">
       <Topbar />
-      <div className="flex-1 p-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Tournament Fixtures
-          </h1>
+      <div className="flex">
+        <Sidebar />
+        <main className="flex-1 p-8">
+          <h1 className="text-3xl font-bold mb-6">Fixture Management</h1>
 
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-              {error}
-            </div>
-          )}
-
-          {/* Tournament Selection */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">Select Tournament</h2>
-            <div className="space-y-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tournament
-                </label>
-                <select
-                  value={selectedTournament?.tournamentId || ""}
-                  onChange={(e) => {
-                    const tournament = tournaments.find(
-                      (t) => t.tournamentId === parseInt(e.target.value)
-                    );
-                    setSelectedTournament(tournament || null);
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select a tournament...</option>
-                  {tournaments.map((tournament) => (
-                    <option
-                      key={tournament.tournamentId}
-                      value={tournament.tournamentId}
-                    >
-                      {tournament.name} - {tournament.sportName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Show teams when tournament is selected */}
-              {selectedTournament && teams.length > 0 && (
-                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                    Registered Teams ({teams.length})
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-                    {teams.map((team) => (
-                      <div
-                        key={team.teamId}
-                        className="px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm flex items-center gap-2"
-                      >
-                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                        <span className="font-medium text-gray-800">
-                          {team.teamName}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex justify-end gap-3">
-                    {!fixtureExists ? (
-                      <button
-                        onClick={() => setShowGenerateModal(true)}
-                        disabled={loading}
-                        className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-                      >
-                        {loading ? "Loading..." : "Generate Fixture"}
-                      </button>
-                    ) : (
-                      <>
-                        <button
-                          onClick={loadFixture}
-                          disabled={loading}
-                          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-                        >
-                          {loading ? "Loading..." : "Show Fixture"}
-                        </button>
-                        <button
-                          onClick={() => setShowRegenerateModal(true)}
-                          disabled={loading}
-                          className="px-6 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-                        >
-                          Regenerate Fixture
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {selectedTournament && teams.length === 0 && (
-                <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <p className="text-yellow-800 font-medium">
-                    No teams registered yet
-                  </p>
-                  <p className="text-sm text-yellow-700 mt-1">
-                    Teams must be registered before viewing fixtures.
-                  </p>
-                </div>
-              )}
-            </div>
+          {/* Tournament Selector */}
+          <div className="mb-6 max-w-md">
+            <label
+              htmlFor="tournament-select"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Select Tournament
+            </label>
+            <select
+              id="tournament-select"
+              value={selectedTournament?.tournamentId || ""}
+              onChange={(e) => {
+                const tournament =
+                  tournaments.find(
+                    (t) => t.tournamentId === parseInt(e.target.value)
+                  ) || null;
+                setSelectedTournament(tournament);
+                // Update URL without reloading page
+                router.push(
+                  `/captain/fixture?tournamentId=${e.target.value}`
+                );
+              }}
+              className="w-full p-2 border border-gray-300 rounded-md shadow-sm"
+            >
+              <option value="" disabled>
+                -- Select a Tournament --
+              </option>
+              {tournaments.map((t) => (
+                <option key={t.tournamentId} value={t.tournamentId}>
+                  {t.name} ({t.sportName})
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Fixture Display */}
-          {showFixture && fixture && fixture.rounds.length > 0 && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  {fixture.tournamentName}
-                </h2>
-                <p className="text-gray-600 mb-4">Sport: {fixture.sportName}</p>
-              </div>
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+              <strong className="font-bold">Error:</strong>
+              <span className="block sm:inline"> {error}</span>
+            </div>
+          )}
 
-              {/* Render Round 1 */}
-              {fixture.rounds.map((round, index) => renderRound(round, 1))}
+          {loading && <p>Loading...</p>}
 
-              {/* Render Additional Rounds */}
-              {additionalRounds.map((roundFixture, index) =>
-                renderRound(roundFixture, index + 2)
+          {selectedTournament && !loading && (
+            <div>
+              {!fixture && !fixtureExists && (
+                <div className="text-center p-8 bg-white rounded-lg shadow">
+                  <h2 className="text-xl font-semibold mb-4">
+                    No fixture generated for {selectedTournament.name}.
+                  </h2>
+                  <p className="text-gray-600 mb-2">
+                    Number of registered teams: {teams.length}
+                  </p>
+                  {teams.length >= 2 ? (
+                    <button
+                      onClick={() => setShowGenerateModal(true)}
+                      className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      Generate Fixture
+                    </button>
+                  ) : (
+                    <p className="text-red-500">
+                      Need at least 2 teams to generate a fixture.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {!fixture && fixtureExists && (
+                <div className="text-center p-8 bg-white rounded-lg shadow">
+                  <h2 className="text-xl font-semibold mb-4">
+                    Fixture exists for {selectedTournament.name}.
+                  </h2>
+                  <button
+                    onClick={loadAllRounds}
+                    className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    Show Fixture
+                  </button>
+                </div>
+              )}
+
+              {fixture && (
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold">
+                      Fixture for {fixture.tournamentName}
+                    </h2>
+                    <button
+                      onClick={loadAllRounds}
+                      className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300"
+                    >
+                      Refresh Fixture
+                    </button>
+                  </div>
+
+                  {fixture.rounds.map((round, index) => (
+                    <RoundCard
+                      key={round.roundId || `round-${index}`}
+                      roundFixture={round}
+                      roundNumber={index + 1}
+                    />
+                  ))}
+
+                  {additionalRounds.map((round, index) => (
+                     <RoundCard
+                      key={round.roundId || `additional-round-${index}`}
+                      roundFixture={round}
+                      roundNumber={fixture.rounds.length + index + 1}
+                    />
+                  ))}
+                </div>
               )}
             </div>
           )}
 
-          {/* No Fixture State */}
-          {!showFixture && selectedTournament && teams.length > 0 && (
-            <div className="bg-white rounded-lg shadow-md p-8 text-center">
-              <p className="text-gray-500 text-lg">
-                {fixtureExists
-                  ? 'Click "Show Fixture" to view the tournament fixture'
-                  : 'Click "Generate Fixture" to create the tournament fixture'}
-              </p>
-            </div>
-          )}
-
-          {/* Generate Fixture Modal */}
+          {/* Generate First Round Modal */}
           {showGenerateModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">
-                  Generate Fixture
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  Select the tournament type for the first round:
+              <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
+                <h2 className="text-2xl font-bold mb-4">
+                  Generate First Round
+                </h2>
+                <p className="mb-4">
+                  Select the type of fixture for the first round. This will
+                  generate matches for all{" "}
+                  <span className="font-bold">{teams.length}</span> registered
+                  teams.
                 </p>
-
-                <div className="mb-4">
+                <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tournament Type
+                    Fixture Type
                   </label>
                   <select
                     value={selectedType}
                     onChange={(e) =>
-                      setSelectedType(
-                        e.target.value as "KNOCKOUT" | "ROUND_ROBIN"
-                      )
+                      setSelectedType(e.target.value as "KNOCKOUT" | "ROUND_ROBIN")
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 border border-gray-300 rounded-md"
                   >
                     <option value="KNOCKOUT">Knockout</option>
                     <option value="ROUND_ROBIN">Round Robin</option>
                   </select>
                 </div>
-
-                <div className="flex gap-3 justify-end">
+                <div className="flex justify-end space-x-4">
                   <button
                     onClick={() => setShowGenerateModal(false)}
-                    disabled={loading}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                    className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400"
                   >
                     Cancel
                   </button>
                   <button
-                    onClick={generateFixture}
-                    disabled={loading}
-                    className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                    onClick={() => {
+                      generateFirstRound();
+                      setShowGenerateModal(false);
+                    }}
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
                   >
-                    {loading ? "Generating..." : "Generate"}
+                    Generate
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Regenerate Round Modal */}
-          {showRegenerateRoundModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">
-                  Regenerate {getUIRoundName(showRegenerateRoundModal)}
-                </h3>
-                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4">
-                  <div className="flex items-center">
-                    <svg
-                      className="w-5 h-5 text-yellow-600 mr-2"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="text-yellow-800 text-sm font-medium">
-                      Warning
-                    </span>
-                  </div>
-                  <p className="text-yellow-700 text-sm mt-1">
-                    This will regenerate{" "}
-                    {getUIRoundName(showRegenerateRoundModal)} and DELETE all
-                    subsequent rounds. This action cannot be undone.
-                  </p>
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    New Tournament Type
-                  </label>
-                  <select
-                    value={regenerateRoundType}
-                    onChange={(e) =>
-                      setRegenerateRoundType(
-                        e.target.value as "KNOCKOUT" | "ROUND_ROBIN"
-                      )
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="KNOCKOUT">Knockout</option>
-                    <option value="ROUND_ROBIN">Round Robin</option>
-                  </select>
-                </div>
-
-                {(() => {
-                  const winners = getRoundWinners(showRegenerateRoundModal - 1);
-                  const subsequentRounds = additionalRounds
-                    .slice(showRegenerateRoundModal - 1)
-                    .filter((r) => r !== undefined).length;
-                  return (
-                    <div className="mb-4 p-3 bg-red-50 rounded-md">
-                      <p className="text-sm text-red-800 font-medium">
-                        Teams from Round {showRegenerateRoundModal - 1}:{" "}
-                        {winners.length}
-                      </p>
-                      <p className="text-xs text-red-600 mt-1">
-                        {subsequentRounds > 0
-                          ? `${subsequentRounds} subsequent round(s) will be deleted`
-                          : "No subsequent rounds to delete"}
-                      </p>
-                    </div>
-                  );
-                })()}
-
-                <div className="flex gap-3 justify-end">
-                  <button
-                    onClick={() => setShowRegenerateRoundModal(null)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => regenerateRound(showRegenerateRoundModal)}
-                    className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 font-semibold"
-                  >
-                    Regenerate {getUIRoundName(showRegenerateRoundModal)}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Generic Round Generation Modal */}
-          {showRoundModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">
-                  Generate {getUIRoundName(showRoundModal)}
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  Select the tournament type for round {showRoundModal}:
-                </p>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tournament Type
-                  </label>
-                  <select
-                    value={selectedRoundType}
-                    onChange={(e) =>
-                      setSelectedRoundType(
-                        e.target.value as "KNOCKOUT" | "ROUND_ROBIN"
-                      )
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="KNOCKOUT">Knockout</option>
-                    <option value="ROUND_ROBIN">Round Robin</option>
-                  </select>
-                </div>
-
-                {(() => {
-                  const winners = getRoundWinners(showRoundModal - 1);
-                  return (
-                    <div className="mb-4 p-3 bg-blue-50 rounded-md">
-                      <p className="text-sm text-blue-800 font-medium">
-                        Teams advancing from Round {showRoundModal - 1}:{" "}
-                        {winners.length}
-                      </p>
-                      <p className="text-xs text-blue-600 mt-1">
-                        {winners.filter((w) => w.isActual).length} confirmed
-                        winners, {winners.filter((w) => !w.isActual).length}{" "}
-                        pending
-                      </p>
-                    </div>
-                  );
-                })()}
-
-                <div className="flex gap-3 justify-end">
-                  <button
-                    onClick={() => setShowRoundModal(null)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => generateNextRound(showRoundModal)}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold"
-                  >
-                    Generate {getUIRoundName(showRoundModal)}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Regenerate Fixture Modal */}
+          {/* Regenerate First Round Modal */}
           {showRegenerateModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">
+              <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
+                <h2 className="text-2xl font-bold mb-4 text-red-600">
                   Regenerate Fixture
-                </h3>
-                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4">
-                  <div className="flex items-center">
-                    <svg
-                      className="w-5 h-5 text-yellow-600 mr-2"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="text-yellow-800 text-sm font-medium">
-                      Warning
-                    </span>
-                  </div>
-                  <p className="text-yellow-700 text-sm mt-1">
-                    This will delete the existing fixture and generate a new
-                    one. This action cannot be undone.
-                  </p>
-                </div>
-
-                <div className="mb-4">
+                </h2>
+                <p className="mb-4">
+                  Are you sure you want to regenerate the entire fixture? This
+                  will delete all existing rounds and matches and create a new
+                  one. This action cannot be undone.
+                </p>
+                <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    New Tournament Type
+                    New Fixture Type
                   </label>
                   <select
                     value={selectedType}
                     onChange={(e) =>
-                      setSelectedType(
-                        e.target.value as "KNOCKOUT" | "ROUND_ROBIN"
-                      )
+                      setSelectedType(e.target.value as "KNOCKOUT" | "ROUND_ROBIN")
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 border border-gray-300 rounded-md"
                   >
                     <option value="KNOCKOUT">Knockout</option>
                     <option value="ROUND_ROBIN">Round Robin</option>
                   </select>
                 </div>
-
-                <div className="flex gap-3 justify-end">
+                <div className="flex justify-end space-x-4">
                   <button
                     onClick={() => setShowRegenerateModal(false)}
-                    disabled={loading}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                    className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400"
                   >
                     Cancel
                   </button>
                   <button
-                    onClick={regenerateFixture}
-                    disabled={loading}
-                    className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                    onClick={() => {
+                      regenerateFirstRound();
+                      setShowRegenerateModal(false);
+                    }}
+                    className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
                   >
-                    {loading ? "Regenerating..." : "Regenerate"}
+                    Regenerate
                   </button>
                 </div>
               </div>
             </div>
           )}
-        </div>
+
+          {/* Generate Additional Round Modal */}
+          {showRoundModal !== null && (() => {
+            const roundNumber = showRoundModal;
+            const uiRoundName = getUIRoundName(roundNumber);
+            const winners = nextRoundWinners;
+
+            return (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
+                  <h2 className="text-2xl font-bold mb-4">
+                    Generate {uiRoundName}
+                  </h2>
+                  <p className="mb-4">
+                    This will generate the next round with{" "}
+                    <span className="font-bold">{winners.length}</span> teams
+                    advancing from the previous round.
+                  </p>
+                  <div className="mb-4 p-3 bg-gray-100 rounded-lg max-h-48 overflow-y-auto">
+                    <h4 className="font-semibold mb-2">Advancing Teams:</h4>
+                    <ul className="list-disc list-inside text-sm">
+                      {winners.map((winner, index) => (
+                        <li key={index} className={!winner.isActual ? 'italic text-gray-500' : ''}>
+                          {winner.teamName}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Round Type
+                    </label>
+                    <select
+                      value={selectedRoundType}
+                      onChange={(e) =>
+                        setSelectedRoundType(
+                          e.target.value as "KNOCKOUT" | "ROUND_ROBIN"
+                        )
+                      }
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="KNOCKOUT">Knockout</option>
+                      <option value="ROUND_ROBIN">Round Robin</option>
+                    </select>
+                  </div>
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      onClick={() => setShowRoundModal(null)}
+                      className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        generateNextRound(roundNumber);
+                        setShowRoundModal(null);
+                      }}
+                      className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                    >
+                      Generate
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Regenerate Round Modal */}
+          {showRegenerateRoundModal !== null && (() => {
+            const roundNumber = showRegenerateRoundModal;
+            const uiRoundName = getUIRoundName(roundNumber);
+            const winners = nextRoundWinners;
+
+            return (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
+                  <h2 className="text-2xl font-bold mb-4 text-red-600">
+                    Regenerate {uiRoundName}
+                  </h2>
+                  <p className="mb-4">
+                    This will delete this round and any subsequent rounds, then
+                    regenerate it. This action cannot be undone.
+                  </p>
+                  <div className="mb-4 p-3 bg-gray-100 rounded-lg max-h-48 overflow-y-auto">
+                    <h4 className="font-semibold mb-2">Teams for new round ({winners.length}):</h4>
+                    <ul className="list-disc list-inside text-sm">
+                       {winners.map((winner, index) => (
+                        <li key={index} className={!winner.isActual ? 'italic text-gray-500' : ''}>
+                          {winner.teamName} ({winner.isActual ? 'Confirmed' : 'Projected'})
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      New Round Type
+                    </label>
+                    <select
+                      value={regenerateRoundType}
+                      onChange={(e) =>
+                        setRegenerateRoundType(
+                          e.target.value as "KNOCKOUT" | "ROUND_ROBIN"
+                        )
+                      }
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="KNOCKOUT">Knockout</option>
+                      <option value="ROUND_ROBIN">Round Robin</option>
+                    </select>
+                  </div>
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      onClick={() => setShowRegenerateRoundModal(null)}
+                      className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        regenerateRound(roundNumber);
+                        setShowRegenerateRoundModal(null);
+                      }}
+                      className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                    >
+                      Regenerate
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </main>
       </div>
     </div>
   );

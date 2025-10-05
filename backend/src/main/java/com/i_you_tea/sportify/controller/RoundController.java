@@ -16,7 +16,7 @@ import java.util.Optional;
 @RequestMapping("/api/tournaments/{tournamentId}/rounds")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
-public class RoundController {
+public class RoundController { 
     
     private final RoundService roundService;
     
@@ -104,6 +104,43 @@ public class RoundController {
         }
     }
     
+    /**
+     * Update an existing round by round value
+     */
+    @PutMapping("/value/{roundValue}")
+    public ResponseEntity<?> updateRoundByValue(@PathVariable Long tournamentId, @PathVariable Integer roundValue, @Valid @RequestBody RoundDTO roundDTO) {
+        try {
+            Round updatedRound = roundService.updateRoundByValue(roundValue, tournamentId, roundDTO);
+            RoundDTO responseDTO = RoundDTO.fromEntity(updatedRound);
+            return ResponseEntity.ok(responseDTO);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error: Failed to update round");
+        }
+    }
+
+    /**
+     * Delete a round by round value
+     */
+    @DeleteMapping("/value/{roundValue}")
+    public ResponseEntity<?> deleteRoundByValue(@PathVariable Long tournamentId, @PathVariable Integer roundValue) {
+        try {
+            // Find the round by value and tournament
+            Optional<Round> existingRound = roundService.getRoundByValueAndTournament(roundValue, tournamentId);
+            if (existingRound.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            roundService.deleteRound(existingRound.get().getRoundId());
+            return ResponseEntity.ok().body("Round deleted successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error: Failed to delete round");
+        }
+    }
+
     /**
      * Delete a round
      */

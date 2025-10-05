@@ -19,6 +19,7 @@ public class RoundService {
     
     private final RoundRepository roundRepository;
     private final TournamentRepository tournamentRepository;
+    private final MatchService matchService;
     
     /**
      * Get all rounds
@@ -64,8 +65,14 @@ public class RoundService {
         round.setRoundValue(roundDTO.getRoundValue());
         round.setRoundName(roundDTO.getRoundName());
         round.setTournament(tournament);
+        round.setType(roundDTO.getType());
         
-        return roundRepository.save(round);
+        Round savedRound = roundRepository.save(round);
+
+        // Generate matches for the round
+        matchService.generateMatchesForRound(savedRound);
+
+        return savedRound;
     }
     
     /**
@@ -75,10 +82,37 @@ public class RoundService {
         Round existingRound = roundRepository.findById(roundId)
                 .orElseThrow(() -> new IllegalArgumentException("Round not found with id: " + roundId));
         
+        // Check if round value is being changed and if the new value already exists
+        if (!existingRound.getRoundValue().equals(roundDTO.getRoundValue())) {
+            Long tournamentId = existingRound.getTournament().getTournamentId();
+            if (roundRepository.existsByRoundValueAndTournament_TournamentId(roundDTO.getRoundValue(), tournamentId)) {
+                throw new IllegalArgumentException("Round with value " + roundDTO.getRoundValue() + " already exists for this tournament");
+            }
+        }
+        
         existingRound.setRoundValue(roundDTO.getRoundValue());
         existingRound.setRoundName(roundDTO.getRoundName());
         
         return roundRepository.save(existingRound);
+    }
+
+    /**
+     * Update an existing round by round value and tournament ID
+     */
+    public Round updateRoundByValue(Integer roundValue, Long tournamentId, RoundDTO roundDTO) {
+        Round existingRound = roundRepository.findByRoundValueAndTournament_TournamentId(roundValue, tournamentId)
+                .orElseThrow(() -> new IllegalArgumentException("Round not found with value: " + roundValue + " for tournament: " + tournamentId));
+        
+        existingRound.setRoundValue(roundDTO.getRoundValue());
+        existingRound.setRoundName(roundDTO.getRoundName());
+        existingRound.setType(roundDTO.getType());
+
+        Round savedRound = roundRepository.save(existingRound);
+
+        // Generate matches for the round
+        matchService.generateMatchesForRound(savedRound);
+        
+        return savedRound;
     }
     
     /**
