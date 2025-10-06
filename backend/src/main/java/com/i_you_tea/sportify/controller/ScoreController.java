@@ -24,6 +24,7 @@ public class ScoreController {
 
     @PostMapping("/createSet")
     public ResponseEntity<ScoreDTO> createSet(@RequestBody ScoreDTO scoreDTO) {
+        System.out.println("Received ScoreDTO: " + scoreDTO);
         ScoreDTO createdScore = scoreService.createSet(scoreDTO);
         return ResponseEntity.ok(createdScore);
     }

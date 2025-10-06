@@ -70,12 +70,14 @@ public class ScoreService {
 
     // New method for creating a score set
     public ScoreDTO createSet(ScoreDTO scoreDTO) {
-        Score score = scoreDTO.toEntity();
-        if (scoreDTO.getMatchId() != null) {
-            Match match = matchRepository.findById(scoreDTO.getMatchId())
-                    .orElseThrow(() -> new RuntimeException("Match not found with id: " + scoreDTO.getMatchId()));
-            score.setMatch(match);
+        if (scoreDTO.getMatchId() == null || scoreDTO.getTeamAId() == null || scoreDTO.getTeamBId() == null
+            || scoreDTO.getTeamAPoints() == null || scoreDTO.getTeamBPoints() == null) {
+            throw new IllegalArgumentException("All fields are required");
         }
+        Score score = scoreDTO.toEntity();
+        Match match = matchRepository.findById(scoreDTO.getMatchId())
+            .orElseThrow(() -> new RuntimeException("Match not found with id: " + scoreDTO.getMatchId()));
+        score.setMatch(match);
         Score saved = scoreRepository.save(score);
         return ScoreDTO.fromEntity(saved);
     }
