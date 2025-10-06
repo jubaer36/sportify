@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Topbar from "@/Component/topbar";
 import Image from "next/image";
 import { makeAuthenticatedRequest } from "@/utils/api";
@@ -15,6 +16,7 @@ interface Announcement {
   postedAt: string;
   relatedSportId?: number;
   relatedSportName?: string;
+  relatedTournamentId?: number;
   startDate?: string;
   endDate?: string;
 }
@@ -36,6 +38,7 @@ export default function UpcomingEvents() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -103,6 +106,14 @@ export default function UpcomingEvents() {
                       />
                       {a.relatedSportName}
                     </span>
+                  )}
+                  {a.relatedTournamentId && (
+                    <button
+                      className="view-tournament-btn"
+                      onClick={() => router.push(`/player/tournamentInfo/${a.relatedTournamentId}`)}
+                    >
+                      View Tournament
+                    </button>
                   )}
                 </div>
               </div>
