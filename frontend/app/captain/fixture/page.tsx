@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Topbar from "@/Component/topbar";
 import { makeAuthenticatedRequest } from "@/utils/api";
 import "./fixture.css";
-import Sidebar from "@/Component/Sidebar";
+import Sidebar from "@/Component/captain_sidebar";
 
 interface Team {
   teamId: number;
@@ -80,6 +80,7 @@ export default function FixtureViewer() {
   const [captainSports, setCaptainSports] = useState<Sport[]>([]);
   const [showFixture, setShowFixture] = useState(false);
   const [fixtureExists, setFixtureExists] = useState(false);
+  const [fixtureExistsUpTo, setFixtureExistsUpTo] = useState<number>(0);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showRegenerateModal, setShowRegenerateModal] = useState(false);
   const [selectedType, setSelectedType] = useState<"KNOCKOUT" | "ROUND_ROBIN">(
@@ -98,9 +99,9 @@ export default function FixtureViewer() {
   const [regenerateRoundType, setRegenerateRoundType] = useState<
     "KNOCKOUT" | "ROUND_ROBIN"
   >("KNOCKOUT");
-  const [currentRoundValue, setCurrentRoundValue] = useState<number>(1);
+  const [selectedCurrentRoundValue, setSelectedCurrentRoundValue] = useState<number>(1);
   const [nextRoundWinners, setNextRoundWinners] = useState<
-    { teamId: number; teamName: string; isActual: boolean }[]
+    { teamId: number; teamName: string }[]
   >([]);
 
   const router = useRouter();
@@ -123,19 +124,24 @@ export default function FixtureViewer() {
       setShowFixture(false);
       setFixtureExists(false);
       setAdditionalRounds([]);
-      setCurrentRoundValue(1);
+      setSelectedCurrentRoundValue(1);
+      setFixtureExistsUpTo(0);
     }
   }, [selectedTournament]);
 
-  // Update currentRoundValue when teams are loaded
+  // Update selectedCurrentRoundValue when teams are loaded
   useEffect(() => {
     if (teams.length > 0) {
-      setCurrentRoundValue(getMaxRoundNumber());
+      setSelectedCurrentRoundValue(getMaxRoundNumber());
     }
   }, [teams]);
 
-  // Generic function to get winners from any round
   const getRoundWinners = async (roundNumber: number) => {
+    if (!selectedTournament) {
+      console.error("getRoundWinners called without a selected tournament.");
+      return []; 
+    }
+
     let roundFixture: RoundFixture | null = null;
 
     if (roundNumber === 1) {
@@ -143,22 +149,209 @@ export default function FixtureViewer() {
     } else {
       roundFixture = additionalRounds[roundNumber - 2] || null;
     }
+    console.log(`Fetching Winners for round: ${roundNumber}`);
+    await deleteDummyTeamsByTournamentAndRoundValue(selectedTournament.tournamentId , roundNumber);
 
     if (!roundFixture || !roundFixture.matches) return [];
 
     let winners;
 
+    
+
     if (roundFixture.type === "KNOCKOUT") {
-      winners =  getKnockOutRoundWinners(roundNumber, roundFixture);
+      winners = await getKnockOutRoundWinners(roundNumber, roundFixture);
     } else {
-      winners =  getRoudRobinRoundWinners(roundNumber, roundFixture);
+      winners = await getRoundRobinRoundWinners(roundNumber, roundFixture);
+    }
+    
+
+    return winners
+  };
+
+  const getKnockOutRoundWinners = async (
+    roundNumber: number,
+    roundFixture: RoundFixture
+  ) => {
+    // 1. Explicitly type the array of promises.
+    const winnerPromises: Promise<
+      Team | { teamId: number; teamName: string }
+    >[] = roundFixture.matches.map(async (match, index) => {
+      if (match.status === "COMPLETED" && match.winnerTeamId && match.winnerTeamName) {
+        // Return the actual winner
+        return {
+          teamId: match.winnerTeamId,
+          teamName: match.winnerTeamName,
+        };
+      } else {
+        // Fetch dummy teams from the database for this tournament and round
+        try {
+          if (!selectedTournament) {
+            throw new Error("No tournament selected");
+          }
+          
+          const result = await makeAuthenticatedRequest<Team[]>(
+            `/api/teams/tournament/${selectedTournament.tournamentId}`
+          );
+          
+          if (result.data) {
+            // Filter for dummy teams that match the expected pattern for this match
+            const dummyTeamName = `Winner Team Match ${index + 1} Round ${roundNumber}`;
+            const dummyTeam = result.data.find(
+              (team) => team.dummy && team.teamName === dummyTeamName
+            );
+            
+            if (dummyTeam) {
+              return {
+                teamId: dummyTeam.teamId,
+                teamName: dummyTeam.teamName,
+              };
+            } else {
+              // Fallback: create the expected dummy team structure
+              return {
+                teamId: -1, // Temporary ID for unresolved matches
+                teamName: dummyTeamName,
+              };
+            }
+          } else {
+            // Fallback for API error
+            return {
+              teamId: -1,
+              teamName: `Winner Team Match ${index + 1} Round ${roundNumber}`,
+            };
+          }
+        } catch (error) {
+          console.error("Error fetching dummy teams:", error);
+          // Fallback for any error
+          return {
+            teamId: -1,
+            teamName: `Winner Team Match ${index + 1} Round ${roundNumber}`,
+          };
+        }
+      }
+    });
+
+    try {
+      // 2. Await all promises at once, outside the map.
+      const winners = await Promise.all(winnerPromises);
+      return winners;
+    } catch (error) {
+      console.error("Error resolving winners:", error);
+      // Return an empty array or handle the error as needed.
+      return [];
+    }
+  };
+
+  const getRoundRobinRoundWinners = async (
+    roundNumber: number,
+    roundFixture: RoundFixture
+  ) => {
+    const allTeams = new Set<number>();
+    roundFixture.matches.forEach((match) => {
+      allTeams.add(match.team1Id);
+      if (match.team2Name !== "BYE" && match.team2Id !== null) {
+        allTeams.add(match.team2Id);
+      }
+    });
+
+    const teamArray = Array.from(allTeams);
+    const bestHalf = Math.floor(teamArray.length / 2);
+
+    // Fetch dummy teams from the database for this tournament and round
+    try {
+      if (!selectedTournament) {
+        throw new Error("No tournament selected");
+      }
+      
+      const result = await makeAuthenticatedRequest<Team[]>(
+        `/api/teams/tournament/${selectedTournament.tournamentId}`
+      );
+      
+      if (result.data) {
+        const dummyTeams: { teamId: number; teamName: string }[] = [];
+        
+        // Look for dummy teams that match the expected pattern for this round
+        for (let i = 0; i < bestHalf; i++) {
+          const dummyTeamName = `Winner Team ${
+            i + 1
+          } Round ${roundFixture.roundValue}`;
+          
+          const dummyTeam = result.data.find(
+            (team) => team.dummy && team.teamName === dummyTeamName
+          );
+          
+          if (dummyTeam) {
+            dummyTeams.push({
+              teamId: dummyTeam.teamId,
+              teamName: dummyTeam.teamName,
+            });
+          } else {
+            // Fallback: create the expected dummy team structure
+            dummyTeams.push({
+              teamId: -1, // Temporary ID for unresolved matches
+              teamName: dummyTeamName,
+            });
+          }
+        }
+        
+        return dummyTeams;
+      } else {
+        // Fallback for API error - create expected structures
+        const fallbackTeams: { teamId: number; teamName: string }[] = [];
+        for (let i = 0; i < bestHalf; i++) {
+          fallbackTeams.push({
+            teamId: -1,
+            teamName: `Winner Team ${i + 1} Round ${roundFixture.roundValue}`,
+          });
+        }
+        return fallbackTeams;
+      }
+    } catch (error) {
+      console.error("Error fetching dummy teams:", error);
+      // Fallback for any error
+      const fallbackTeams: { teamId: number; teamName: string }[] = [];
+      for (let i = 0; i < bestHalf; i++) {
+        fallbackTeams.push({
+          teamId: -1,
+          teamName: `Winner Team ${i + 1} Round ${roundFixture.roundValue}`,
+        });
+      }
+      return fallbackTeams;
+    }
+  };
+
+  // Generic function to get winners from any round
+  const setRoundWinners = async (roundNumber: number) => {
+    if (!selectedTournament) {
+      console.error("getRoundWinners called without a selected tournament.");
+      return []; 
+    }
+
+    let roundFixture: RoundFixture | null = null;
+
+    if (roundNumber === 1) {
+      roundFixture = fixture?.rounds?.[0] || null;
+    } else {
+      roundFixture = additionalRounds[roundNumber - 2] || null;
+    }
+    console.log(`Fetching Winners for round: ${roundNumber}`);
+    await deleteDummyTeamsByTournamentAndRoundValue(selectedTournament.tournamentId , roundNumber);
+
+    if (!roundFixture || !roundFixture.matches) return [];
+
+    let winners;
+
+    
+
+    if (roundFixture.type === "KNOCKOUT") {
+      winners =  setKnockOutRoundWinners(roundNumber, roundFixture);
+    } else {
+      winners =  setRoundRobinRoundWinners(roundNumber, roundFixture);
     }
 
     return winners;
   };
 
-  // ...existing code...
-  const getKnockOutRoundWinners = async (
+  const setKnockOutRoundWinners = async (
     roundNumber: number,
     roundFixture: RoundFixture
   ) => {
@@ -196,8 +389,7 @@ export default function FixtureViewer() {
     }
   };
 
-  // ...existing code...
-  const getRoudRobinRoundWinners = async (
+  const setRoundRobinRoundWinners = async (
     roundNumber: number,
     roundFixture: RoundFixture
   ) => {
@@ -217,7 +409,7 @@ export default function FixtureViewer() {
     for (let i = 0; i < winningTeams.length; i++) {
       const dummyTeamName = `Winner Team ${
         i + 1
-      } Round$ {roundFixture.roundValue}`;
+      } Round ${roundFixture.roundValue}`;
       winnerPromises.push(createDummyTeam(dummyTeamName));
     }
     try {
@@ -225,8 +417,7 @@ export default function FixtureViewer() {
       return winners.map((team) => ({
         teamId: team.teamId,
         teamName: team.teamName,
-        tournamentId: selectedTournament?.tournamentId,
-        isActual: false,
+        tournamentId: selectedTournament?.tournamentId
       }));
     } catch (error) {
       console.error("Failed to create one or more dummy teams:", error);
@@ -239,7 +430,7 @@ export default function FixtureViewer() {
     if (!selectedTournament || !userProfile) {
       throw new Error("Selected tournament or user profile is not available.");
     }
-
+    // deleteDummyTeamsByTournamentAndRoundValue(selectedTournament.tournamentId,1);
     const sport = captainSports.find(
       (s) => s.name === selectedTournament.sportName
     );
@@ -277,6 +468,22 @@ export default function FixtureViewer() {
       setError("Error creating dummy team.");
       console.error("Dummy team creation exception:", error);
       return null;
+    }
+  };
+
+  const deleteDummyTeamsByTournamentAndRoundValue = async (tournamentId: number, roundValue: number) => {
+    try {
+      console.log(`[fixture] Deleting dummy teams for tournament ${tournamentId}, round ${roundValue}: DELETE /api/teams/dummy/tournament/${tournamentId}/round/${roundValue}`);
+      await makeAuthenticatedRequest(
+        `/api/teams/dummy/tournament/${tournamentId}/round/${roundValue}`,
+        {
+          method: "DELETE",
+        }
+      );
+      console.log(`[fixture] Dummy teams for tournament ${tournamentId}, round ${roundValue} deleted successfully.`);
+    } catch (error) {
+      setError("Error deleting dummy teams.");
+      console.error("Dummy team deletion exception:", error);
     }
   };
   // Generic function to generate any round
@@ -336,87 +543,88 @@ export default function FixtureViewer() {
 
   // Regenerate a specific round and delete all subsequent rounds
   const regenerateRound = async (roundNumber: number) => {
-    if (roundNumber === 1) {
-      // For Round 1, use the regenerateFirstRound function
-      await regenerateFirstRound();
-      return;
-    }
+    console.log(`Round regenerating function disabled`);
+    // if (roundNumber === 1) {
+    //   // For Round 1, use the regenerateFirstRound function
+    //   await regenerateFirstRound();
+    //   return;
+    // }
 
-    const winners = await getRoundWinners(roundNumber - 1);
-    if (winners.length < 2) {
-      setError(
-        `Need at least 2 winners to regenerate ${getUIRoundName(roundNumber)}`
-      );
-      return;
-    }
+    // const winners = await getRoundWinners(roundNumber - 1);
+    // if (winners.length < 2) {
+    //   setError(
+    //     `Need at least 2 winners to regenerate ${getUIRoundName(roundNumber)}`
+    //   );
+    //   return;
+    // }
 
-    setLoading(true);
+    // setLoading(true);
 
-    try {
-      const roundValue = getRoundValue(roundNumber);
-      const maxRounds = getMaxRoundNumber();
+    // try {
+    //   const roundValue = getRoundValue(roundNumber);
+    //   const maxRounds = getMaxRoundNumber();
 
-      // Delete all rounds from this round onwards
-      for (let rNum = roundNumber; rNum <= maxRounds; rNum++) {
-        const rValue = getRoundValue(rNum);
-        try {
-          console.log(
-            `[fixture] Deleting round ${rNum}: DELETE /api/tournaments/${
-              selectedTournament!.tournamentId
-            }/rounds/value/${rValue}`
-          );
-          await makeAuthenticatedRequest(
-            `/api/tournaments/${
-              selectedTournament!.tournamentId
-            }/rounds/value/${rValue}`,
-            { method: "DELETE" }
-          );
-        } catch {
-          // Continue even if delete fails (round might not exist)
-        }
-      }
+    //   // Delete all rounds from this round onwards
+    //   for (let rNum = roundNumber; rNum <= maxRounds; rNum++) {
+    //     const rValue = getRoundValue(rNum);
+    //     try {
+    //       console.log(
+    //         `[fixture] Deleting round ${rNum}: DELETE /api/tournaments/${
+    //           selectedTournament!.tournamentId
+    //         }/rounds/value/${rValue}`
+    //       );
+    //       await makeAuthenticatedRequest(
+    //         `/api/tournaments/${
+    //           selectedTournament!.tournamentId
+    //         }/rounds/value/${rValue}`,
+    //         { method: "DELETE" }
+    //       );
+    //     } catch {
+    //       // Continue even if delete fails (round might not exist)
+    //     }
+    //   }
 
-      // Create the new round
-      const roundData = {
-        roundValue: roundValue,
-        roundName: getRoundName(roundNumber, winners.length),
-        type: regenerateRoundType,
-      };
+    //   // Create the new round
+    //   const roundData = {
+    //     roundValue: roundValue,
+    //     roundName: getRoundName(roundNumber, winners.length),
+    //     type: regenerateRoundType,
+    //   };
 
-      console.log(
-        `[fixture] Creating new round ${roundNumber}: POST /api/tournaments/${
-          selectedTournament!.tournamentId
-        }/rounds/value/${roundValue}`
-      );
+    //   console.log(
+    //     `[fixture] Creating new round ${roundNumber}: POST /api/tournaments/${
+    //       selectedTournament!.tournamentId
+    //     }/rounds/value/${roundValue}`
+    //   );
 
-      const result = await makeAuthenticatedRequest<RoundFixture>(
-        `/api/tournaments/${
-          selectedTournament!.tournamentId
-        }/rounds/value/${roundValue}`,
-        {
-          method: "POST",
-          body: JSON.stringify(roundData),
-        }
-      );
+    //   const result = await makeAuthenticatedRequest<RoundFixture>(
+    //     `/api/tournaments/${
+    //       selectedTournament!.tournamentId
+    //     }/rounds/value/${roundValue}`,
+    //     {
+    //       method: "POST",
+    //       body: JSON.stringify(roundData),
+    //     }
+    //   );
 
-      if (result.data) {
-        // Reload all rounds to get the updated state
-        await loadAllRounds();
-        setShowRegenerateRoundModal(null);
-        alert(
-          `${getUIRoundName(
-            roundNumber
-          )} regenerated successfully! All subsequent rounds have been deleted.`
-        );
-      } else {
-        throw new Error(`Failed to regenerate ${getUIRoundName(roundNumber)}`);
-      }
-    } catch (error) {
-      setError(`Error regenerating ${getUIRoundName(roundNumber)}`);
-      console.error("Regenerate round error:", error);
-    } finally {
-      setLoading(false);
-    }
+    //   if (result.data) {
+    //     // Reload all rounds to get the updated state
+    //     await loadAllRounds();
+    //     setShowRegenerateRoundModal(null);
+    //     alert(
+    //       `${getUIRoundName(
+    //         roundNumber
+    //       )} regenerated successfully! All subsequent rounds have been deleted.`
+    //     );
+    //   } else {
+    //     throw new Error(`Failed to regenerate ${getUIRoundName(roundNumber)}`);
+    //   }
+    // } catch (error) {
+    //   setError(`Error regenerating ${getUIRoundName(roundNumber)}`);
+    //   console.error("Regenerate round error:", error);
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
   // Helper functions
@@ -488,12 +696,9 @@ export default function FixtureViewer() {
     return maxRounds;
   };
 
-  // Map a UI roundNumber (1-based) to a descending roundValue so that
-  // round 1 has the highest value and later rounds decrease by 1.
-  // Uses the dynamically computed maximum rounds from team count.
+
   const getRoundValue = (roundNumber: number) => {
     const maxRounds = getMaxRoundNumber();
-    // roundNumber 1 => value = maxRounds, roundNumber = maxRounds => value = 1
     const value = maxRounds - (roundNumber - 1);
     return Math.max(1, Math.round(value));
   };
@@ -596,8 +801,9 @@ export default function FixtureViewer() {
       console.log("[fixture] Teams response:", result);
       
       if (result.data) {
-        const actualTeams = result.data.filter((team)=>{!team.dummy});
+        const actualTeams = result.data.filter(team => !team.dummy);
         setTeams(actualTeams);
+        console.log(`Total Actual Teams: ${actualTeams.length}`)
       }
     } catch {
       // best-effort; do not block UI
@@ -625,11 +831,29 @@ export default function FixtureViewer() {
 
   const checkFixtureExists = async (tournamentId: number) => {
     try {
-      // Check if the first round exists
-      const exists = await checkRoundExists(tournamentId, getMaxRoundNumber());
-      setFixtureExists(exists);
+      const maxRounds = getMaxRoundNumber();
+      let lastExistingRound = 0;
+      let anyFixtureExists = false;
+
+      for (let roundNum = 1; roundNum <= maxRounds; roundNum++) {
+        const roundValue = getRoundValue(roundNum);
+        const exists = await checkRoundExists(tournamentId, roundValue);
+        if (exists) {
+          anyFixtureExists = true;
+          lastExistingRound = roundNum;
+        } else {
+          // Stop checking if a round is missing
+          break;
+        }
+      }
+
+      setFixtureExists(anyFixtureExists);
+      setFixtureExistsUpTo(lastExistingRound);
+      console.log(`Fixture exists: ${anyFixtureExists}, up to round: ${lastExistingRound}`);
+
     } catch {
       setFixtureExists(false);
+      setFixtureExistsUpTo(0);
     }
   };
 
@@ -663,13 +887,14 @@ export default function FixtureViewer() {
 
     setLoading(true);
     setError(null);
+    
 
     try {
       const maxRounds = getMaxRoundNumber();
       const loadedRounds: RoundFixture[] = [];
 
       // Load all existing rounds
-      for (let roundNum = 1; roundNum <= maxRounds; roundNum++) {
+      for (let roundNum = 1; roundNum <= fixtureExistsUpTo; roundNum++) {
         const roundValue = roundNum;
         const roundData = await loadRound(roundValue);
         if (roundData) {
@@ -776,12 +1001,15 @@ export default function FixtureViewer() {
           } first round`
         );
       }
+      
+      setRoundWinners(1);
     } catch (error) {
       setError("Error generating first round");
       console.error("Generate first round error:", error);
     } finally {
       setLoading(false);
     }
+    
   };
 
   const regenerateFirstRound = async () => {
@@ -870,7 +1098,7 @@ export default function FixtureViewer() {
     roundNumber: number;
   }) => {
     const [winners, setWinners] = useState<
-      { teamId: number; teamName: string; isActual: boolean }[]
+      { teamId: number; teamName: string }[]
     >([]);
     const [isLoadingWinners, setIsLoadingWinners] = useState(true);
 
@@ -878,6 +1106,11 @@ export default function FixtureViewer() {
       const fetchWinners = async () => {
         setIsLoadingWinners(true);
         const fetchedWinners = await getRoundWinners(roundNumber);
+        console.log(`Fetched Winners for Round ${roundNumber}:`, fetchedWinners);
+        console.log(`Number of winners: ${fetchedWinners.length}`);
+        fetchedWinners.forEach((winner, index) => {
+          console.log(`Winner ${index + 1}: ID=${winner.teamId}, Name="${winner.teamName}"`);
+        });
         setWinners(fetchedWinners);
         setIsLoadingWinners(false);
       };
@@ -920,7 +1153,10 @@ export default function FixtureViewer() {
               </span>
             )}
             <button
-              onClick={() => setShowRegenerateRoundModal(roundNumber)}
+              onClick={() => {
+                setShowRegenerateRoundModal(roundNumber);
+                setSelectedCurrentRoundValue(roundNumber);
+              }}
               className="text-white hover:text-yellow-300 transition-colors"
               title={`Regenerate ${getUIRoundName(roundNumber)}`}
             >
@@ -995,7 +1231,10 @@ export default function FixtureViewer() {
                 </p>
                 {canGenerateNextRound && (
                   <button
-                    onClick={() => setShowRoundModal(nextRoundNumber)}
+                    onClick={() => {
+                      setShowRoundModal(nextRoundNumber);
+                      setSelectedCurrentRoundValue(nextRoundNumber);
+                    }}
                     className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
                   >
                     Generate {nextUIRoundName}
@@ -1041,7 +1280,10 @@ export default function FixtureViewer() {
               </span>
             )}
             <button
-              onClick={() => setShowRegenerateRoundModal(roundNumber)}
+              onClick={() => {
+                setShowRegenerateRoundModal(roundNumber);
+                setSelectedCurrentRoundValue(roundNumber);
+              }}
               className="text-white hover:text-yellow-300 transition-colors"
               title={`Regenerate ${getUIRoundName(roundNumber)}`}
             >
@@ -1109,7 +1351,10 @@ export default function FixtureViewer() {
               Click here to generate the next round.
             </p>
             <button
-              onClick={() => setShowRoundModal(roundNumber + 1)}
+              onClick={() => {
+                setShowRoundModal(roundNumber + 1);
+                setSelectedCurrentRoundValue(roundNumber + 1);
+              }}
               className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
             >
               Generate {getUIRoundName(roundNumber + 1)}
@@ -1124,7 +1369,7 @@ export default function FixtureViewer() {
     <div className="min-h-screen bg-gray-100">
       <Topbar />
       <div className="flex">
-        <Sidebar />
+        <Sidebar open={true} onClose={() => {}} />
         <main className="flex-1 p-8">
           <h1 className="text-3xl font-bold mb-6">Fixture Management</h1>
 
@@ -1368,9 +1613,7 @@ export default function FixtureViewer() {
                         {winners.map((winner, index) => (
                           <li
                             key={index}
-                            className={
-                              !winner.isActual ? "italic text-gray-500" : ""
-                            }
+                            
                           >
                             {winner.teamName}
                           </li>
@@ -1441,12 +1684,9 @@ export default function FixtureViewer() {
                         {winners.map((winner, index) => (
                           <li
                             key={index}
-                            className={
-                              !winner.isActual ? "italic text-gray-500" : ""
-                            }
+                            
                           >
-                            {winner.teamName} (
-                            {winner.isActual ? "Confirmed" : "Projected"})
+                            {winner.teamName}
                           </li>
                         ))}
                       </ul>

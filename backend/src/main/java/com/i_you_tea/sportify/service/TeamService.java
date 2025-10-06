@@ -15,6 +15,7 @@ import com.i_you_tea.sportify.repository.TournamentRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -95,25 +96,35 @@ public class TeamService {
     }
 
     public Team createDummyTeam(@Valid CreateDummyTeamDTO createDummyTeamDTO) {
-        Sport sport = sportRepository.findById(createDummyTeamDTO.getSportId())
-                .orElseThrow(() -> new RuntimeException("Sport not found with ID: " + createDummyTeamDTO.getSportId()));
+        Team dummyTeam = new Team();
+        dummyTeam.setTeamName(createDummyTeamDTO.getTeamName());
+        dummyTeam.setDummy(true); // Mark as a dummy team
 
-        User createdBy = userRepository.findById(createDummyTeamDTO.getCreatedById())
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + createDummyTeamDTO.getCreatedById()));
+        // Assuming you have a way to get the Sport entity
+        Sport sport = new Sport();
+        sport.setSportId(createDummyTeamDTO.getSportId());
+        dummyTeam.setSport(sport);
 
-        Tournament tournament = null;
-        if (createDummyTeamDTO.getTournamentId() != null) {
-            tournament = tournamentRepository.findById(createDummyTeamDTO.getTournamentId())
-                    .orElseThrow(() -> new RuntimeException("Tournament not found with ID: " + createDummyTeamDTO.getTournamentId()));
-        }
+        // Assuming you have a way to get the Tournament entity
+        Tournament tournament = new Tournament();
+        tournament.setTournamentId(createDummyTeamDTO.getTournamentId());
+        dummyTeam.setTournament(tournament);
 
-        Team team = new Team();
-        team.setTeamName(createDummyTeamDTO.getTeamName());
-        team.setSport(sport);
-        team.setCreatedBy(createdBy);
-        team.setTournament(tournament);
-        team.setDummy(true);
+        // Assuming you have a way to get the User entity for createdBy
+        User createdBy = new User();
+        createdBy.setUserId(createDummyTeamDTO.getCreatedById());
+        dummyTeam.setCreatedBy(createdBy);
 
-        return teamRepository.save(team);
+        return teamRepository.save(dummyTeam);
+    }
+
+    @Transactional
+    public void deleteDummyTeamsByRoundId(Long roundId) {
+        teamRepository.deleteDummyTeamsByRoundId(roundId);
+    }
+
+    @Transactional
+    public void deleteDummyTeamsByTournamentIdAndRoundValue(Long tournamentId, int roundValue) {
+        teamRepository.deleteDummyTeamsByTournamentIdAndRoundValue(tournamentId, roundValue);
     }
 }
