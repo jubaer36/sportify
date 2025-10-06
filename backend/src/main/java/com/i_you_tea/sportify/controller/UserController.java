@@ -6,6 +6,7 @@ import com.i_you_tea.sportify.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -106,6 +107,48 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error retrieving user"));
+        }
+    }
+
+    /**
+     * Update the role of a user (Admin only)
+     */
+    @PutMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateUserRole(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> requestBody) {
+        try {
+            Optional<User> userOptional = userService.findById(id);
+            if (userOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "User not found"));
+            }
+
+            User user = userOptional.get();
+
+            String newRoleStr = requestBody.get("role");
+            if (newRoleStr == null) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Role is required"));
+            }
+
+            try {
+                User.UserRole newRole = User.UserRole.valueOf(newRoleStr);
+                user.setRole(newRole);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Invalid role value"));
+            }
+
+            User updatedUser = userService.updateUser(user);
+            UserDTO responseDTO = UserDTO.fromEntity(updatedUser);
+
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error updating user role"));
         }
     }
 }
