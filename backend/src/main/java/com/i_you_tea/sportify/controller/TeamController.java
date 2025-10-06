@@ -1,8 +1,7 @@
 package com.i_you_tea.sportify.controller;
 
+import com.i_you_tea.sportify.dto.*;
 import com.i_you_tea.sportify.dto.CreateTeamDTO;
-import com.i_you_tea.sportify.dto.TeamDTO;
-import com.i_you_tea.sportify.dto.UserTeamsRequestDTO;
 import com.i_you_tea.sportify.entity.Team;
 import com.i_you_tea.sportify.service.TeamService;
 import jakarta.validation.Valid;

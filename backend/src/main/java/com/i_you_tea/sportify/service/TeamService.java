@@ -1,5 +1,6 @@
 package com.i_you_tea.sportify.service;
 
+import com.i_you_tea.sportify.dto.CreateDummyTeamDTO;
 import com.i_you_tea.sportify.dto.CreateTeamDTO;
 import com.i_you_tea.sportify.entity.Team;
 import com.i_you_tea.sportify.entity.TeamMember;
@@ -11,6 +12,7 @@ import com.i_you_tea.sportify.repository.TeamMemberRepository;
 import com.i_you_tea.sportify.repository.UserRepository;
 import com.i_you_tea.sportify.repository.SportRepository;
 import com.i_you_tea.sportify.repository.TournamentRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -92,7 +94,7 @@ public class TeamService {
         return false;
     }
 
-    public Team createDummyTeam(CreateTeamDTO createDummyTeamDTO) {
+    public Team createDummyTeam(@Valid CreateDummyTeamDTO createDummyTeamDTO) {
         Sport sport = sportRepository.findById(createDummyTeamDTO.getSportId())
                 .orElseThrow(() -> new RuntimeException("Sport not found with ID: " + createDummyTeamDTO.getSportId()));
 
