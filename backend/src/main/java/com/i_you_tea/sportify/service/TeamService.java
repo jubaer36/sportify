@@ -134,7 +134,8 @@ public class TeamService {
         
         System.out.println("[TeamService] Deleting dummy teams for tournament " + tournamentId + ", round " + roundValue);
         // Then delete the dummy teams
-        teamRepository.deleteDummyTeamsByTournamentIdAndRoundValue(tournamentId, roundValue);
+        String roundPattern = "Round " + roundValue;
+        teamRepository.deleteDummyTeamsByTournamentIdAndRoundValue(tournamentId, roundPattern);
         
         System.out.println("[TeamService] Deletion completed for tournament " + tournamentId + ", round " + roundValue);
     }

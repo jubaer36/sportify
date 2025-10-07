@@ -462,7 +462,7 @@ export default function FixtureViewer() {
     }
   };
 
-  const createDummyTeam = async (teamName: string): Promise<Team> => {
+  const createDummyTeam = async (teamName: string): Promise<Team | null> => {
     if (!selectedTournament || !userProfile) {
       throw new Error("Selected tournament or user profile is not available.");
     }
@@ -923,9 +923,11 @@ export default function FixtureViewer() {
           console.log(`Regenerating round as no matches are completed`);
           console.log(`Deleting dummy teams from round ${roundNumber} up to ${roundsWithFixture}`);
           for (let i = roundsWithFixture; i >= roundNumber; i--) {
-            deleteDummyTeamsByTournamentAndRoundValue(selectedTournament.tournamentId, i);
+            await deleteDummyTeamsByTournamentAndRoundValue(selectedTournament.tournamentId, i);
             console.log(`Deleted dummy teams for round value ${i}`);
           }
+          
+          // Try to update the round first
           result = await makeAuthenticatedRequest<RoundFixture>(
             `/api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`,
             {
@@ -933,6 +935,29 @@ export default function FixtureViewer() {
               body: JSON.stringify(roundData),
             }
           );
+          
+          // If PUT fails with a constraint error, try to delete and recreate
+          if (result && result.error && (result.error.includes('constraint') || result.error.includes('Row was updated'))) {
+            console.log(`PUT failed with constraint error, trying DELETE then POST approach`);
+            
+            // Delete the existing round
+            await makeAuthenticatedRequest(
+              `/api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`,
+              { method: "DELETE" }
+            );
+            
+            // Wait a bit for database cleanup
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            
+            // Create the round fresh
+            result = await makeAuthenticatedRequest<RoundFixture>(
+              `/api/tournaments/${selectedTournament.tournamentId}/rounds`,
+              {
+                method: "POST",
+                body: JSON.stringify(roundData),
+              }
+            );
+          }
         } else {
           console.log(`Regeneration not allowed as already some matches are completed`);
           setError("Cannot regenerate round as some matches are already completed");
@@ -986,19 +1011,43 @@ export default function FixtureViewer() {
           `First round ${actionText} successfully with ${selectedType} format!`
         );
 
+      } else if (result && result.error) {
+        // Handle specific server errors
+        console.error("[fixture] Server error:", result.error);
+        if (result.error.includes('Row was updated or deleted')) {
+          setError("Database conflict detected. Another user may have modified the data. Please refresh and try again.");
+        } else if (result.error.includes('constraint')) {
+          setError("Database constraint error. There may be related data preventing the update.");
+        } else {
+          setError(`Server error: ${result.error}`);
+        }
+        return;
       } else {
-        throw new Error(
-          `Failed to ${
-            existingRoundResult.data ? "update" : "create"
-          } first round`
-        );
+        const errorMsg = `Failed to ${existingRoundResult.data ? "update" : "create"} first round`;
+        console.error("[fixture]", errorMsg);
+        setError(errorMsg);
+        return;
       }
       
       
       
     } catch (error) {
-      setError("Error generating first round");
       console.error("Generate first round error:", error);
+      
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('Row was updated or deleted')) {
+          setError("Database conflict detected. Please refresh the page and try again.");
+        } else if (error.message.includes('constraint')) {
+          setError("Database constraint error. Please try deleting existing dummy teams first.");
+        } else if (error.message.includes('500')) {
+          setError("Server error occurred. Please check the server logs and try again.");
+        } else {
+          setError(`Error generating first round: ${error.message}`);
+        }
+      } else {
+        setError("An unexpected error occurred while generating the first round.");
+      }
     } finally {
       setLoading(false);
     }

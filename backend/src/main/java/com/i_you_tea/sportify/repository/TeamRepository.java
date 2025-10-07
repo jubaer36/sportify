@@ -33,13 +33,11 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
 
     @Modifying
     @Query("DELETE FROM Team t WHERE t.dummy = true AND t.teamId IN " +
-           "(SELECT DISTINCT m.team1.teamId FROM Match m WHERE m.round.roundId = :roundId " +
-           "UNION SELECT DISTINCT m.team2.teamId FROM Match m WHERE m.round.roundId = :roundId)")
+            "(SELECT DISTINCT m.team1.teamId FROM Match m WHERE m.round.roundId = :roundId " +
+            "UNION SELECT DISTINCT m.team2.teamId FROM Match m WHERE m.round.roundId = :roundId)")
     void deleteDummyTeamsByRoundId(@Param("roundId") Long roundId);
 
     @Modifying
-    @Query("DELETE FROM Team t WHERE t.dummy = true AND t.tournament.tournamentId = :tournamentId AND t.teamId IN " +
-           "(SELECT DISTINCT m.team1.teamId FROM Match m WHERE m.round.roundValue = :roundValue AND m.tournament.tournamentId = :tournamentId " +
-           "UNION SELECT DISTINCT m.team2.teamId FROM Match m WHERE m.round.roundValue = :roundValue AND m.tournament.tournamentId = :tournamentId)")
-    void deleteDummyTeamsByTournamentIdAndRoundValue(@Param("tournamentId") Long tournamentId, @Param("roundValue") int roundValue);
+    @Query("DELETE FROM Team t WHERE t.dummy = true AND t.tournament.tournamentId = :tournamentId AND t.teamName LIKE %:roundPattern%")
+    void deleteDummyTeamsByTournamentIdAndRoundValue(@Param("tournamentId") Long tournamentId, @Param("roundPattern") String roundPattern);
 }
