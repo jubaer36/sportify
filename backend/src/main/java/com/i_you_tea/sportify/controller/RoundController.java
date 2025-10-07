@@ -72,13 +72,22 @@ public class RoundController {
     @PostMapping
     public ResponseEntity<?> createRound(@PathVariable Long tournamentId, @Valid @RequestBody RoundDTO roundDTO) {
         try {
+            System.out.println("[RoundController] Creating round - Tournament: " + tournamentId);
+            System.out.println("[RoundController] Round data: " + roundDTO.toString());
+            
             Round createdRound = roundService.createRound(roundDTO, tournamentId);
             RoundDTO responseDTO = RoundDTO.fromEntity(createdRound);
+            
+            System.out.println("[RoundController] Round created successfully: " + responseDTO.getRoundId());
             return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
         } catch (IllegalArgumentException e) {
+            System.err.println("[RoundController] IllegalArgumentException: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Error: Failed to create round");
+            System.err.println("[RoundController] Exception creating round: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Error: Failed to create round - " + e.getMessage());
         }
     }
     
@@ -110,13 +119,22 @@ public class RoundController {
     @PutMapping("/value/{roundValue}")
     public ResponseEntity<?> updateRoundByValue(@PathVariable Long tournamentId, @PathVariable Integer roundValue, @Valid @RequestBody RoundDTO roundDTO) {
         try {
+            System.out.println("[RoundController] Updating round - Tournament: " + tournamentId + ", Round Value: " + roundValue);
+            System.out.println("[RoundController] Round data: " + roundDTO.toString());
+            
             Round updatedRound = roundService.updateRoundByValue(roundValue, tournamentId, roundDTO);
             RoundDTO responseDTO = RoundDTO.fromEntity(updatedRound);
+            
+            System.out.println("[RoundController] Round updated successfully: " + responseDTO.getRoundId());
             return ResponseEntity.ok(responseDTO);
         } catch (IllegalArgumentException e) {
+            System.err.println("[RoundController] IllegalArgumentException: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Error: Failed to update round");
+            System.err.println("[RoundController] Exception updating round: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Error: Failed to update round - " + e.getMessage());
         }
     }
 

@@ -32,18 +32,34 @@ public class MatchService {
     }
 
     public void generateMatchesForRound(Round round) {
+        System.out.println("[MatchService] Generating matches for round: " + round.getRoundId());
+        
         Tournament tournament = round.getTournament();
         List<Team> teams = teamRepository.findByTournamentTournamentId(tournament.getTournamentId());
+        
+        System.out.println("[MatchService] Found " + teams.size() + " teams for tournament: " + tournament.getTournamentId());
 
         // Clear existing matches for this round
         List<Match> existingMatches = matchRepository.findByRound(round);
-        matchRepository.deleteAll(existingMatches);
+        System.out.println("[MatchService] Deleting " + existingMatches.size() + " existing matches");
+        
+        try {
+            matchRepository.deleteAll(existingMatches);
+            System.out.println("[MatchService] Existing matches deleted successfully");
+        } catch (Exception e) {
+            System.err.println("[MatchService] Error deleting existing matches: " + e.getMessage());
+            throw e;
+        }
 
         if (round.getType() == Round.TournamentType.KNOCKOUT) {
+            System.out.println("[MatchService] Generating KNOCKOUT matches");
             generateKnockoutMatches(round, teams);
         } else if (round.getType() == Round.TournamentType.ROUND_ROBIN) {
+            System.out.println("[MatchService] Generating ROUND_ROBIN matches");
             generateRoundRobinMatches(round, teams);
         }
+        
+        System.out.println("[MatchService] Match generation completed");
     }
 
     private void generateKnockoutMatches(Round round, List<Team> teams) {

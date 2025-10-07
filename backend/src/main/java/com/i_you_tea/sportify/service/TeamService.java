@@ -103,19 +103,19 @@ public class TeamService {
         dummyTeam.setTeamName(createDummyTeamDTO.getTeamName());
         dummyTeam.setDummy(true); // Mark as a dummy team
 
-        // Assuming you have a way to get the Sport entity
-        Sport sport = new Sport();
-        sport.setSportId(createDummyTeamDTO.getSportId());
+        // Load the actual Sport entity from database
+        Sport sport = sportRepository.findById(createDummyTeamDTO.getSportId())
+                .orElseThrow(() -> new RuntimeException("Sport not found with ID: " + createDummyTeamDTO.getSportId()));
         dummyTeam.setSport(sport);
 
-        // Assuming you have a way to get the Tournament entity
-        Tournament tournament = new Tournament();
-        tournament.setTournamentId(createDummyTeamDTO.getTournamentId());
+        // Load the actual Tournament entity from database
+        Tournament tournament = tournamentRepository.findById(createDummyTeamDTO.getTournamentId())
+                .orElseThrow(() -> new RuntimeException("Tournament not found with ID: " + createDummyTeamDTO.getTournamentId()));
         dummyTeam.setTournament(tournament);
 
-        // Assuming you have a way to get the User entity for createdBy
-        User createdBy = new User();
-        createdBy.setUserId(createDummyTeamDTO.getCreatedById());
+        // Load the actual User entity from database
+        User createdBy = userRepository.findById(createDummyTeamDTO.getCreatedById())
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + createDummyTeamDTO.getCreatedById()));
         dummyTeam.setCreatedBy(createdBy);
 
         return teamRepository.save(dummyTeam);

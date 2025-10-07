@@ -355,10 +355,7 @@ export default function FixtureViewer() {
       roundFixture = additionalRounds[roundNumber - 2] || null;
     }
     console.log(`Fetching Winners for round: ${roundNumber}`);
-    await deleteDummyTeamsByTournamentAndRoundValue(
-      selectedTournament.tournamentId,
-      roundNumber
-    );
+    
 
     if (!roundFixture || !roundFixture.matches) return [];
 
@@ -750,6 +747,7 @@ export default function FixtureViewer() {
       const maxRounds = getMaxRoundNumber();
       let lastExistingRound = 0;
       let anyFixtureExists = false;
+      console.log(`Checking if fixture exists for max round ${maxRounds}`);
 
       for (let roundNum = 1; roundNum <= maxRounds; roundNum++) {
         const roundValue = getRoundValue(roundNum);
@@ -893,7 +891,7 @@ export default function FixtureViewer() {
           `[fixture] Updating existing first round: PUT /api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`
         );
         if (!atLeastOneMatchCompleteInThisRound) {
-          for (let i = fixtureExistsUpTo; i >= selectedCurrentRoundValue; i--) {
+          for (let i = fixtureExistsUpTo+1; i > selectedCurrentRoundValue; i--) {
             deleteDummyTeamsByTournamentAndRoundValue(selectedTournament.tournamentId, i);
           }
           result = await makeAuthenticatedRequest<RoundFixture>(

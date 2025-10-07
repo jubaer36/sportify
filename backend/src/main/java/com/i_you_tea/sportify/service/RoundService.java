@@ -100,17 +100,29 @@ public class RoundService {
      * Update an existing round by round value and tournament ID
      */
     public Round updateRoundByValue(Integer roundValue, Long tournamentId, RoundDTO roundDTO) {
+        System.out.println("[RoundService] Updating round with value: " + roundValue + " for tournament: " + tournamentId);
+        
         Round existingRound = roundRepository.findByRoundValueAndTournament_TournamentId(roundValue, tournamentId)
                 .orElseThrow(() -> new IllegalArgumentException("Round not found with value: " + roundValue + " for tournament: " + tournamentId));
+        
+        System.out.println("[RoundService] Found existing round: " + existingRound.getRoundId());
         
         existingRound.setRoundValue(roundDTO.getRoundValue());
         existingRound.setRoundName(roundDTO.getRoundName());
         existingRound.setType(roundDTO.getType());
 
         Round savedRound = roundRepository.save(existingRound);
+        System.out.println("[RoundService] Round saved successfully");
 
         // Generate matches for the round
-        matchService.generateMatchesForRound(savedRound);
+        System.out.println("[RoundService] Generating matches for the round");
+        try {
+            matchService.generateMatchesForRound(savedRound);
+            System.out.println("[RoundService] Matches generated successfully");
+        } catch (Exception e) {
+            System.err.println("[RoundService] Error generating matches: " + e.getMessage());
+            throw e;
+        }
         
         return savedRound;
     }

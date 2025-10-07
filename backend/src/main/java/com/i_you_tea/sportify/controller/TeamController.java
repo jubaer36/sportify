@@ -123,9 +123,10 @@ public class TeamController {
                                                                @RequestBody CreateDummyTeamDTO dummyTeamDTO) {
         try {
             Team createdTeam = teamService.createDummyTeam(dummyTeamDTO);
+            TeamDTO teamDTO = TeamDTO.fromEntity(createdTeam);
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Dummy team created successfully");
-            response.put("team", createdTeam);
+            response.put("team", teamDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
