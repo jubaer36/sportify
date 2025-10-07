@@ -22,7 +22,7 @@ export async function makeAuthenticatedRequest<T>(
     const token = localStorage.getItem('token');
     
     console.log('[API] Making request to:', endpoint);
-    console.log('[API] Token exists:', !!token);
+    // console.log('[API] Token exists:', !!token);
     
     if (!token) {
       console.error('[API] No token found in localStorage');
@@ -39,20 +39,20 @@ export async function makeAuthenticatedRequest<T>(
       ...options.headers,
     };
 
-    console.log('[API] Request headers:', headers);
-    console.log('[API] Request URL:', url);
+    // console.log('[API] Request headers:', headers);
+    // console.log('[API] Request URL:', url);
 
     const response = await fetch(url, {
       ...options,
       headers,
     });
 
-    console.log('[API] Response status:', response.status);
-    console.log('[API] Response ok:', response.ok);
+    // console.log('[API] Response status:', response.status);
+    // console.log('[API] Response ok:', response.ok);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[API] Error response:', errorText);
+      // console.error('[API] Error response:', errorText);
       
       if (response.status === 401) {
         // Clear invalid token
@@ -98,7 +98,7 @@ export async function makeAuthenticatedRequest<T>(
 
     try {
       const data = await response.json();
-      console.log('[API] Response data:', data);
+      // console.log('[API] Response data:', data);
       return {
         data,
         status: response.status

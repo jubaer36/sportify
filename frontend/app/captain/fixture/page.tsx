@@ -6,6 +6,7 @@ import Topbar from "@/Component/topbar";
 import { makeAuthenticatedRequest } from "@/utils/api";
 import "./fixture.css";
 import Sidebar from "@/Component/captain_sidebar";
+import { Console } from "console";
 
 interface Team {
   teamId: number;
@@ -341,12 +342,14 @@ export default function FixtureViewer() {
   };
 
   // Generic function to get winners from any round
-  const setRoundWinners = async (roundNumber: number) => {
+  const setRoundWinners = async (roundNumber: number , fixture: Fixture | null) => {
     if (!selectedTournament) {
       console.error("getRoundWinners called without a selected tournament.");
       return [];
     }
-
+    
+    console.log(`Fixture exists up to round: ${fixtureExistsUpTo}`);
+    console.log(`Fixture data:`, fixture);
     let roundFixture: RoundFixture | null = null;
 
     if (roundNumber === 1) {
@@ -362,8 +365,10 @@ export default function FixtureViewer() {
     let winners;
 
     if (roundFixture.type === "KNOCKOUT") {
+      console.log(`Fetching Knockout winners for round ${roundNumber}`);
       winners = setKnockOutRoundWinners(roundNumber, roundFixture);
     } else {
+      console.log(`Fetching Round Robin winners for round ${roundNumber}`);
       winners = setRoundRobinRoundWinners(roundNumber, roundFixture);
     }
 
@@ -374,10 +379,12 @@ export default function FixtureViewer() {
     roundNumber: number,
     roundFixture: RoundFixture
   ) => {
+    console.log('[setKnockOutRoundWinners] Step 1: Preparing winnerPromises for round', roundNumber, roundFixture);
     // 1. Explicitly type the array of promises.
     const winnerPromises: Promise<
       Team | { teamId: number; teamName: string }
     >[] = roundFixture.matches.map((match, index) => {
+      console.log(`[setKnockOutRoundWinners] Step 2: Processing match ${index + 1}`, match);
       if (
         match.status !== "COMPLETED" ||
         !match.winnerTeamId ||
@@ -386,10 +393,18 @@ export default function FixtureViewer() {
         const dummyTeamName = `Winner Team Match ${
           index + 1
         } Round ${roundNumber}`;
+        console.log(`[setKnockOutRoundWinners] Step 2a: Creating dummy team for match ${index + 1} with name`, dummyTeamName);
         // 2. Return the promise from createDummyTeam.
-        return createDummyTeam(dummyTeamName);
+        return createDummyTeam(dummyTeamName).then((team) => {
+          console.log(`[setKnockOutRoundWinners] Step 2a-i: Dummy team created for match ${index + 1}`, team);
+          return team;
+        });
       } else {
         // 3. Return a resolved promise for completed matches.
+        console.log(`[setKnockOutRoundWinners] Step 2b: Match ${index + 1} completed, winner:`, {
+          teamId: match.winnerTeamId,
+          teamName: match.winnerTeamName,
+        });
         return Promise.resolve({
           teamId: match.winnerTeamId,
           teamName: match.winnerTeamName,
@@ -399,10 +414,12 @@ export default function FixtureViewer() {
 
     try {
       // 4. Await all promises at once, outside the map.
+      console.log('[setKnockOutRoundWinners] Step 3: Awaiting all winnerPromises...');
       const winners = await Promise.all(winnerPromises);
+      console.log('[setKnockOutRoundWinners] Step 4: All winners resolved:', winners);
       return winners;
     } catch (error) {
-      console.error("Error resolving winners:", error);
+      console.error('[setKnockOutRoundWinners] Step 5: Error resolving winners:', error);
       // Return an empty array or handle the error as needed.
       return [];
     }
@@ -445,7 +462,7 @@ export default function FixtureViewer() {
     }
   };
 
-  const createDummyTeam = async (teamName: string): Promise<any> => {
+  const createDummyTeam = async (teamName: string): Promise<Team> => {
     if (!selectedTournament || !userProfile) {
       throw new Error("Selected tournament or user profile is not available.");
     }
@@ -585,8 +602,7 @@ export default function FixtureViewer() {
   };
 
   const getRoundValue = (roundNumber: number) => {
-    const maxRounds = getMaxRoundNumber();
-    const value = maxRounds - (roundNumber - 1);
+    const value = roundNumber;
     return Math.max(1, Math.round(value));
   };
 
@@ -742,7 +758,7 @@ export default function FixtureViewer() {
     }
   };
 
-  const checkFixtureExists = async (tournamentId: number) => {
+  const checkFixtureExists = async (tournamentId: number): Promise<number> => {
     try {
       const maxRounds = getMaxRoundNumber();
       let lastExistingRound = 0;
@@ -766,9 +782,12 @@ export default function FixtureViewer() {
       console.log(
         `Fixture exists: ${anyFixtureExists}, up to round: ${lastExistingRound}`
       );
+      
+      return lastExistingRound;
     } catch {
       setFixtureExists(false);
       setFixtureExistsUpTo(0);
+      return 0;
     }
   };
 
@@ -797,19 +816,20 @@ export default function FixtureViewer() {
     }
   };
 
-  const loadAllRounds = async () => {
-    if (!selectedTournament) return;
+  const loadAllRounds = async (upToRound?: number): Promise<Fixture | null> => {
+    if (!selectedTournament) return null;
 
     setLoading(true);
     setError(null);
 
     try {
-      const maxRounds = getMaxRoundNumber();
+      
       const loadedRounds: RoundFixture[] = [];
+      const roundsToLoad = upToRound !== undefined ? upToRound : fixtureExistsUpTo;
 
       // Load all existing rounds
-      console.log(`Fixture exists up to round: ${fixtureExistsUpTo}`)
-      for (let roundNum = 1; roundNum <= fixtureExistsUpTo; roundNum++) {
+      console.log(`Fixture exists up to round: ${roundsToLoad}`)
+      for (let roundNum = 1; roundNum <= roundsToLoad; roundNum++) {
         const roundValue = roundNum;
         const roundData = await loadRound(roundValue);
         console.log(`Round Data: ${roundData}`);
@@ -834,11 +854,15 @@ export default function FixtureViewer() {
         setFixture(mockFixture);
         setAdditionalRounds(loadedRounds.slice(1)); // Store additional rounds
         setShowFixture(true);
+        
+        return mockFixture;
       } else {
         setError("No rounds found for this tournament");
+        return null;
       }
     } catch {
       setError("Error loading rounds");
+      return null;
     } finally {
       setLoading(false);
     }
@@ -849,20 +873,25 @@ export default function FixtureViewer() {
 
     setLoading(true);
     setError(null);
+    const roundsWithFixture = await checkFixtureExists(selectedTournament.tournamentId);
+    console.log(`Rounds with fixture: ${roundsWithFixture}`);
 
     try {
       const roundValue = roundNumber; // Get round value for first round
+      console.log(`Generating for round ${roundNumber}`);
       setSelectedCurrentRoundValue(roundNumber);
       let rName;
-      if (selectedCurrentRoundValue == 1) {
-        rName = getRoundName(selectedCurrentRoundValue, teams.length);
+      if (roundNumber == 1) {
+        rName = getRoundName(roundNumber, teams.length);
+        console.log(`[generateNextRound] Step 1: Total teams: ${teams.length}`);
+        console.log(`[generateNextRound] Step 1: Round name for round ${roundNumber} is`, rName);
       } else {
         // For subsequent rounds, we need to get winners from previous round
         const previousRoundWinners = await getRoundWinners(
-          selectedCurrentRoundValue - 1
+          roundNumber - 1
         );
         rName = getRoundName(
-          selectedCurrentRoundValue,
+          roundNumber,
           previousRoundWinners.length
         );
       }
@@ -883,16 +912,19 @@ export default function FixtureViewer() {
       const existingRoundResult = await makeAuthenticatedRequest<RoundFixture>(
         `/api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`
       );
-      console.log(`Exisiting round Values: ${existingRoundResult.data}`);
+      console.log(`Exisiting round Values: ${existingRoundResult.data?.matches}`);
       let result;
       if (existingRoundResult.data) {
         // Round exists, update it with PUT request
         console.log(
           `[fixture] Updating existing first round: PUT /api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`
         );
-        if (!atLeastOneMatchCompleteInThisRound) {
-          for (let i = fixtureExistsUpTo+1; i > selectedCurrentRoundValue; i--) {
+        if (!atLeastOneMatchCompleteInThisRound || 1==1) {
+          console.log(`Regenerating round as no matches are completed`);
+          console.log(`Deleting dummy teams from round ${roundNumber} up to ${roundsWithFixture}`);
+          for (let i = roundsWithFixture; i >= roundNumber; i--) {
             deleteDummyTeamsByTournamentAndRoundValue(selectedTournament.tournamentId, i);
+            console.log(`Deleted dummy teams for round value ${i}`);
           }
           result = await makeAuthenticatedRequest<RoundFixture>(
             `/api/tournaments/${selectedTournament.tournamentId}/rounds/value/${roundValue}`,
@@ -920,19 +952,40 @@ export default function FixtureViewer() {
           }
         );
       }
-      getMaxRoundNumber();
+      
 
       console.log("[fixture] Round operation result:", result);
 
       if (result && result.data) {
         await new Promise((resolve) => setTimeout(resolve, 500));
-        await loadAllRounds();
+        
+        // Store the new values in variables first
+        const newFixtureExistsUpTo = result.data.roundValue;
+        const newSelectedCurrentRoundValue = roundNumber;
+        
+        // Then update the state
         setFixtureExists(true);
         setShowGenerateModal(false);
+        setFixtureExistsUpTo(newFixtureExistsUpTo);
+        setSelectedCurrentRoundValue(newSelectedCurrentRoundValue);
+        setAtLeastOneMatchCompleteInThisRound(false);
+        
+        // Use the local variables for logging and further operations
+        console.log(`Fixture exists up to round: ${newFixtureExistsUpTo}`);
+        console.log(`Selected result round value: ${result.data.roundValue}`);
+        console.log(`Selected type: ${selectedType}`);
+        console.log(`Result data:`, result.data);
+        console.log(`Loading all rounds...`);
+        
+        const fixture = await loadAllRounds(newFixtureExistsUpTo);
         const actionText = existingRoundResult.data ? "updated" : "generated";
+        console.log(`Setting round winners for round ${newSelectedCurrentRoundValue}...`);
+        await setRoundWinners(newSelectedCurrentRoundValue , fixture);
+        
         alert(
           `First round ${actionText} successfully with ${selectedType} format!`
         );
+
       } else {
         throw new Error(
           `Failed to ${
@@ -940,8 +993,9 @@ export default function FixtureViewer() {
           } first round`
         );
       }
-
-      setRoundWinners(selectedCurrentRoundValue);
+      
+      
+      
     } catch (error) {
       setError("Error generating first round");
       console.error("Generate first round error:", error);
@@ -987,10 +1041,10 @@ export default function FixtureViewer() {
       const fetchWinners = async () => {
         setIsLoadingWinners(true);
         const fetchedWinners = await getRoundWinners(roundNumber);
-        console.log(
-          `Fetched Winners for Round ${roundNumber}:`,
-          fetchedWinners
-        );
+        // console.log(
+        //   `Fetched Winners for Round ${roundNumber}:`,
+        //   fetchedWinners
+        // );
         console.log(`Number of winners: ${fetchedWinners.length}`);
         fetchedWinners.forEach((winner, index) => {
           console.log(
@@ -1338,7 +1392,7 @@ export default function FixtureViewer() {
                     Fixture exists for {selectedTournament.name}.
                   </h2>
                   <button
-                    onClick={loadAllRounds}
+                    onClick={() => loadAllRounds()}
                     className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
                   >
                     Show Fixture
@@ -1353,7 +1407,7 @@ export default function FixtureViewer() {
                       Fixture for {fixture.tournamentName}
                     </h2>
                     <button
-                      onClick={loadAllRounds}
+                      onClick={() => loadAllRounds()}
                       className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300"
                     >
                       Refresh Fixture
