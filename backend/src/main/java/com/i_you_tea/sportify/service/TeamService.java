@@ -12,6 +12,8 @@ import com.i_you_tea.sportify.repository.TeamMemberRepository;
 import com.i_you_tea.sportify.repository.UserRepository;
 import com.i_you_tea.sportify.repository.SportRepository;
 import com.i_you_tea.sportify.repository.TournamentRepository;
+import com.i_you_tea.sportify.repository.MatchRepository;
+import com.i_you_tea.sportify.repository.MatchRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ public class TeamService {
     private final UserRepository userRepository;
     private final SportRepository sportRepository;
     private final TournamentRepository tournamentRepository;
+    private final MatchRepository matchRepository;
     public List<Team> getAllTeams() {
         return teamRepository.findAll();
     }
@@ -125,6 +128,14 @@ public class TeamService {
 
     @Transactional
     public void deleteDummyTeamsByTournamentIdAndRoundValue(Long tournamentId, int roundValue) {
+        System.out.println("[TeamService] Deleting matches for tournament " + tournamentId + ", round " + roundValue);
+        // First, delete all matches for this tournament and round
+        matchRepository.deleteByTournamentIdAndRoundValue(tournamentId, roundValue);
+        
+        System.out.println("[TeamService] Deleting dummy teams for tournament " + tournamentId + ", round " + roundValue);
+        // Then delete the dummy teams
         teamRepository.deleteDummyTeamsByTournamentIdAndRoundValue(tournamentId, roundValue);
+        
+        System.out.println("[TeamService] Deletion completed for tournament " + tournamentId + ", round " + roundValue);
     }
 }

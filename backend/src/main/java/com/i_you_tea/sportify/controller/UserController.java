@@ -34,19 +34,26 @@ public class UserController {
     @GetMapping("/profile")
     public ResponseEntity<?> getCurrentUserProfile(@RequestHeader("Authorization") String token) {
         try {
+            System.out.println("[UserController] Received profile request with token: " + 
+                (token != null ? token.substring(0, Math.min(20, token.length())) + "..." : "null"));
+            
             Optional<User> userOptional = userService.getCurrentUserFromToken(token);
 
             if (userOptional.isEmpty()) {
+                System.err.println("[UserController] No user found for token");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "Invalid or expired token"));
             }
 
             User currentUser = userOptional.get();
+            System.out.println("[UserController] Found user: " + currentUser.getUsername() + " (ID: " + currentUser.getUserId() + ")");
             UserDTO userDTO = UserDTO.fromEntity(currentUser);
             return ResponseEntity.ok(userDTO);
         } catch (Exception e) {
+            System.err.println("[UserController] Error retrieving user profile: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error retrieving user profile"));
+                    .body(Map.of("error", "Error retrieving user profile: " + e.getMessage()));
         }
     }
 
