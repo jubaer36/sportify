@@ -34,7 +34,7 @@ public class Match {
     private Team team1;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team2_id", nullable = false)
+    @JoinColumn(name = "team2_id", nullable = true)
     private Team team2;
     
     @Column(name = "scheduled_time")

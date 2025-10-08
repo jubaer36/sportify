@@ -17,9 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -206,6 +204,83 @@ public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginRequest)
 
         } catch (Exception e) {
             return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
+        }
+    }
+
+        @PostMapping("/register/bulk")
+    public ResponseEntity<?> registerBulk(@RequestBody List<RegisterRequestDTO> users) {
+        if (users == null || users.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "User list cannot be empty"));
+        }
+
+        try {
+            Map<String, Object> response = new HashMap<>();
+            List<Map<String, Object>> results = new ArrayList<>();
+            int successCount = 0;
+            int failCount = 0;
+
+            for (RegisterRequestDTO registerRequest : users) {
+                Map<String, Object> userResult = new HashMap<>();
+                userResult.put("email", registerRequest.getEmail());
+                userResult.put("username", registerRequest.getUsername());
+
+                try {
+                    // Call the existing register method
+                    ResponseEntity<?> registerResponse = register(registerRequest);
+                    
+                    if (registerResponse.getStatusCode() == HttpStatus.CREATED) {
+                        // Registration successful
+                        userResult.put("success", true);
+                        
+                        // Extract user details from the response if it's an AuthResponseDTO
+                        Object responseBody = registerResponse.getBody();
+                        if (responseBody instanceof AuthResponseDTO) {
+                            AuthResponseDTO authResponse = (AuthResponseDTO) responseBody;
+                            UserDTO userDTO = authResponse.getUser();
+                            userResult.put("userId", userDTO.getUserId());
+                            userResult.put("name", userDTO.getName());
+                            userResult.put("role", userDTO.getRole());
+                        }
+                        successCount++;
+                    } else {
+                        // Registration failed
+                        userResult.put("success", false);
+                        Object errorBody = registerResponse.getBody();
+                        if (errorBody instanceof Map) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> errorMap = (Map<String, Object>) errorBody;
+                            userResult.put("error", errorMap.get("error"));
+                        } else {
+                            userResult.put("error", "Registration failed");
+                        }
+                        failCount++;
+                    }
+
+                } catch (Exception userException) {
+                    userResult.put("success", false);
+                    userResult.put("error", "Failed to register user: " + userException.getMessage());
+                    failCount++;
+                }
+                
+                results.add(userResult);
+            }
+
+            response.put("message", "Bulk registration completed");
+            response.put("totalRequested", users.size());
+            response.put("successfullyRegistered", successCount);
+            response.put("failed", failCount);
+            response.put("results", results);
+
+            if (successCount > 0) {
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "An error occurred during bulk registration: " + e.getMessage()));
         }
     }
 }
