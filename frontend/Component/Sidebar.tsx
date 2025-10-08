@@ -13,9 +13,10 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         ×
       </button>
       <nav className="sidebar-nav">
-        <Link href="/admin/profile" className="sidebar-link">My Profile</Link>
+        <Link href="/profile" className="sidebar-link">My Profile</Link>
         <Link href="/admin/manage-captains" className="sidebar-link">Manage Captains</Link>
         <Link href="/admin/all-games" className="sidebar-link">All Games</Link>
+        <Link href="/admin/hall-of-fame" className="sidebar-link">Hall of Fame</Link>
       </nav>
     </aside>
   );

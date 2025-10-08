@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Topbar from "@/Component/topbar";
 import { makeAuthenticatedRequest } from "@/utils/api";
 import "./manage-captains.css";
@@ -56,10 +56,15 @@ function getDefaultLogo(sportName: string): string {
 }
 
 export default function ManageCaptains() {
+  const searchRef = useRef<HTMLDivElement>(null);
   const [sports, setSports] = useState<Sport[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedSport, setSelectedSport] = useState<Sport | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
   const [loadingSports, setLoadingSports] = useState(true);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [errorSports, setErrorSports] = useState<string | null>(null);
@@ -110,6 +115,50 @@ export default function ManageCaptains() {
       }
     };
     fetchUsers();
+  }, []);
+
+  // --- Filter users based on search term ---
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredUsers([]);
+    } else {
+      const filtered = users.filter(user =>
+        user.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredUsers(filtered);
+    }
+  }, [searchTerm, users]);
+
+  // --- Handle search input change ---
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setShowDropdown(value.trim() !== '');
+    if (value.trim() === '') {
+      setSelectedUserId(null);
+      setSelectedUser(null);
+    }
+  };
+
+  // --- Handle user selection from dropdown ---
+  const handleUserSelect = (user: User) => {
+    setSelectedUserId(user.userId);
+    setSelectedUser(user);
+    setSearchTerm(user.name);
+    setShowDropdown(false);
+  };
+
+  // --- Handle click outside to close dropdown ---
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   // --- Assign captain API call ---
@@ -182,6 +231,9 @@ export default function ManageCaptains() {
                     setSelectedSport(sport);
                     setSuccessMsg(null);
                     setSelectedUserId(null);
+                    setSelectedUser(null);
+                    setSearchTerm('');
+                    setShowDropdown(false);
                   }}
                 >
                   <img
@@ -223,18 +275,40 @@ export default function ManageCaptains() {
                 <div className="error-message">{errorUsers}</div>
               ) : (
                 <>
-                  <select
-                    className="user-dropdown"
-                    onChange={(e) => setSelectedUserId(Number(e.target.value))}
-                    value={selectedUserId ?? ''}
-                  >
-                    <option value="">-- Select User --</option>
-                    {users.map((user) => (
-                      <option key={user.userId} value={user.userId}>
-                        {user.name} ({user.username}) - {user.email}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="search-container" ref={searchRef}>
+                    <input
+                      type="text"
+                      className="search-box"
+                      placeholder="Type player name to search..."
+                      value={searchTerm}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      onFocus={() => setShowDropdown(searchTerm.trim() !== '')}
+                    />
+                    {showDropdown && filteredUsers.length > 0 && (
+                      <div className="user-dropdown-list">
+                        {filteredUsers.map((user) => (
+                          <div
+                            key={user.userId}
+                            className="user-option"
+                            onClick={() => handleUserSelect(user)}
+                          >
+                            <div className="user-name">{user.name}</div>
+                            <div className="user-details">@{user.username} • {user.email}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {showDropdown && searchTerm.trim() !== '' && filteredUsers.length === 0 && (
+                      <div className="user-dropdown-list">
+                        <div className="no-results">No players found</div>
+                      </div>
+                    )}
+                  </div>
+                  {selectedUser && (
+                    <div className="selected-user">
+                      <strong>Selected:</strong> {selectedUser.name} (@{selectedUser.username})
+                    </div>
+                  )}
                   <button
                     className="assign-btn"
                     onClick={handleAssignCaptain}

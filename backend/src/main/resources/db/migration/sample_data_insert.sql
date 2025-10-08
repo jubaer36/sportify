@@ -29,10 +29,10 @@ INSERT INTO role (id, name, is_active, created_on, updated_on) VALUES
 
 -- Insert Sports (with captain assignments only, champion/runner-up will be updated after teams are inserted)
 INSERT INTO sports (sport_id, name, is_team_game, rules, captain_id) VALUES
-(1, 'Football', true, 'Standard FIFA football rules with 11 players per team, 90-minute match duration.', 6),
-(2, 'Basketball', true, 'Standard basketball rules with 5 players per team, 4 quarters of 12 minutes each.', 7),
-(3, 'Cricket', true, 'T20 format cricket rules with 11 players per team, 20 overs per innings.', 7),
-(4, 'Tennis', false, 'Standard tennis rules, singles match, best of 3 sets.', 6),
+(1, 'Football', true, 'Standard FIFA football rules with 11 players per team, 90-minute match duration.', NULL),
+(2, 'Basketball', true, 'Standard basketball rules with 5 players per team, 4 quarters of 12 minutes each.', NULL),
+(3, 'Cricket', true, 'T20 format cricket rules with 11 players per team, 20 overs per innings.', NULL),
+(4, 'Tennis', false, 'Standard tennis rules, singles match, best of 3 sets.', NULL),
 (5, 'Badminton', false, 'Standard badminton rules, singles match, best of 3 games to 21 points.', NULL);
 
 -- Insert Tournaments (with champions and runners-up for completed tournaments)
@@ -42,8 +42,8 @@ INSERT INTO tournaments (tournament_id, name, sport_id, start_date, end_date, cr
 (3, 'Summer Cricket Tournament', 3, '2024-05-01', '2024-05-31', 1, NULL, NULL),
 (4, 'Tennis Masters Cup', 4, '2024-06-01', '2024-06-15', 1, NULL, NULL),
 (5, 'Badminton Open Championship', 5,  '2024-07-01', '2024-07-31', 1, NULL, NULL),
-(6, 'Captain''s Football League', 1,  '2024-08-01', '2024-08-31', 6, NULL, NULL),
-(7, 'Elite Cricket Championship', 3, '2024-09-01', '2024-09-30', 7, NULL, NULL),
+(6, 'Captain''s Football League', 1,  '2024-08-01', '2024-08-31', 1, NULL, NULL),
+(7, 'Elite Cricket Championship', 3, '2024-09-01', '2024-09-30', 1, NULL, NULL),
 (8, 'Winter Football Championship 2024', 1, '2024-12-01', '2024-12-31', 1, NULL, NULL);
 
 -- Insert Teams
