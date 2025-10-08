@@ -44,6 +44,7 @@ public class SportService {
             sport.setName(sportUpdate.getName());
             sport.setIsTeamGame(sportUpdate.getIsTeamGame());
             sport.setRules(sportUpdate.getRules());
+            sport.setPlayerCount(sportUpdate.getPlayerCount());
 
             // Handle captain assignment (allow any user)
             if (sportUpdate.getCaptain() != null && sportUpdate.getCaptain().getUserId() != null) {

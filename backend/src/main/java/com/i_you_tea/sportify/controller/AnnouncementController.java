@@ -3,13 +3,13 @@ package com.i_you_tea.sportify.controller;
 import com.i_you_tea.sportify.dto.AnnouncementDTO;
 import com.i_you_tea.sportify.entity.Announcement;
 import com.i_you_tea.sportify.service.AnnouncementService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,9 +30,25 @@ public class AnnouncementController {
         return ResponseEntity.ok(announcementDTOs);
     }
 
+    @PostMapping("/make")
+    public ResponseEntity<AnnouncementDTO> makeAnnouncement(@RequestBody @Valid com.i_you_tea.sportify.dto.AnnouncementMakeDTO dto) {
+        Announcement created = announcementService.makeAnnouncement(
+                dto.getTitle(),
+                dto.getContent(),
+                dto.getPostedByUserId(),
+                dto.getRelatedSportId(),
+                dto.getRelatedTournamentId(),
+                dto.getStartDate(),
+                dto.getEndDate()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(AnnouncementDTO.fromEntity(created));
+    }
 
-    @PostMapping
-    public ResponseEntity<AnnouncementDTO> createAnnouncement(@RequestBody Announcement announcement) {
+   
+
+    // Keep the old method for backward compatibility if needed
+    @PostMapping("/direct")
+    public ResponseEntity<AnnouncementDTO> createAnnouncementDirect(@RequestBody Announcement announcement) {
         Announcement created = announcementService.createAnnouncement(announcement);
         return ResponseEntity.status(HttpStatus.CREATED).body(AnnouncementDTO.fromEntity(created));
     }

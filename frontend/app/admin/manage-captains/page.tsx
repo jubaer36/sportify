@@ -167,8 +167,11 @@ export default function ManageCaptains() {
     setAssigning(true);
     setSuccessMsg(null);
 
+    // Save previous captain id before updating
+    const previousCaptainId = selectedSport.captainId;
+
     try {
-      // Construct SportDTO for backend
+      // 1. Update sport with new captain
       const updatedSportDTO = {
         sportId: selectedSport.sportId,
         name: selectedSport.name,
@@ -181,23 +184,55 @@ export default function ManageCaptains() {
         recentRunnerUpName: selectedSport.recentRunnerUpName ?? null,
       };
 
-      const response = await makeAuthenticatedRequest<Sport>(
+      const sportResponse = await makeAuthenticatedRequest<Sport>(
         `${SPORTS_API}/${selectedSport.sportId}`,
         {
           method: "PUT",
           body: JSON.stringify(updatedSportDTO),
         }
       );
+      if (sportResponse.error) throw new Error(sportResponse.error);
 
-      if (response.error) {
-        throw new Error(response.error);
+      // 2. Update selected user's role to CAPTAIN
+      await makeAuthenticatedRequest<User>(
+        `/api/users/${selectedUserId}/role`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ role: "CAPTAIN" }),
+        }
+      );
+
+      // 3. Handle previous captain's role if needed
+      if (
+        previousCaptainId &&
+        previousCaptainId !== selectedUserId
+      ) {
+        // Check if previous captain is still captain of any sport
+        const prevCaptainSports = await makeAuthenticatedRequest<Sport[]>(
+          `/api/sports/captain/${previousCaptainId}`
+        );
+        const isStillCaptain =
+          prevCaptainSports.data &&
+          Array.isArray(prevCaptainSports.data) &&
+          prevCaptainSports.data.length > 0;
+
+        if (!isStillCaptain) {
+          // Update previous captain's role to PLAYER
+          await makeAuthenticatedRequest<User>(
+            `/api/users/${previousCaptainId}/role`,
+            {
+              method: "PUT",
+              body: JSON.stringify({ role: "PLAYER" }),
+            }
+          );
+        }
       }
 
       setSuccessMsg("Captain assigned successfully!");
       await fetchSports();
 
       // update selected sport
-      const updated = response.data;
+      const updated = sportResponse.data;
       if (updated) {
         setSelectedSport(updated);
       }

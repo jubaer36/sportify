@@ -1,0 +1,153 @@
+.conduct-match-bg {
+  min-height: 100vh;
+  background: #e0f2fe;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center content horizontally */
+}
+
+.conduct-match-content {
+  width: 60%; /* Full width about 60% of screen */
+  max-width: 1000px; /* Optional max width for large screens */
+  margin: 3rem 0 0 0;
+  background: #fff;
+  border-radius: 1.2rem;
+  box-shadow: 0 4px 24px 0 #38bdf82a;
+  padding: 2.5rem 2rem;
+  text-align: center;
+}
+
+.conduct-match-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #0284c7;
+  margin-bottom: 2rem;
+}
+
+.section {
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.section-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #0c4a6e;
+  margin-bottom: 0.7rem;
+  display: block;
+}
+
+.proceed-btn {
+  width: 100%;
+  padding: 0.9rem 0;
+  background: #38bdf8;
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 0.8rem;
+  margin-top: 2rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.proceed-btn:disabled {
+  background: #bae6fd;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+/* -----------------------------
+   Custom Dropdown Styles
+------------------------------ */
+.dropdown-section {
+  width: 100%; /* Take full width of content area */
+  margin: 0 auto;
+  margin-bottom: 1rem;
+}
+
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+}
+
+.custom-dropdown-selected {
+  padding: 0.7rem 1rem;
+  border: 1px solid #bae6fd;
+  border-radius: 0.7rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f0f9ff;
+  color: #0369a1;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.custom-dropdown-selected:hover {
+  border-color: #0284c7;
+}
+
+.custom-dropdown-selected .arrow {
+  margin-left: 10px;
+}
+
+.custom-dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  border: 1px solid #bae6fd;
+  border-radius: 0.7rem;
+  background-color: #f0f9ff;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+  padding: 0;
+  margin: 5px 0 0 0;
+  list-style: none;
+}
+
+.custom-dropdown-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+  transition: background 0.2s;
+}
+
+.custom-dropdown-item:hover {
+  background-color: #e0f2fe;
+}
+
+.tournament-name,
+.team-names {
+  font-weight: 500;
+  color: #0c4a6e;
+}
+
+.sport-tag,
+.round-tag {
+  background-color: #dbeafe;
+  color: #0284c7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+/* Scrollbar styling for dropdown */
+.custom-dropdown-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-dropdown-list::-webkit-scrollbar-thumb {
+  background-color: #38bdf8;
+  border-radius: 3px;
+}
+
+.custom-dropdown-list::-webkit-scrollbar-track {
+  background-color: #f0f9ff;
+}

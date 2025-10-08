@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "matches")
@@ -32,7 +34,7 @@ public class Match {
     private Team team1;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team2_id", nullable = false)
+    @JoinColumn(name = "team2_id", nullable = true)
     private Team team2;
     
     @Column(name = "scheduled_time")
@@ -52,7 +54,16 @@ public class Match {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "round_id")
     private Round round;
-    
+
+    @OneToMany(mappedBy = "match", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Score> scores = new ArrayList<>();
+
+    @Column(name = "team_a_final_score")
+    private Integer teamAFinalScore;
+
+    @Column(name = "team_b_final_score")
+    private Integer teamBFinalScore;
+
     public enum MatchStatus {
         SCHEDULED, ONGOING, COMPLETED, CANCELLED
     }

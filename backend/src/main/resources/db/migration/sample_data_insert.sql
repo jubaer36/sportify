@@ -17,7 +17,6 @@
 
 
 
-
 -- Insert Roles (assuming role table exists, extending MasterEntity)
 INSERT INTO role (id, name, is_active, created_on, updated_on) VALUES
 (1, 'ADMIN', true, NOW(), NOW()),
@@ -28,12 +27,12 @@ INSERT INTO role (id, name, is_active, created_on, updated_on) VALUES
 (6, 'CAPTAIN', true, NOW(), NOW());
 
 -- Insert Sports (with captain assignments only, champion/runner-up will be updated after teams are inserted)
-INSERT INTO sports (sport_id, name, is_team_game, rules, captain_id) VALUES
-(1, 'Football', true, 'Standard FIFA football rules with 11 players per team, 90-minute match duration.', NULL),
-(2, 'Basketball', true, 'Standard basketball rules with 5 players per team, 4 quarters of 12 minutes each.', NULL),
-(3, 'Cricket', true, 'T20 format cricket rules with 11 players per team, 20 overs per innings.', NULL),
-(4, 'Tennis', false, 'Standard tennis rules, singles match, best of 3 sets.', NULL),
-(5, 'Badminton', false, 'Standard badminton rules, singles match, best of 3 games to 21 points.', NULL);
+INSERT INTO sports (sport_id, name, is_team_game, rules, captain_id, player_count) VALUES
+(1, 'Football', true, 'Standard FIFA football rules with 11 players per team, 90-minute match duration.', 6, 11),
+(2, 'Basketball', true, 'Standard basketball rules with 5 players per team, 4 quarters of 12 minutes each.', 7, 5),
+(3, 'Cricket', true, 'T20 format cricket rules with 11 players per team, 20 overs per innings.', 7, 11),
+(4, 'Tennis', false, 'Standard tennis rules, singles match, best of 3 sets.', 6, 1),
+(5, 'Badminton', false, 'Standard badminton rules, singles match, best of 3 games to 21 points.', NULL, 1);
 
 -- Insert Tournaments (with champions and runners-up for completed tournaments)
 INSERT INTO tournaments (tournament_id, name, sport_id, start_date, end_date, created_by, champion_id, runner_up_id) VALUES
@@ -42,9 +41,9 @@ INSERT INTO tournaments (tournament_id, name, sport_id, start_date, end_date, cr
 (3, 'Summer Cricket Tournament', 3, '2024-05-01', '2024-05-31', 1, NULL, NULL),
 (4, 'Tennis Masters Cup', 4, '2024-06-01', '2024-06-15', 1, NULL, NULL),
 (5, 'Badminton Open Championship', 5,  '2024-07-01', '2024-07-31', 1, NULL, NULL),
-(6, 'Captain''s Football League', 1,  '2024-08-01', '2024-08-31', 1, NULL, NULL),
-(7, 'Elite Cricket Championship', 3, '2024-09-01', '2024-09-30', 1, NULL, NULL),
-(8, 'Winter Football Championship 2024', 1, '2024-12-01', '2024-12-31', 1, NULL, NULL);
+(6, 'Captain''s Football League', 1,  '2024-08-01', '2024-08-31', 6, NULL, NULL),
+(7, 'Elite Cricket Championship', 3, '2024-09-01', '2024-09-30', 7, NULL, NULL),
+(8, 'Winter Football Championship 2024', 1, '2024-12-01', '2024-12-31', 6, NULL, NULL);
 
 -- Insert Teams
 INSERT INTO teams (team_id, team_name, sport_id, created_by, logo,tournament_id) VALUES
@@ -57,22 +56,22 @@ INSERT INTO teams (team_id, team_name, sport_id, created_by, logo,tournament_id)
 (7, 'Silver Sharks', 3, 7, 'silver_sharks_logo.png',7);
 
 -- Insert Team Members
-INSERT INTO team_members (team_id, user_id, role_in_team) VALUES
-(1, 2, 'Captain'),
-(1, 3, 'Forward'),
-(1, 4, 'Midfielder'),
-(2, 5, 'Captain'),
-(2, 4, 'Defender'),
-(3, 3, 'Point Guard'),
-(3, 5, 'Shooting Guard'),
-(4, 2, 'Captain'),
-(4, 4, 'Power Forward'),
-(5, 5, 'Captain'),
-(6, 6, 'Captain'),
-(6, 3, 'Striker'),
-(7, 7, 'Captain'),
-(7, 4, 'Wicket Keeper'),
-(7, 2, 'All Rounder');
+INSERT INTO team_members (team_id, user_id, role_in_team, status) VALUES
+(1, 2, 'Captain', 'ACCEPTED'),
+(1, 3, 'Forward', 'ACCEPTED'),
+(1, 4, 'Midfielder', 'ACCEPTED'),
+(2, 5, 'Captain', 'ACCEPTED'),
+(2, 4, 'Defender', 'ACCEPTED'),
+(3, 3, 'Point Guard', 'ACCEPTED'),
+(3, 5, 'Shooting Guard', 'ACCEPTED'),
+(4, 2, 'Captain', 'ACCEPTED'),
+(4, 4, 'Power Forward', 'ACCEPTED'),
+(5, 5, 'Captain', 'ACCEPTED'),
+(6, 6, 'Captain', 'ACCEPTED'),
+(6, 3, 'Striker', 'ACCEPTED'),
+(7, 7, 'Captain', 'ACCEPTED'),
+(7, 4, 'Wicket Keeper', 'ACCEPTED'),
+(7, 2, 'All Rounder', 'ACCEPTED');
 
 -- Update Sports table with recent champion and runner-up information (after teams are inserted)
 -- Based on the most recent tournament results for each sport
@@ -117,35 +116,48 @@ INSERT INTO rounds (round_id, round_value, round_name, tournament_id, type) VALU
 
 
 -- Insert Matches (using round_id to reference rounds table)
-INSERT INTO matches (match_id, tournament_id, sport_id, team1_id, team2_id, scheduled_time, venue, status, winner_team_id, round_id) VALUES
+-- ==============================
+-- INSERT INTO MATCHES
+-- ==============================
+INSERT INTO matches
+(match_id, tournament_id, sport_id, team1_id, team2_id, scheduled_time, venue, status, winner_team_id, round_id, team_a_final_score, team_b_final_score)
+VALUES
 -- Spring Football Championship matches (Tournament ID 1)
-(1, 1, 1, 1, 2, '2024-03-15 15:00:00', 'Main Football Ground', 'COMPLETED', 1, 2), -- Round of 16 (round_id = 2)
-(4, 1, 1, 1, 5, '2024-03-20 16:00:00', 'Secondary Ground', 'SCHEDULED', NULL, 5), -- Final (round_id = 5)
+(1, 1, 1, 1, 2, '2024-03-15 15:00:00', 'Main Football Ground', 'COMPLETED', 1, 2, NULL, NULL), -- Round of 16 (round_id = 2)
+(4, 1, 1, 1, 5, '2024-03-20 16:00:00', 'Secondary Ground', 'SCHEDULED', NULL, 5, NULL, NULL), -- Final (round_id = 5)
 
 -- Inter-College Basketball League matches (Tournament ID 2 - ROUND_ROBIN, no rounds needed)
-(2, 2, 2, 3, 4, '2024-04-10 18:00:00', 'Basketball Court A', 'COMPLETED', 3, NULL),
-(5, 2, 2, 3, 5, '2024-04-25 19:00:00', 'Basketball Court B', 'COMPLETED', 5, NULL),
+(2, 2, 2, 3, 4, '2024-04-10 18:00:00', 'Basketball Court A', 'COMPLETED', 3, NULL, NULL, NULL),
+(5, 2, 2, 3, 5, '2024-04-25 19:00:00', 'Basketball Court B', 'COMPLETED', 5, NULL, NULL, NULL),
 
 -- Summer Cricket Tournament matches (Tournament ID 3)
-(3, 3, 3, 5, 1, '2024-05-20 14:00:00', 'Cricket Stadium', 'ONGOING', NULL, 7), -- Quarter-final (round_id = 7)
+(3, 3, 4, 5, 1, '2024-05-20 14:00:00', 'Cricket Stadium', 'ONGOING', NULL, 7, NULL, NULL),
 
 -- Captain's Football League matches (Tournament ID 6 - ROUND_ROBIN, no rounds needed)
-(6, 6, 1, 6, 1, '2024-08-15 16:00:00', 'Captain''s Ground', 'COMPLETED', 6, NULL),
+(6, 6, 3, 6, 1, '2024-08-15 16:00:00', 'Captain''s Ground', 'COMPLETED', 6, NULL, NULL, NULL),
 
 -- Elite Cricket Championship matches (Tournament ID 7)
-(7, 7, 3, 7, 5, '2024-09-10 14:30:00', 'Elite Cricket Ground', 'COMPLETED', 7, 13); -- Quarter-final (round_id = 13)
+(7, 7, 3, 7, 5, '2024-09-10 14:30:00', 'Elite Cricket Ground', 'COMPLETED', 7, 13, NULL, NULL);
 
--- Insert Scores
-INSERT INTO scores (score_id, match_id, team_id, points, updated_by) VALUES
-(1, 1, 1, 3, 1),
-(2, 1, 2, 1, 1),
-(3, 2, 3, 85, 1),
-(4, 2, 4, 78, 1),
-(5, 5, 3, 92, 1),
-(6, 6, 6, 2, 6),
-(7, 6, 1, 1, 6),
-(8, 7, 7, 185, 7),
-(9, 7, 5, 167, 7);
+
+-- ==============================
+-- INSERT INTO SCORES
+-- ==============================
+INSERT INTO scores (score_id, match_id, team_a_id, team_a_points, team_b_id, team_b_points) VALUES
+-- Match 1 (Football: Team 1 vs Team 2)
+(1, 1, 1, 3, 2, 1),
+
+-- Match 2 (Basketball: Team 3 vs Team 4)
+(2, 2, 3, 85, 4, 78),
+
+-- Match 3 (Cricket: Team 5 vs Team 1)
+(3, 3, 5, 250, 1, 240),
+
+-- Match 4 (Football: Team 1 vs Team 5)
+(4, 4, 1, 2, 5, 2),
+
+-- Match 5 (Basketball: Team 3 vs Team 5)
+(5, 5, 3, 92, 5, 87);
 
 -- Insert Hall of Fame entries
 INSERT INTO hall_of_fame (hof_id, user_id, sport_id, title, stats, photo, match_id, tournament_id) VALUES
@@ -210,131 +222,131 @@ INSERT INTO teams (team_id, team_name, sport_id, created_by, logo , tournament_i
 (32, 'Frost Vipers FC', 1, 6, 'frost_vipers_logo.png',8);
 
 -- Insert team members for the new teams (captain and key players for each team)
-INSERT INTO team_members (team_id, user_id, role_in_team) VALUES
+INSERT INTO team_members (team_id, user_id, role_in_team, status) VALUES
 -- Winter Wolves FC
-(8, 6, 'Captain'),
-(8, 2, 'Striker'),
-(8, 3, 'Midfielder'),
+(8, 6, 'Captain', 'ACCEPTED'),
+(8, 2, 'Striker', 'ACCEPTED'),
+(8, 3, 'Midfielder', 'ACCEPTED'),
 
 -- Frost Giants United
-(9, 7, 'Captain'),
-(9, 4, 'Defender'),
-(9, 5, 'Goalkeeper'),
+(9, 7, 'Captain', 'ACCEPTED'),
+(9, 4, 'Defender', 'ACCEPTED'),
+(9, 5, 'Goalkeeper', 'ACCEPTED'),
 
 -- Arctic Avalanche
-(10, 2, 'Captain'),
-(10, 6, 'Forward'),
-(10, 7, 'Midfielder'),
+(10, 2, 'Captain', 'ACCEPTED'),
+(10, 6, 'Forward', 'ACCEPTED'),
+(10, 7, 'Midfielder', 'ACCEPTED'),
 
 -- Blizzard Bombers
-(11, 3, 'Captain'),
-(11, 4, 'Striker'),
-(11, 5, 'Defender'),
+(11, 3, 'Captain', 'ACCEPTED'),
+(11, 4, 'Striker', 'ACCEPTED'),
+(11, 5, 'Defender', 'ACCEPTED'),
 
 -- Ice Storm FC
-(12, 4, 'Captain'),
-(12, 2, 'Midfielder'),
-(12, 3, 'Wing'),
+(12, 4, 'Captain', 'ACCEPTED'),
+(12, 2, 'Midfielder', 'ACCEPTED'),
+(12, 3, 'Wing', 'ACCEPTED'),
 
 -- Polar Panthers
-(13, 5, 'Captain'),
-(13, 6, 'Forward'),
-(13, 7, 'Defender'),
+(13, 5, 'Captain', 'ACCEPTED'),
+(13, 6, 'Forward', 'ACCEPTED'),
+(13, 7, 'Defender', 'ACCEPTED'),
 
 -- Snowfall Strikers
-(14, 6, 'Captain'),
-(14, 2, 'Striker'),
-(14, 4, 'Midfielder'),
+(14, 6, 'Captain', 'ACCEPTED'),
+(14, 2, 'Striker', 'ACCEPTED'),
+(14, 4, 'Midfielder', 'ACCEPTED'),
 
 -- Glacier Gladiators
-(15, 7, 'Captain'),
-(15, 3, 'Forward'),
-(15, 5, 'Defender'),
+(15, 7, 'Captain', 'ACCEPTED'),
+(15, 3, 'Forward', 'ACCEPTED'),
+(15, 5, 'Defender', 'ACCEPTED'),
 
 -- Frozen Thunder FC
-(16, 2, 'Captain'),
-(16, 3, 'Midfielder'),
-(16, 4, 'Defender'),
+(16, 2, 'Captain', 'ACCEPTED'),
+(16, 3, 'Midfielder', 'ACCEPTED'),
+(16, 4, 'Defender', 'ACCEPTED'),
 
 -- Ice Hawks United
-(17, 3, 'Captain'),
-(17, 5, 'Striker'),
-(17, 6, 'Goalkeeper'),
+(17, 3, 'Captain', 'ACCEPTED'),
+(17, 5, 'Striker', 'ACCEPTED'),
+(17, 6, 'Goalkeeper', 'ACCEPTED'),
 
 -- Winter Warriors FC
-(18, 4, 'Captain'),
-(18, 7, 'Forward'),
-(18, 2, 'Midfielder'),
+(18, 4, 'Captain', 'ACCEPTED'),
+(18, 7, 'Forward', 'ACCEPTED'),
+(18, 2, 'Midfielder', 'ACCEPTED'),
 
 -- Frost Fire FC
-(19, 5, 'Captain'),
-(19, 6, 'Defender'),
-(19, 7, 'Wing'),
+(19, 5, 'Captain', 'ACCEPTED'),
+(19, 6, 'Defender', 'ACCEPTED'),
+(19, 7, 'Wing', 'ACCEPTED'),
 
 -- Arctic Lions
-(20, 6, 'Captain'),
-(20, 2, 'Striker'),
-(20, 3, 'Midfielder'),
+(20, 6, 'Captain', 'ACCEPTED'),
+(20, 2, 'Striker', 'ACCEPTED'),
+(20, 3, 'Midfielder', 'ACCEPTED'),
 
 -- Snow Leopards FC
-(21, 7, 'Captain'),
-(21, 4, 'Forward'),
-(21, 5, 'Defender'),
+(21, 7, 'Captain', 'ACCEPTED'),
+(21, 4, 'Forward', 'ACCEPTED'),
+(21, 5, 'Defender', 'ACCEPTED'),
 
 -- Blizzard Eagles
-(22, 2, 'Captain'),
-(22, 3, 'Midfielder'),
-(22, 6, 'Striker'),
+(22, 2, 'Captain', 'ACCEPTED'),
+(22, 3, 'Midfielder', 'ACCEPTED'),
+(22, 6, 'Striker', 'ACCEPTED'),
 
 -- Polar Storm FC
-(23, 3, 'Captain'),
-(23, 4, 'Defender'),
-(23, 7, 'Goalkeeper'),
+(23, 3, 'Captain', 'ACCEPTED'),
+(23, 4, 'Defender', 'ACCEPTED'),
+(23, 7, 'Goalkeeper', 'ACCEPTED'),
 
 -- Frost Titans
-(24, 4, 'Captain'),
-(24, 5, 'Forward'),
-(24, 2, 'Midfielder'),
+(24, 4, 'Captain', 'ACCEPTED'),
+(24, 5, 'Forward', 'ACCEPTED'),
+(24, 2, 'Midfielder', 'ACCEPTED'),
 
 -- Winter Phoenix FC
-(25, 5, 'Captain'),
-(25, 6, 'Striker'),
-(25, 7, 'Wing'),
+(25, 5, 'Captain', 'ACCEPTED'),
+(25, 6, 'Striker', 'ACCEPTED'),
+(25, 7, 'Wing', 'ACCEPTED'),
 
 -- Ice Demons United
-(26, 6, 'Captain'),
-(26, 2, 'Midfielder'),
-(26, 3, 'Defender'),
+(26, 6, 'Captain', 'ACCEPTED'),
+(26, 2, 'Midfielder', 'ACCEPTED'),
+(26, 3, 'Defender', 'ACCEPTED'),
 
 -- Arctic Sharks FC
-(27, 7, 'Captain'),
-(27, 4, 'Forward'),
-(27, 5, 'Goalkeeper'),
+(27, 7, 'Captain', 'ACCEPTED'),
+(27, 4, 'Forward', 'ACCEPTED'),
+(27, 5, 'Goalkeeper', 'ACCEPTED'),
 
 -- Frozen Falcons
-(28, 2, 'Captain'),
-(28, 3, 'Striker'),
-(28, 6, 'Midfielder'),
+(28, 2, 'Captain', 'ACCEPTED'),
+(28, 3, 'Striker', 'ACCEPTED'),
+(28, 6, 'Midfielder', 'ACCEPTED'),
 
 -- Snow Dragons FC
-(29, 3, 'Captain'),
-(29, 4, 'Defender'),
-(29, 7, 'Wing'),
+(29, 3, 'Captain', 'ACCEPTED'),
+(29, 4, 'Defender', 'ACCEPTED'),
+(29, 7, 'Wing', 'ACCEPTED'),
 
 -- Glacier Bulls
-(30, 4, 'Captain'),
-(30, 5, 'Forward'),
-(30, 2, 'Midfielder'),
+(30, 4, 'Captain', 'ACCEPTED'),
+(30, 5, 'Forward', 'ACCEPTED'),
+(30, 2, 'Midfielder', 'ACCEPTED'),
 
 -- Winter Stallions
-(31, 5, 'Captain'),
-(31, 6, 'Defender'),
-(31, 7, 'Striker'),
+(31, 5, 'Captain', 'ACCEPTED'),
+(31, 6, 'Defender', 'ACCEPTED'),
+(31, 7, 'Striker', 'ACCEPTED'),
 
 -- Frost Vipers FC
-(32, 6, 'Captain'),
-(32, 2, 'Goalkeeper'),
-(32, 3, 'Forward');
+(32, 6, 'Captain', 'ACCEPTED'),
+(32, 2, 'Goalkeeper', 'ACCEPTED'),
+(32, 3, 'Forward', 'ACCEPTED');
 
 -- Additional announcements
 INSERT INTO announcements (announcement_id, title, content, posted_by, posted_at, related_sport_id, related_tournament_id, start_date, end_date) VALUES
@@ -343,6 +355,18 @@ INSERT INTO announcements (announcement_id, title, content, posted_by, posted_at
                                                                                                                                                      (13, 'Cricket Tournament Team Registration', 'Team registration for the upcoming cricket tournament is now open. Last date for registration is April 25th, 2024.', 1, '2024-04-15 09:00:00', 3, 3, '2024-04-15 00:00:00', '2024-04-25 23:59:59'),
                                                                                                                                                      (14, 'Tennis Coaching Camp Announcement', 'Special tennis coaching camp for beginners will be conducted from June 1st to June 15th. Limited seats available!', 1, '2024-05-20 11:00:00', 4, NULL, '2024-06-01 00:00:00', '2024-06-15 23:59:59'),
                                                                                                                                                      (15, 'Captain''s Football League Playoffs', 'Playoff matches for Captain''s Football League will begin on September 15th. Top 8 teams will compete for the championship.', 6, '2024-09-10 16:00:00', 1, 6, '2024-09-15 00:00:00', '2024-09-25 23:59:59');
+
+
+--Insert into cricket-scores
+
+INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team_b_innings, team_a_total_run, team_b_total_run, team_a_total_wicket, team_b_total_wicket, team_a_overs, team_b_overs) VALUES (6, 101, 102, 1, 0, 275, NULL, 7, NULL, '50.0', NULL);
+
+INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team_b_innings, team_a_total_run, team_b_total_run, team_a_total_wicket, team_b_total_wicket, team_a_overs, team_b_overs) VALUES (6, 101, 102, 1, 2, 275, 260, 7, 9, '50.0', '49.2');
+
+INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team_b_innings, team_a_total_run, team_b_total_run, team_a_total_wicket, team_b_total_wicket, team_a_overs, team_b_overs) VALUES (7, 201, 202, 1, 0, 180, NULL, 10, NULL, '45.3', NULL);
+
+
+
 -- Update sequences to continue from the next available ID
 SELECT setval('teams_team_id_seq', 32, true);
 SELECT setval('tournaments_tournament_id_seq', 8, true);

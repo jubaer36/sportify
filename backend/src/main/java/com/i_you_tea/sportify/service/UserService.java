@@ -63,15 +63,20 @@ public class UserService {
             
             // Extract username from JWT token
             String username = jwtService.extractUserName(jwt);
+            System.out.println("[UserService] Extracted username from token: " + username);
             
-            if (username != null) {
+            if (username != null && !username.trim().isEmpty()) {
                 // Find user by username
-                return findByUsername(username);
+                Optional<User> user = findByUsername(username);
+                System.out.println("[UserService] User found: " + user.isPresent());
+                return user;
             }
             
+            System.out.println("[UserService] No username extracted from token");
             return Optional.empty();
         } catch (Exception e) {
-            // Log the error if needed
+            System.err.println("[UserService] Error extracting user from token: " + e.getMessage());
+            e.printStackTrace();
             return Optional.empty();
         }
     }

@@ -6,6 +6,7 @@ import com.i_you_tea.sportify.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -34,19 +35,26 @@ public class UserController {
     @GetMapping("/profile")
     public ResponseEntity<?> getCurrentUserProfile(@RequestHeader("Authorization") String token) {
         try {
+            System.out.println("[UserController] Received profile request with token: " + 
+                (token != null ? token.substring(0, Math.min(20, token.length())) + "..." : "null"));
+            
             Optional<User> userOptional = userService.getCurrentUserFromToken(token);
 
             if (userOptional.isEmpty()) {
+                System.err.println("[UserController] No user found for token");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "Invalid or expired token"));
             }
 
             User currentUser = userOptional.get();
+            System.out.println("[UserController] Found user: " + currentUser.getUsername() + " (ID: " + currentUser.getUserId() + ")");
             UserDTO userDTO = UserDTO.fromEntity(currentUser);
             return ResponseEntity.ok(userDTO);
         } catch (Exception e) {
+            System.err.println("[UserController] Error retrieving user profile: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error retrieving user profile"));
+                    .body(Map.of("error", "Error retrieving user profile: " + e.getMessage()));
         }
     }
 
@@ -106,6 +114,48 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error retrieving user"));
+        }
+    }
+
+    /**
+     * Update the role of a user (Admin only)
+     */
+    @PutMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateUserRole(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> requestBody) {
+        try {
+            Optional<User> userOptional = userService.findById(id);
+            if (userOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "User not found"));
+            }
+
+            User user = userOptional.get();
+
+            String newRoleStr = requestBody.get("role");
+            if (newRoleStr == null) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Role is required"));
+            }
+
+            try {
+                User.UserRole newRole = User.UserRole.valueOf(newRoleStr);
+                user.setRole(newRole);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Invalid role value"));
+            }
+
+            User updatedUser = userService.updateUser(user);
+            UserDTO responseDTO = UserDTO.fromEntity(updatedUser);
+
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error updating user role"));
         }
     }
 }

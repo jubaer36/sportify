@@ -19,6 +19,8 @@ public class RoundDTO {
     private Long tournamentId;
     private String tournamentName;
     private Round.TournamentType type;
+    private List<MatchDTO> matches;
+    private List<TeamDTO> participatingTeams;
     
     /**
      * Convert Round entity to RoundDTO
@@ -38,6 +40,10 @@ public class RoundDTO {
         if (round.getTournament() != null) {
             dto.setTournamentId(round.getTournament().getTournamentId());
             dto.setTournamentName(round.getTournament().getName());
+        }
+        
+        if (round.getMatches() != null) {
+            dto.setMatches(round.getMatches().stream().map(MatchDTO::fromEntity).collect(Collectors.toList()));
         }
         
         return dto;

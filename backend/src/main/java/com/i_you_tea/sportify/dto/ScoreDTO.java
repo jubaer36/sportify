@@ -9,26 +9,32 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ScoreDTO {
-    
     private Long scoreId;
     private Long matchId;
-    private String matchInfo;
-    private Long teamId;
-    private String teamName;
-    private Integer points;
-    private Long updatedById;
-    private String updatedByName;
-    
+    private Long teamAId;
+    private Integer teamAPoints;
+    private Long teamBId;
+    private Integer teamBPoints;
+
     public static ScoreDTO fromEntity(Score score) {
         return new ScoreDTO(
             score.getScoreId(),
             score.getMatch() != null ? score.getMatch().getMatchId() : null,
-            score.getMatch() != null ? (score.getMatch().getTeam1().getTeamName() + " vs " + score.getMatch().getTeam2().getTeamName()) : null,
-            score.getTeam() != null ? score.getTeam().getTeamId() : null,
-            score.getTeam() != null ? score.getTeam().getTeamName() : null,
-            score.getPoints(),
-            score.getUpdatedBy() != null ? score.getUpdatedBy().getUserId() : null,
-            score.getUpdatedBy() != null ? score.getUpdatedBy().getName() : null
+            score.getTeamAId(),
+            score.getTeamAPoints(),
+            score.getTeamBId(),
+            score.getTeamBPoints()
         );
+    }
+
+    public Score toEntity() {
+        Score score = new Score();
+        score.setScoreId(this.scoreId);
+        // Match should be set in service using matchId
+        score.setTeamAId(this.teamAId);
+        score.setTeamAPoints(this.teamAPoints);
+        score.setTeamBId(this.teamBId);
+        score.setTeamBPoints(this.teamBPoints);
+        return score;
     }
 }
