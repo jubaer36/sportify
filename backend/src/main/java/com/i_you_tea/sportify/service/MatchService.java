@@ -35,10 +35,24 @@ public class MatchService {
         System.out.println("[MatchService] Generating matches for round: " + round.getRoundId());
         
         Tournament tournament = round.getTournament();
-        List<Team> teams = teamRepository.findByTournamentTournamentId(tournament.getTournamentId());
+        // For round 1, get only non-dummy teams; for subsequent rounds this method shouldn't be used
+        List<Team> teams = teamRepository.findByTournamentTournamentId(tournament.getTournamentId())
+                .stream()
+                .filter(team -> round.getRoundValue() == 1 ? !team.getDummy() : true)  // Filter dummy teams only for round 1
+                .toList();
         
         System.out.println("[MatchService] Found " + teams.size() + " teams for tournament: " + tournament.getTournamentId());
 
+        generateMatchesWithTeams(round, teams);
+    }
+
+    public void generateMatchesForRound(Round round, List<Team> participatingTeams) {
+        System.out.println("[MatchService] Generating matches for round: " + round.getRoundId() + " with " + participatingTeams.size() + " specific teams");
+        
+        generateMatchesWithTeams(round, participatingTeams);
+    }
+
+    private void generateMatchesWithTeams(Round round, List<Team> teams) {
         // Clear existing matches for this round
         List<Match> existingMatches = matchRepository.findByRound(round);
         System.out.println("[MatchService] Deleting " + existingMatches.size() + " existing matches");

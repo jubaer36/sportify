@@ -1,13 +1,17 @@
 package com.i_you_tea.sportify.service;
 
 import com.i_you_tea.sportify.dto.RoundDTO;
+import com.i_you_tea.sportify.dto.TeamDTO;
 import com.i_you_tea.sportify.entity.Round;
+import com.i_you_tea.sportify.entity.Team;
 import com.i_you_tea.sportify.entity.Tournament;
 import com.i_you_tea.sportify.repository.RoundRepository;
 import com.i_you_tea.sportify.repository.TournamentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 import java.util.List;
 import java.util.Optional;
@@ -70,7 +74,22 @@ public class RoundService {
         Round savedRound = roundRepository.save(round);
 
         // Generate matches for the round
-        matchService.generateMatchesForRound(savedRound);
+        if (roundDTO.getParticipatingTeams() != null && !roundDTO.getParticipatingTeams().isEmpty()) {
+            // Use specific participating teams
+            List<Team> participatingTeams = roundDTO.getParticipatingTeams().stream()
+                    .map(teamDTO -> {
+                        Team team = new Team();
+                        team.setTeamId(teamDTO.getTeamId());
+                        team.setTeamName(teamDTO.getTeamName());
+                        team.setDummy(teamDTO.getDummy());
+                        return team;
+                    })
+                    .toList();
+            matchService.generateMatchesForRound(savedRound, participatingTeams);
+        } else {
+            // Fall back to all teams for the tournament (for backward compatibility)
+            matchService.generateMatchesForRound(savedRound);
+        }
 
         return savedRound;
     }
@@ -117,7 +136,24 @@ public class RoundService {
         // Generate matches for the round
         System.out.println("[RoundService] Generating matches for the round");
         try {
-            matchService.generateMatchesForRound(savedRound);
+            if (roundDTO.getParticipatingTeams() != null && !roundDTO.getParticipatingTeams().isEmpty()) {
+                // Use specific participating teams
+                List<Team> participatingTeams = roundDTO.getParticipatingTeams().stream()
+                        .map(teamDTO -> {
+                            Team team = new Team();
+                            team.setTeamId(teamDTO.getTeamId());
+                            team.setTeamName(teamDTO.getTeamName());
+                            team.setDummy(teamDTO.getDummy());
+                            return team;
+                        })
+                        .toList();
+                System.out.println("[RoundService] Using " + participatingTeams.size() + " specific participating teams");
+                matchService.generateMatchesForRound(savedRound, participatingTeams);
+            } else {
+                // Fall back to all teams for the tournament (for backward compatibility)
+                System.out.println("[RoundService] No participating teams specified, using all tournament teams");
+                matchService.generateMatchesForRound(savedRound);
+            }
             System.out.println("[RoundService] Matches generated successfully");
         } catch (Exception e) {
             System.err.println("[RoundService] Error generating matches: " + e.getMessage());

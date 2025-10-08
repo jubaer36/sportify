@@ -40,4 +40,11 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     @Modifying
     @Query("DELETE FROM Team t WHERE t.dummy = true AND t.tournament.tournamentId = :tournamentId AND t.teamName LIKE %:roundPattern%")
     void deleteDummyTeamsByTournamentIdAndRoundValue(@Param("tournamentId") Long tournamentId, @Param("roundPattern") String roundPattern);
+
+    @Query("SELECT t FROM Team t WHERE t.dummy = true AND t.tournament.tournamentId = :tournamentId AND t.teamName LIKE %:roundPattern%")
+    List<Team> findDummyTeamsByTournamentIdAndRoundValue(@Param("tournamentId") Long tournamentId, @Param("roundPattern") String roundPattern);
+
+    // Find all dummy teams for a tournament (regardless of round)
+    @Query("SELECT t FROM Team t WHERE t.dummy = true AND t.tournament.tournamentId = :tournamentId")
+    List<Team> findAllDummyTeamsByTournamentId(@Param("tournamentId") Long tournamentId);
 }

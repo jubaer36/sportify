@@ -150,4 +150,56 @@ public class TeamController {
         teamService.deleteDummyTeamsByTournamentIdAndRoundValue(tournamentId, roundValue);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/dummy/tournament/{tournamentId}/round/{roundValue}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN') or hasRole('PLAYER')")
+    public ResponseEntity<Map<String, Object>> getDummyTeamsByTournamentAndRound(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long tournamentId,
+            @PathVariable int roundValue) {
+        try {
+            List<Team> dummyTeams = teamService.getDummyTeamsByTournamentIdAndRoundValue(tournamentId, roundValue);
+            List<TeamDTO> teamDTOs = dummyTeams.stream()
+                    .map(TeamDTO::fromEntity)
+                    .collect(Collectors.toList());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Dummy teams retrieved successfully");
+            response.put("teams", teamDTOs);
+            response.put("totalTeams", teamDTOs.size());
+            response.put("tournamentId", tournamentId);
+            response.put("roundValue", roundValue);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", "Failed to retrieve dummy teams: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    @GetMapping("/dummy/tournament/{tournamentId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN') or hasRole('PLAYER')")
+    public ResponseEntity<Map<String, Object>> getAllDummyTeamsByTournament(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long tournamentId) {
+        try {
+            List<Team> dummyTeams = teamService.getAllDummyTeamsByTournamentId(tournamentId);
+            List<TeamDTO> teamDTOs = dummyTeams.stream()
+                    .map(TeamDTO::fromEntity)
+                    .collect(Collectors.toList());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "All dummy teams retrieved successfully");
+            response.put("teams", teamDTOs);
+            response.put("totalTeams", teamDTOs.size());
+            response.put("tournamentId", tournamentId);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", "Failed to retrieve dummy teams: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
 }

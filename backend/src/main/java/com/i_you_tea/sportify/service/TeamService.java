@@ -139,4 +139,19 @@ public class TeamService {
         
         System.out.println("[TeamService] Deletion completed for tournament " + tournamentId + ", round " + roundValue);
     }
+
+    public List<Team> getDummyTeamsByTournamentIdAndRoundValue(Long tournamentId, int roundValue) {
+        System.out.println("[TeamService] Fetching dummy teams for tournament " + tournamentId + ", round " + roundValue);
+        String roundPattern = "Round " + roundValue;
+        List<Team> dummyTeams = teamRepository.findDummyTeamsByTournamentIdAndRoundValue(tournamentId, roundPattern);
+        System.out.println("[TeamService] Found " + dummyTeams.size() + " dummy teams for tournament " + tournamentId + ", round " + roundValue);
+        return dummyTeams;
+    }
+
+    public List<Team> getAllDummyTeamsByTournamentId(Long tournamentId) {
+        System.out.println("[TeamService] Fetching all dummy teams for tournament " + tournamentId);
+        List<Team> dummyTeams = teamRepository.findAllDummyTeamsByTournamentId(tournamentId);
+        System.out.println("[TeamService] Found " + dummyTeams.size() + " dummy teams for tournament " + tournamentId);
+        return dummyTeams;
+    }
 }

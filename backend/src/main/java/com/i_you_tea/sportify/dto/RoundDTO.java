@@ -20,6 +20,7 @@ public class RoundDTO {
     private String tournamentName;
     private Round.TournamentType type;
     private List<MatchDTO> matches;
+    private List<TeamDTO> participatingTeams;
     
     /**
      * Convert Round entity to RoundDTO
