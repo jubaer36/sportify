@@ -47,4 +47,11 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     @Modifying
     @Transactional
     void deleteByRound_RoundId(Long roundId);
+
+    /**
+     * Delete matches by tournament and round value
+     */
+    @Modifying
+    @Query("DELETE FROM Match m WHERE m.tournament.tournamentId = :tournamentId AND m.round.roundValue = :roundValue")
+    void deleteByTournamentIdAndRoundValue(@Param("tournamentId") Long tournamentId, @Param("roundValue") int roundValue);
 }

@@ -1,8 +1,7 @@
 package com.i_you_tea.sportify.controller;
 
+import com.i_you_tea.sportify.dto.*;
 import com.i_you_tea.sportify.dto.CreateTeamDTO;
-import com.i_you_tea.sportify.dto.TeamDTO;
-import com.i_you_tea.sportify.dto.UserTeamsRequestDTO;
 import com.i_you_tea.sportify.entity.Team;
 import com.i_you_tea.sportify.service.TeamService;
 import jakarta.validation.Valid;
@@ -12,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -44,7 +44,23 @@ public class TeamController {
         return ResponseEntity.ok(teamDTOs);
     }
 
-    
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN') or hasRole('PLAYER')")
+    public ResponseEntity<?> deleteTeam(@RequestHeader("Authorization") String token,
+                                        @PathVariable Long id) {
+        try {
+            boolean deleted = teamService.deleteTeam(id);
+            if (deleted) {
+                return ResponseEntity.ok(Map.of("message", "Team deleted successfully"));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Team not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error deleting team: " + e.getMessage()));
+        }
+    }
 
     @PostMapping("/user-teams")
     public ResponseEntity<?> getUserTeams(@RequestBody UserTeamsRequestDTO request) {
@@ -98,6 +114,92 @@ public class TeamController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error creating team: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/dummy")
+    @PreAuthorize("hasRole('CAPTAIN')")
+    public ResponseEntity<Map<String, Object>> createDummyTeam(@RequestHeader("Authorization") String token,
+                                                               @RequestBody CreateDummyTeamDTO dummyTeamDTO) {
+        try {
+            Team createdTeam = teamService.createDummyTeam(dummyTeamDTO);
+            TeamDTO teamDTO = TeamDTO.fromEntity(createdTeam);
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Dummy team created successfully");
+            response.put("team", teamDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", "Failed to create dummy team: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    @DeleteMapping("/dummy/round/{roundId}")
+    public ResponseEntity<Void> deleteDummyTeamsByRoundId(@RequestHeader("Authorization") String token,
+                                                          @PathVariable Long roundId) {
+        teamService.deleteDummyTeamsByRoundId(roundId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/dummy/tournament/{tournamentId}/round/{roundValue}")
+    public ResponseEntity<Void> deleteDummyTeamsByTournamentAndRound(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long tournamentId,
+            @PathVariable int roundValue) {
+        teamService.deleteDummyTeamsByTournamentIdAndRoundValue(tournamentId, roundValue);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/dummy/tournament/{tournamentId}/round/{roundValue}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN') or hasRole('PLAYER')")
+    public ResponseEntity<Map<String, Object>> getDummyTeamsByTournamentAndRound(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long tournamentId,
+            @PathVariable int roundValue) {
+        try {
+            List<Team> dummyTeams = teamService.getDummyTeamsByTournamentIdAndRoundValue(tournamentId, roundValue);
+            List<TeamDTO> teamDTOs = dummyTeams.stream()
+                    .map(TeamDTO::fromEntity)
+                    .collect(Collectors.toList());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Dummy teams retrieved successfully");
+            response.put("teams", teamDTOs);
+            response.put("totalTeams", teamDTOs.size());
+            response.put("tournamentId", tournamentId);
+            response.put("roundValue", roundValue);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", "Failed to retrieve dummy teams: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    @GetMapping("/dummy/tournament/{tournamentId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN') or hasRole('PLAYER')")
+    public ResponseEntity<Map<String, Object>> getAllDummyTeamsByTournament(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long tournamentId) {
+        try {
+            List<Team> dummyTeams = teamService.getAllDummyTeamsByTournamentId(tournamentId);
+            List<TeamDTO> teamDTOs = dummyTeams.stream()
+                    .map(TeamDTO::fromEntity)
+                    .collect(Collectors.toList());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "All dummy teams retrieved successfully");
+            response.put("teams", teamDTOs);
+            response.put("totalTeams", teamDTOs.size());
+            response.put("tournamentId", tournamentId);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", "Failed to retrieve dummy teams: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 }

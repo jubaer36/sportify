@@ -61,7 +61,14 @@ public class JWTServiceImpl implements JWTService {
     }
 
     public String extractUserName(String token){
-        return extractClaim(token,Claims::getSubject);
+        try {
+            String username = extractClaim(token, Claims::getSubject);
+            System.out.println("[JWTService] Extracted username: " + username);
+            return username;
+        } catch (Exception e) {
+            System.err.println("[JWTService] Error extracting username from token: " + e.getMessage());
+            return null;
+        }
     }
 
     @Override
@@ -114,23 +121,34 @@ public class JWTServiceImpl implements JWTService {
 
     private <T> T extractClaim(String token, Function<Claims,T> claimsResolvers) {
         final Claims claims = extractAllClaims(token);
+        if (claims == null) {
+            System.err.println("[JWTService] No claims extracted from token");
+            return null;
+        }
         return claimsResolvers.apply(claims);
     }
 
     private Claims extractAllClaims(String token) {
         try {
-            return Jwts.parserBuilder()
+            System.out.println("[JWTService] Parsing token: " + (token != null ? token.substring(0, Math.min(20, token.length())) + "..." : "null"));
+            Claims claims = Jwts.parserBuilder()
                     .setSigningKey(getSignKey())
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
+            System.out.println("[JWTService] Successfully parsed claims for subject: " + claims.getSubject());
+            return claims;
         } catch (ExpiredJwtException e) {
-            // Handle silently or log in controlled way
+            System.err.println("[JWTService] JWT token expired: " + e.getMessage());
             log.warn("JWT token expired: {}", e.getMessage());
-            return null; // or throw custom exception if needed
+            return null;
         } catch (JwtException e) {
-            // for other JWT related exceptions
+            System.err.println("[JWTService] Invalid JWT token: " + e.getMessage());
             log.warn("Invalid JWT token: {}", e.getMessage());
+            return null;
+        } catch (Exception e) {
+            System.err.println("[JWTService] Unexpected error parsing JWT: " + e.getMessage());
+            log.error("Unexpected error parsing JWT: {}", e.getMessage(), e);
             return null;
         }
     }

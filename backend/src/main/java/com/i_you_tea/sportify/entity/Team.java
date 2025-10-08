@@ -36,4 +36,7 @@ public class Team {
     
     @Column(name = "logo")
     private String logo;
+
+    @Column(name="dummy",nullable = true)
+    private Boolean dummy = false;
 }

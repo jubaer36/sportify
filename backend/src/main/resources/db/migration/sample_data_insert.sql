@@ -43,7 +43,7 @@ INSERT INTO tournaments (tournament_id, name, sport_id, start_date, end_date, cr
 (5, 'Badminton Open Championship', 5,  '2024-07-01', '2024-07-31', 1, NULL, NULL),
 (6, 'Captain''s Football League', 1,  '2024-08-01', '2024-08-31', 6, NULL, NULL),
 (7, 'Elite Cricket Championship', 3, '2024-09-01', '2024-09-30', 7, NULL, NULL),
-(8, 'Winter Football Championship 2024', 1, '2024-12-01', '2024-12-31', 1, NULL, NULL);
+(8, 'Winter Football Championship 2024', 1, '2024-12-01', '2024-12-31', 6, NULL, NULL);
 
 -- Insert Teams
 INSERT INTO teams (team_id, team_name, sport_id, created_by, logo,tournament_id) VALUES
