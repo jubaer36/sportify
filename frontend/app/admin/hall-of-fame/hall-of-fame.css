@@ -1,0 +1,385 @@
+/* Hall of Fame Page Layout */
+.hall-of-fame-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: #e0f2fe;
+    padding-bottom: 2rem;
+}
+
+.hall-of-fame-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #0284c7;
+    text-align: center;
+    margin-bottom: 2rem;
+    text-shadow: 0 2px 4px rgba(2, 132, 199, 0.1);
+}
+
+/* Filters Section */
+.filters-section {
+    background: #fff;
+    border-radius: 1.2rem;
+    box-shadow: 0 4px 24px 0 #38bdf82a;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 200px;
+}
+
+.filter-group label {
+    font-weight: 600;
+    color: #0c4a6e;
+    font-size: 1rem;
+}
+
+.filter-select {
+    padding: 0.75rem 1rem;
+    border: 1px solid #bae6fd;
+    border-radius: 0.5rem;
+    background: #f0f9ff;
+    font-size: 1rem;
+    color: #0c4a6e;
+    transition: all 0.2s ease;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: #0284c7;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.1);
+}
+
+/* Selected Sport Display */
+.selected-sport {
+    background: #fff;
+    border-radius: 1.2rem;
+    box-shadow: 0 4px 24px 0 #38bdf82a;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.sport-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.sport-logo {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.sport-name {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #0c4a6e;
+}
+
+/* Winners Section */
+.winners-section {
+    background: #fff;
+    border-radius: 1.2rem;
+    box-shadow: 0 4px 24px 0 #38bdf82a;
+    padding: 2rem;
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-message,
+.error-message,
+.no-selection,
+.no-winners {
+    text-align: center;
+    font-size: 1.2rem;
+    color: #64748b;
+}
+
+.error-message {
+    color: #dc2626;
+}
+
+.no-selection p,
+.no-winners p {
+    margin: 0;
+    font-style: italic;
+}
+
+/* Podium Layout */
+.podium {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.podium-positions {
+    display: flex;
+    align-items: end;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.position-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.position-container.first {
+    order: 2;
+}
+
+.position-container.second {
+    order: 1;
+}
+
+.position-container.third {
+    order: 3;
+}
+
+/* Winner Cards */
+.winner-card {
+    background: #fff;
+    border-radius: 1.2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    padding: 2rem 1.5rem;
+    text-align: center;
+    position: relative;
+    border: 3px solid transparent;
+    transition: all 0.3s ease;
+    min-width: 250px;
+    max-width: 300px;
+}
+
+.winner-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.winner-card.first-place {
+    border-color: #ffd700;
+    background: linear-gradient(135deg, #fff9e6 0%, #fff 100%);
+    transform: scale(1.1);
+}
+
+.winner-card.second-place {
+    border-color: #c0c0c0;
+    background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+}
+
+.winner-card.third-place {
+    border-color: #cd7f32;
+    background: linear-gradient(135deg, #fdf6f0 0%, #fff 100%);
+}
+
+.medal {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.winner-content {
+    margin-bottom: 1rem;
+}
+
+.winner-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #0c4a6e;
+    margin: 1rem 0;
+    line-height: 1.3;
+}
+
+.position-number {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #0284c7;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+}
+
+/* Team Winner Styles */
+.team-winner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.team-logo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    margin-bottom: 1rem;
+}
+
+.team-members {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-top: 1rem;
+    width: 100%;
+}
+
+.member {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.5rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.member-photo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #bae6fd;
+}
+
+.member-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #475569;
+    flex: 1;
+}
+
+/* Individual Player Styles */
+.player-winner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.player-photo {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #bae6fd;
+    margin-bottom: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .filters-section {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .filter-group {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .podium-positions {
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .position-container {
+        order: unset !important;
+    }
+
+    .winner-card.first-place {
+        transform: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .hall-of-fame-container {
+        padding: 0 0.5rem;
+    }
+
+    .page-title {
+        font-size: 2rem;
+    }
+
+    .filters-section {
+        padding: 1.5rem;
+    }
+
+    .winner-card {
+        min-width: 200px;
+        max-width: 250px;
+        padding: 1.5rem 1rem;
+    }
+
+    .medal {
+        font-size: 2.5rem;
+    }
+
+    .winner-name {
+        font-size: 1.1rem;
+    }
+
+    .team-logo,
+    .player-photo {
+        width: 70px;
+        height: 70px;
+    }
+}
+
+@media (max-width: 480px) {
+    .winner-card {
+        min-width: 180px;
+        max-width: 220px;
+    }
+
+    .sport-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .sport-name {
+        font-size: 1.2rem;
+    }
+
+    .member {
+        gap: 0.5rem;
+    }
+
+    .member-photo {
+        width: 35px;
+        height: 35px;
+    }
+
+    .member-name {
+        font-size: 0.8rem;
+    }
+}
