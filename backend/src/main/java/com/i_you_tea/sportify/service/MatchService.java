@@ -61,6 +61,8 @@ public class MatchService {
         existingMatch.setStatus(matchDetails.getStatus());
         existingMatch.setWinnerTeam(matchDetails.getWinnerTeam());
         existingMatch.setRound(matchDetails.getRound());
+        existingMatch.setTeamAFinalScore(matchDetails.getTeamAFinalScore());
+        existingMatch.setTeamBFinalScore(matchDetails.getTeamBFinalScore());
         
         return matchRepository.save(existingMatch);
     }
