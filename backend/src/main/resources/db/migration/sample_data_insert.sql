@@ -365,6 +365,14 @@ INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team
 
 INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team_b_innings, team_a_total_run, team_b_total_run, team_a_total_wicket, team_b_total_wicket, team_a_overs, team_b_overs) VALUES (7, 201, 202, 1, 0, 180, NULL, 10, NULL, '45.3', NULL);
 
+UPDATE tournaments SET champion_id = 1,  runner_up_id = 2 WHERE tournament_id = 1;
+UPDATE tournaments SET champion_id = 3,  runner_up_id = 4 WHERE tournament_id = 2;
+UPDATE tournaments SET champion_id = 5,  runner_up_id = 6 WHERE tournament_id = 3;
+UPDATE tournaments SET champion_id = 7,  runner_up_id = 8 WHERE tournament_id = 4;
+UPDATE tournaments SET champion_id = 9,  runner_up_id = 10 WHERE tournament_id = 5;
+UPDATE tournaments SET champion_id = 11, runner_up_id = 12 WHERE tournament_id = 6;
+UPDATE tournaments SET champion_id = 13, runner_up_id = 14 WHERE tournament_id = 7;
+UPDATE tournaments SET champion_id = 15, runner_up_id = 16 WHERE tournament_id = 8;
 
 
 -- Update sequences to continue from the next available ID
