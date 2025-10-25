@@ -165,6 +165,11 @@ export default function TournamentsPage() {
     );
   });
 
+  // Add this function to handle the create team navigation
+  const handleCreateTeam = (tournamentId: number) => {
+    router.push(`/player/create-teams/${tournamentId}`);
+  };
+
   return (
     <div className="tournaments-bg">
       <Topbar />
@@ -298,6 +303,20 @@ export default function TournamentsPage() {
                       </span>
 
                     </div>
+                  </div>
+
+                  <div className="tournament-actions">
+                    {/* Create Team button, visible only for team games */}
+                    {sport?.isTeamGame && (
+                      <button
+                        onClick={() => handleCreateTeam(tournament.tournamentId)}
+                        className="btn btn-create-team"
+                        title="Create Team for this Tournament"
+                      >
+                        <span className="btn-icon">⚡</span>
+                        Create Team
+                      </button>
+                    )}
                   </div>
                 </div>
               );

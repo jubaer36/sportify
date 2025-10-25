@@ -30,7 +30,7 @@ public class TeamMember {
     
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private TeamMemberStatus status = TeamMemberStatus.PENDING;
+    private TeamMemberStatus status = TeamMemberStatus.ACCEPTED;
     
     public enum TeamMemberStatus {
         PENDING,

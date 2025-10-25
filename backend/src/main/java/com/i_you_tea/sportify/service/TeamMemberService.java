@@ -43,7 +43,7 @@ public class TeamMemberService {
         teamMember.setTeam(team);
         teamMember.setUser(user);
         teamMember.setRoleInTeam(addTeamMemberDTO.getRoleInTeam());
-        teamMember.setStatus(TeamMember.TeamMemberStatus.PENDING);
+        teamMember.setStatus(TeamMember.TeamMemberStatus.ACCEPTED);
         
         return teamMemberRepository.save(teamMember);
     }
