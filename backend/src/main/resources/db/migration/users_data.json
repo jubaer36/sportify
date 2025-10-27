@@ -47,5 +47,355 @@
     "email": "raihan@gmail.com",
     "password": "123",
     "role": "CAPTAIN"
+  },
+  {
+    "name": "Ahmed Hassan",
+    "username": "ahmed",
+    "email": "ahmed@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Sara Khan",
+    "username": "sara",
+    "email": "sara@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "David Lee",
+    "username": "david",
+    "email": "david@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Emma Wilson",
+    "username": "emma",
+    "email": "emma@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Mohammed Ali",
+    "username": "mohammed",
+    "email": "mohammed@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Lisa Brown",
+    "username": "lisa",
+    "email": "lisa@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "James Miller",
+    "username": "james",
+    "email": "james@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Fatima Ahmed",
+    "username": "fatima",
+    "email": "fatima@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Robert Davis",
+    "username": "robert",
+    "email": "robert@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Aisha Patel",
+    "username": "aisha",
+    "email": "aisha@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Michael Garcia",
+    "username": "michael",
+    "email": "michael@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Zara Khan",
+    "username": "zara",
+    "email": "zara@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "William Rodriguez",
+    "username": "william",
+    "email": "william@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Nadia Hassan",
+    "username": "nadia",
+    "email": "nadia@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Christopher Martinez",
+    "username": "christopher",
+    "email": "christopher@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Yusuf Ali",
+    "username": "yusuf",
+    "email": "yusuf@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Olivia Johnson",
+    "username": "olivia",
+    "email": "olivia@gmail.com",
+    "password": "123",
+    "role": "CAPTAIN"
+  },
+  {
+    "name": "Daniel Lee",
+    "username": "daniel",
+    "email": "daniel@gmail.com",
+    "password": "123",
+    "role": "CAPTAIN"
+  },
+  {
+    "name": "Amira Wilson",
+    "username": "amira",
+    "email": "amira@gmail.com",
+    "password": "123",
+    "role": "CAPTAIN"
+  },
+  {
+    "name": "Anthony Brown",
+    "username": "anthony",
+    "email": "anthony@gmail.com",
+    "password": "123",
+    "role": "CAPTAIN"
+  },
+  {
+    "name": "Hana Ahmed",
+    "username": "hana",
+    "email": "hana@gmail.com",
+    "password": "123",
+    "role": "CAPTAIN"
+  },
+  {
+    "name": "Matthew Miller",
+    "username": "matthew",
+    "email": "matthew@gmail.com",
+    "password": "123",
+    "role": "ADMIN"
+  },
+  {
+    "name": "Layla Davis",
+    "username": "layla",
+    "email": "layla@gmail.com",
+    "password": "123",
+    "role": "ADMIN"
+  },
+  {
+    "name": "Andrew Garcia",
+    "username": "andrew",
+    "email": "andrew@gmail.com",
+    "password": "123",
+    "role": "ADMIN"
+  },
+  {
+    "name": "Sofia Khan",
+    "username": "sofia",
+    "email": "sofia@gmail.com",
+    "password": "123",
+    "role": "ADMIN"
+  },
+  {
+    "name": "Joseph Rodriguez",
+    "username": "joseph",
+    "email": "joseph@gmail.com",
+    "password": "123",
+    "role": "ADMIN"
+  },
+  {
+    "name": "Maya Hassan",
+    "username": "maya",
+    "email": "maya@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Benjamin Martinez",
+    "username": "benjamin",
+    "email": "benjamin@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Zainab Ali",
+    "username": "zainab",
+    "email": "zainab@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Samuel Johnson",
+    "username": "samuel",
+    "email": "samuel@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Amina Lee",
+    "username": "amina",
+    "email": "amina@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Alexander Wilson",
+    "username": "alexander",
+    "email": "alexander@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Leila Brown",
+    "username": "leila",
+    "email": "leila@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "David Ahmed",
+    "username": "david2",
+    "email": "david2@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Nora Miller",
+    "username": "nora",
+    "email": "nora@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Ethan Davis",
+    "username": "ethan",
+    "email": "ethan@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Rania Garcia",
+    "username": "rania",
+    "email": "rania@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Jacob Khan",
+    "username": "jacob",
+    "email": "jacob@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Yara Rodriguez",
+    "username": "yara",
+    "email": "yara@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Logan Hassan",
+    "username": "logan",
+    "email": "logan@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Mariam Ali",
+    "username": "mariam",
+    "email": "mariam@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Jackson Johnson",
+    "username": "jackson",
+    "email": "jackson@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Huda Lee",
+    "username": "huda",
+    "email": "huda@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Aiden Wilson",
+    "username": "aiden",
+    "email": "aiden@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Lina Brown",
+    "username": "lina",
+    "email": "lina@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Lucas Ahmed",
+    "username": "lucas",
+    "email": "lucas@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Zara Miller",
+    "username": "zara2",
+    "email": "zara2@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Mason Davis",
+    "username": "mason",
+    "email": "mason@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Sana Garcia",
+    "username": "sana",
+    "email": "sana@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
+  },
+  {
+    "name": "Elijah Khan",
+    "username": "elijah",
+    "email": "elijah@gmail.com",
+    "password": "123",
+    "role": "PLAYER"
   }
 ]
