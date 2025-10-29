@@ -90,7 +90,10 @@ export default function CertificatesPage() {
                 {error && <p style={{textAlign:'center', color:'#dc2626'}}>{error}</p>}
 
                 <div className="certificates-grid">
-                    {data.map(cert => (
+                    {data.map(cert => {
+                        const containsSport = cert.tournamentName.toLowerCase().includes(cert.sportName.toLowerCase());
+                        const sportSuffix = containsSport ? '' : ` (${cert.sportName})`;
+                        return (
                         <div key={cert.id} className="certificate-wrapper">
                             <div className={`certificate ${cert.position.toLowerCase()}`}>
                                 <div className="certificate-border">
@@ -109,7 +112,7 @@ export default function CertificatesPage() {
                                         <div className="reason">
                                             for outstanding performance as <strong>{cert.position}</strong> in
                                             <span className="tournament"> {cert.tournamentName}</span>
-                                            <span className="sport"> ({cert.sportName})</span>
+                                            <span className="sport">{sportSuffix}</span>
                                         </div>
                                         <div className="decor-line" />
 
@@ -143,7 +146,8 @@ export default function CertificatesPage() {
                                 <button className="btn-primary" disabled>Share (soon)</button>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </div>
