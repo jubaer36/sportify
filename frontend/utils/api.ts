@@ -33,11 +33,14 @@ export async function makeAuthenticatedRequest<T>(
     }
 
     const url = `${API_BASE_URL}${endpoint}`;
-    const headers = {
-      'Content-Type': 'application/json',
+    const headers: Record<string, string> = {
       'Authorization': `Bearer ${token}`,
-      ...options.headers,
+      ...(options.headers as Record<string, string> | undefined),
     };
+    // Only set JSON content type when there is a request body
+    if (options.body && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     // console.log('[API] Request headers:', headers);
     // console.log('[API] Request URL:', url);

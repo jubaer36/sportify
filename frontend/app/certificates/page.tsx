@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Topbar from "@/Component/topbar";
+import { makeAuthenticatedRequest } from "@/utils/api";
 import "./certificates.css";
 
 type Certificate = {
@@ -38,6 +39,46 @@ function formatDate(dateIso: string) {
 }
 
 export default function CertificatesPage() {
+    const [certs, setCerts] = useState<Certificate[] | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                // fetch profile to get userId
+                const profileRes = await fetch("http://localhost:8090/api/users/profile", {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                });
+                if (!profileRes.ok) throw new Error('Failed to load profile');
+                const profile = await profileRes.json();
+                const userId = profile?.userId;
+                if (!userId) throw new Error('No user id');
+
+                const res = await makeAuthenticatedRequest<any>(`/api/certificates/user/${userId}`);
+                const items = (res.data || []).map((c: any) => ({
+                    id: c.certificateId,
+                    recipientName: c.userName,
+                    tournamentName: c.tournamentName,
+                    sportName: c.sportName,
+                    position: (c.position || 'Participant') as Certificate['position'],
+                    date: c.issuedOn,
+                }));
+                setCerts(items);
+            } catch (e: any) {
+                setError(e.message || 'Failed to load certificates');
+                setCerts(demoCertificates); // fallback to demo
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, []);
+
+    const data = certs ?? demoCertificates;
+
     return (
         <div className="certificates-page">
             <Topbar />
@@ -45,8 +86,11 @@ export default function CertificatesPage() {
                 <h1 className="certificates-title">My Certificates</h1>
                 <p className="certificates-subtitle">Digital certificates for your achievements. PDF download coming soon.</p>
 
+                {loading && <p style={{textAlign:'center', color:'#64748b'}}>Loading...</p>}
+                {error && <p style={{textAlign:'center', color:'#dc2626'}}>{error}</p>}
+
                 <div className="certificates-grid">
-                    {demoCertificates.map(cert => (
+                    {data.map(cert => (
                         <div key={cert.id} className="certificate-wrapper">
                             <div className={`certificate ${cert.position.toLowerCase()}`}>
                                 <div className="certificate-border">

@@ -53,7 +53,8 @@ public class SecurityConfiguration {
                                                                 "/api/notifications/sendSingleNotification",
                                                                 "/actuator/**",
                                                                 "/api/deepLink/**",
-                                                                "/api/user/ping/**")
+                                                                "/api/user/ping/**",
+                                                                "/api/certificates/**")
                                                 .permitAll()
                                                 .anyRequest().authenticated())
                                 .sessionManagement(manager -> manager
