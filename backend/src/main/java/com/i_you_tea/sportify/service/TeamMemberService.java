@@ -43,7 +43,13 @@ public class TeamMemberService {
         teamMember.setTeam(team);
         teamMember.setUser(user);
         teamMember.setRoleInTeam(addTeamMemberDTO.getRoleInTeam());
-        teamMember.setStatus(TeamMember.TeamMemberStatus.ACCEPTED);
+        
+        // Set status based on role - Captain gets ACCEPTED automatically, others get PENDING
+        if ("Captain".equalsIgnoreCase(addTeamMemberDTO.getRoleInTeam())) {
+            teamMember.setStatus(TeamMember.TeamMemberStatus.ACCEPTED);
+        } else {
+            teamMember.setStatus(TeamMember.TeamMemberStatus.PENDING);
+        }
         
         return teamMemberRepository.save(teamMember);
     }

@@ -105,6 +105,7 @@ const CreateTeamPage = () => {
         method: 'POST',
         body: JSON.stringify(teamRequest)
       });
+      console.log('Create team response:', response);
 
       if (response.error) {
         setError('Failed to create team: ' + response.error);
