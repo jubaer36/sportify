@@ -191,13 +191,13 @@ export default function HallOfFame() {
                             members: members
                         });
                     } else {
-                        // For individual games, we already have the name from tournament
+                        // For individual games, fall back if demo data lacks names
                         winnersData.push({
                             position: 1,
-                            id: tournament.championId,
-                            name: tournament.championName,
+                            id: tournament.championId ?? -1,
+                            name: tournament.championName || 'Champion',
                             isTeam: false,
-                            photo: '/Photos/profile.png' // Default user photo
+                            photo: '/Photos/profile.png'
                         });
                     }
                 }
@@ -221,13 +221,13 @@ export default function HallOfFame() {
                             members: members
                         });
                     } else {
-                        // For individual games, we already have the name from tournament
+                        // For individual games, fall back if demo data lacks names
                         winnersData.push({
                             position: 2,
-                            id: tournament.runnerUpId,
-                            name: tournament.runnerUpName,
+                            id: tournament.runnerUpId ?? -2,
+                            name: tournament.runnerUpName || 'Runner-up',
                             isTeam: false,
-                            photo: '/Photos/profile.png' // Default user photo
+                            photo: '/Photos/profile.png'
                         });
                     }
                 }
