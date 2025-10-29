@@ -236,6 +236,110 @@
     align-items: center;
 }
 
+.team-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: transparent;
+    border: 0;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease;
+}
+
+.team-header:hover,
+.team-header:focus-visible {
+    background: #f1f5f9;
+    outline: none;
+}
+
+.expand-indicator {
+    margin-left: 0.25rem;
+    font-size: 0.9rem;
+    color: #0ea5e9;
+    font-weight: 600;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 1000;
+}
+
+.modal {
+    width: 100%;
+    max-width: 640px;
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.3);
+    overflow: hidden;
+    animation: modalIn 0.2s ease-out;
+}
+
+@keyframes modalIn {
+    from { transform: translateY(8px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.team-logo.small {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    border: 2px solid #e2e8f0;
+}
+
+.modal-close {
+    background: transparent;
+    border: 0;
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    color: #334155;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    background: #f1f5f9;
+}
+
+.modal-body {
+    padding: 1rem 1.25rem 1.25rem;
+}
+
+.team-members.grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.no-members {
+    text-align: center;
+    color: #64748b;
+    padding: 1rem 0;
+}
+
 .team-logo {
     width: 80px;
     height: 80px;
