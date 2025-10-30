@@ -43,6 +43,10 @@ export default function CertificatesPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const handleDownloadPDF = (cert: Certificate) => {
+        alert('PDF download coming!');
+    };
+
     useEffect(() => {
         const load = async () => {
             try {
@@ -142,7 +146,12 @@ export default function CertificatesPage() {
                                 </div>
                             </div>
                             <div className="certificate-actions">
-                                <button className="btn-outline" disabled>Download PDF (soon)</button>
+                                <button
+                                    className="btn-outline"
+                                    onClick={() => handleDownloadPDF(cert)}
+                                >
+                                    Download PDF
+                                </button>
                                 <button className="btn-primary" disabled>Share (soon)</button>
                             </div>
                         </div>
