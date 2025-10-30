@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import Topbar from "@/Component/topbar";
 import "./my-teams.css";
 
@@ -49,6 +50,7 @@ interface TeamResponse {
 }
 
 export default function MyTeams() {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -296,6 +298,12 @@ export default function MyTeams() {
                         {team.tournament ? 'Active in Tournament' : 'Available for Tournament'}
                       </span>
                     </div>
+                    <button 
+                      className="details-button"
+                      onClick={() => router.push(`/player/team-details/${team.teamId}`)}
+                    >
+                      Details
+                    </button>
                   </div>
                 </div>
               ))}
