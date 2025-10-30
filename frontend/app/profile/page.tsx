@@ -4,6 +4,7 @@ import "./profile.css";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Topbar from "@/Component/topbar";
 
 interface UserProfile {
     userId: number;
@@ -154,6 +155,7 @@ export default function ProfilePage() {
 
     return (
         <div className="profile-page">
+            <Topbar />
             <div className="profile-container">
                 <div className="profile-header">
                     <h1>My Profile</h1>

@@ -1,15 +1,19 @@
 .topbar {
-  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  z-index: 1000;
   background: #bae6fd;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0.7rem 2rem;
   box-shadow: 0 2px 8px 0 #38bdf82a;
-  position: sticky;
-  top: 0;
-  z-index: 10;
   transition: margin-left 0.3s;
+}
+.topbar + * {
+  margin-top: 70px;
 }
 
 .topbar.sidebar-open {
