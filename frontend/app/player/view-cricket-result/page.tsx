@@ -62,8 +62,29 @@ export default function ViewCricketResultPage() {
   const [cricketScores, setCricketScores] = useState<CricketScore[]>([]);
   const [loading, setLoading] = useState(true);
   const [noResult, setNoResult] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<string>("");
 
-  // Fetch tournament, match, teams, and cricket scores
+  // Fetch cricket scores (reusable function for auto-refresh)
+  const fetchCricketScores = async () => {
+    try {
+      const scoreRes = await makeAuthenticatedRequest<CricketScore[]>(
+        `/api/cricket-scores/match/${matchId}`
+      );
+      if (scoreRes.data && Array.isArray(scoreRes.data) && scoreRes.data.length > 0) {
+        setCricketScores(scoreRes.data);
+        setNoResult(false);
+      } else {
+        setCricketScores([]);
+        setNoResult(true);
+      }
+      setLastUpdated(new Date().toLocaleTimeString());
+    } catch (err) {
+      console.error("Error fetching cricket scores:", err);
+    }
+  };
+
+  // Initial fetch: tournament, match, teams, and cricket scores
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
@@ -79,17 +100,8 @@ export default function ViewCricketResultPage() {
         const teamRes = await makeAuthenticatedRequest<Team[]>(`/api/teams`);
         setTeams(Array.isArray(teamRes.data) ? teamRes.data : []);
 
-        // Fetch cricket scores for this match
-        const scoreRes = await makeAuthenticatedRequest<CricketScore[]>(
-          `/api/cricket-scores/match/${matchId}`
-        );
-        if (scoreRes.data && Array.isArray(scoreRes.data) && scoreRes.data.length > 0) {
-          setCricketScores(scoreRes.data);
-          setNoResult(false);
-        } else {
-          setCricketScores([]);
-          setNoResult(true);
-        }
+        // Initial cricket scores fetch
+        await fetchCricketScores();
       } catch (err) {
         console.error("Error fetching data:", err);
         setNoResult(true);
@@ -106,6 +118,17 @@ export default function ViewCricketResultPage() {
       setTeamB(teams.find((t) => t.teamId === match.team2Id) ?? null);
     }
   }, [match, teams]);
+
+  // Auto-refresh cricket scores every 5 seconds for ongoing matches
+  useEffect(() => {
+    if (!autoRefresh || noResult || match?.status === "COMPLETED") return;
+    
+    const interval = setInterval(() => {
+      fetchCricketScores();
+    }, 5000); // 5 seconds
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, matchId, noResult, match?.status]);
 
   if (loading) {
     return (
@@ -164,6 +187,34 @@ export default function ViewCricketResultPage() {
           <span className={`status-badge ${match?.status?.toLowerCase()}`}>
             {match?.status || "UNKNOWN"}
           </span>
+          
+          {/* Live Refresh Controls */}
+          {match?.status !== "COMPLETED" && !noResult && (
+            <div className="live-indicator">
+              <div className="live-refresh-controls">
+                <button 
+                  className="refresh-btn" 
+                  onClick={fetchCricketScores}
+                  title="Refresh scores now"
+                >
+                  🔄 Refresh
+                </button>
+                <label className="auto-refresh-toggle">
+                  <input
+                    type="checkbox"
+                    checked={autoRefresh}
+                    onChange={(e) => setAutoRefresh(e.target.checked)}
+                  />
+                  Auto-refresh (5s)
+                </label>
+                {lastUpdated && (
+                  <span className="last-updated">
+                    Last updated: {lastUpdated}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Final Score */}

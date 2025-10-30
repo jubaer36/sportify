@@ -70,6 +70,7 @@ export default function ConductCricketMatchPage() {
   const [canCreate, setCanCreate] = useState(true);
   const [canComplete, setCanComplete] = useState(false);
   const [canEndMatch, setCanEndMatch] = useState(false);
+  const [savingScores, setSavingScores] = useState<{ [key: number]: boolean }>({});
 
   // Debug log helper
   const debugLog = (...args: any[]) => {
@@ -164,6 +165,61 @@ export default function ConductCricketMatchPage() {
           : set
       )
     );
+  };
+
+  // NEW: Live save cricket score to database
+  const handleSaveCricketScore = async (setIdx: number) => {
+    const currentSet = scores[setIdx];
+    if (!currentSet || currentSet.length !== 2) return;
+
+    setSavingScores((prev) => ({ ...prev, [setIdx]: true }));
+
+    try {
+      for (let i = 0; i < currentSet.length; i++) {
+        const score = currentSet[i];
+        
+        if (score.cricketScoreId) {
+          // Update existing cricket score with PUT
+          const updated = await makeAuthenticatedRequest<CricketScore>(
+            `/api/cricket-scores/${score.cricketScoreId}`,
+            {
+              method: "PUT",
+              body: JSON.stringify(score),
+            }
+          );
+          debugLog("Cricket score updated:", updated);
+        } else {
+          // Create new cricket score with POST
+          const created = await makeAuthenticatedRequest<CricketScore>(
+            `/api/cricket-scores/create`,
+            {
+              method: "POST",
+              body: JSON.stringify(score),
+            }
+          );
+          debugLog("Cricket score created:", created);
+          
+          // Update local state with the returned ID
+          if (created.data) {
+            setScores((prev) =>
+              prev.map((set, idx) =>
+                idx === setIdx
+                  ? set.map((s, teamIdx) =>
+                      teamIdx === i ? { ...s, cricketScoreId: created.data!.cricketScoreId } : s
+                    )
+                  : set
+              )
+            );
+          }
+        }
+      }
+      alert("Cricket score saved successfully! Players can now view live updates.");
+    } catch (err) {
+      debugLog("Error in handleSaveCricketScore:", err);
+      alert("Error saving cricket score. Please try again.");
+    }
+
+    setSavingScores((prev) => ({ ...prev, [setIdx]: false }));
   };
 
   // Complete and save cricket match score for current set
@@ -290,6 +346,46 @@ export default function ConductCricketMatchPage() {
           {teamA?.teamName ?? "Team A"} <span className="vs">vs</span>{" "}
           {teamB?.teamName ?? "Team B"}
         </h2>
+
+        {/* Live Save Button for Current Set */}
+        {scores.length > 0 && activeSetIdx !== null && (
+          <div className="live-save-section" style={{ marginBottom: "1.5rem", textAlign: "center" }}>
+            <button
+              className={`save-score-btn ${scores[activeSetIdx]?.[0]?.cricketScoreId ? "saved" : ""}`}
+              onClick={() => handleSaveCricketScore(activeSetIdx)}
+              disabled={savingScores[activeSetIdx]}
+              title={scores[activeSetIdx]?.[0]?.cricketScoreId ? "Update live score" : "Save live score"}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                background: scores[activeSetIdx]?.[0]?.cricketScoreId ? "#0284c7" : "#10b981",
+                color: "#fff",
+                border: "none",
+                borderRadius: "0.6rem",
+                padding: "0.7rem 1.5rem",
+                fontSize: "1rem",
+                fontWeight: 600,
+                cursor: savingScores[activeSetIdx] ? "not-allowed" : "pointer",
+                transition: "all 0.2s",
+              }}
+            >
+              {savingScores[activeSetIdx] ? (
+                <>
+                  <span style={{ fontSize: "1.1rem" }}>⏳</span> Saving...
+                </>
+              ) : scores[activeSetIdx]?.[0]?.cricketScoreId ? (
+                <>
+                  <span style={{ fontSize: "1.1rem" }}>✓</span> Update Live Score
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: "1.1rem" }}>💾</span> Save Live Score
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
         {/* --- Team Sections --- */}
         <div className="teams-score-section" style={{ display: "flex", gap: "3rem", justifyContent: "center", marginBottom: "2rem" }}>

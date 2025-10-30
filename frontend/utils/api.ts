@@ -9,25 +9,89 @@ export interface ApiResponse<T> {
 }
 
 /**
+ * Refresh the access token using the refresh token
+ * @returns Promise with new token or null if refresh fails
+ */
+async function refreshAccessToken(): Promise<string | null> {
+  try {
+    const refreshToken = localStorage.getItem('refreshToken');
+    
+    if (!refreshToken) {
+      console.error('[API] No refresh token found');
+      return null;
+    }
+
+    console.log('[API] Attempting to refresh access token...');
+    
+    const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[API] Token refresh failed:', response.status, errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    
+    if (data.token && data.refreshToken) {
+      // Update both tokens in localStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('refreshToken', data.refreshToken);
+      console.log('[API] ✅ Token refreshed successfully');
+      return data.token;
+    } else {
+      console.error('[API] Token refresh response missing token data:', data);
+      return null;
+    }
+
+  } catch (error) {
+    console.error('[API] Error refreshing token:', error);
+    return null;
+  }
+}
+
+/**
  * Make an authenticated API request
  * @param endpoint - API endpoint (e.g., '/api/sports')
  * @param options - Fetch options
+ * @param isRetry - Internal flag to prevent infinite retry loops
  * @returns Promise with response data
  */
 export async function makeAuthenticatedRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  isRetry: boolean = false
 ): Promise<ApiResponse<T>> {
   try {
-    const token = localStorage.getItem('token');
+    let token = localStorage.getItem('token');
     
-    console.log('[API] Making request to:', endpoint);
-    // console.log('[API] Token exists:', !!token);
+    console.log('[API] Making request to:', endpoint, isRetry ? '(retry)' : '');
     
-    if (!token) {
-      console.error('[API] No token found in localStorage');
+    // If no token on first attempt, check if we can refresh
+    if (!token && !isRetry) {
+      console.log('[API] No token found, attempting to use refresh token...');
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        token = newToken;
+        console.log('[API] Successfully obtained token via refresh');
+      } else {
+        console.error('[API] No token and refresh failed');
+        return {
+          error: 'No authentication token found. Please login again.',
+          status: 401
+        };
+      }
+    } else if (!token && isRetry) {
+      // On retry, if still no token, we've already tried refresh
+      console.error('[API] No token found after refresh attempt');
       return {
-        error: 'No authentication token found. Please login again.',
+        error: 'Session expired. Please login again.',
         status: 401
       };
     }
@@ -42,28 +106,33 @@ export async function makeAuthenticatedRequest<T>(
       headers['Content-Type'] = 'application/json';
     }
 
-    // console.log('[API] Request headers:', headers);
-    // console.log('[API] Request URL:', url);
-
     const response = await fetch(url, {
       ...options,
       headers,
     });
 
-    // console.log('[API] Response status:', response.status);
-    // console.log('[API] Response ok:', response.ok);
-
     if (!response.ok) {
       const errorText = await response.text();
-      // console.error('[API] Error response:', errorText);
       
-      if (response.status === 401) {
-        // Clear invalid token
-        localStorage.removeItem('token');
-        return {
-          error: 'Authentication failed. Please login again.',
-          status: response.status
-        };
+      if (response.status === 401 && !isRetry) {
+        // Token might be expired, try to refresh it
+        console.log('[API] 401 Unauthorized - attempting token refresh...');
+        const newToken = await refreshAccessToken();
+        
+        if (newToken) {
+          // Retry the original request with the new token
+          console.log('[API] Retrying request with refreshed token...');
+          return makeAuthenticatedRequest<T>(endpoint, options, true);
+        } else {
+          // Refresh failed, clear tokens and ask user to login
+          console.error('[API] Token refresh failed - clearing tokens');
+          localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
+          return {
+            error: 'Session expired. Please login again.',
+            status: response.status
+          };
+        }
       }
       
       // Try to parse error as JSON if possible
@@ -101,7 +170,6 @@ export async function makeAuthenticatedRequest<T>(
 
     try {
       const data = await response.json();
-      // console.log('[API] Response data:', data);
       return {
         data,
         status: response.status

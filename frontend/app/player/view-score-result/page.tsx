@@ -62,6 +62,25 @@ export default function ViewScoreResultPage() {
   const [scores, setScores] = useState<Score[]>([]);
   const [loading, setLoading] = useState(true);
   const [noResult, setNoResult] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+
+  // Function to fetch scores
+  const fetchScores = async () => {
+    try {
+      const scoreRes = await makeAuthenticatedRequest<Score[]>(`/api/scores/match/${matchId}`);
+      if (scoreRes.data && Array.isArray(scoreRes.data) && scoreRes.data.length > 0) {
+        setScores(scoreRes.data);
+        setNoResult(false);
+        setLastUpdated(new Date());
+      } else {
+        setScores([]);
+        setNoResult(true);
+      }
+    } catch (err) {
+      console.error("Error fetching scores:", err);
+    }
+  };
 
   // Fetch tournament, match, teams, and scores
   useEffect(() => {
@@ -79,15 +98,8 @@ export default function ViewScoreResultPage() {
         const teamRes = await makeAuthenticatedRequest<Team[]>(`/api/teams`);
         setTeams(Array.isArray(teamRes.data) ? teamRes.data : []);
 
-        // Fetch scores for this match
-        const scoreRes = await makeAuthenticatedRequest<Score[]>(`/api/scores/match/${matchId}`);
-        if (scoreRes.data && Array.isArray(scoreRes.data) && scoreRes.data.length > 0) {
-          setScores(scoreRes.data);
-          setNoResult(false);
-        } else {
-          setScores([]);
-          setNoResult(true);
-        }
+        // Initial score fetch
+        await fetchScores();
       } catch (err) {
         console.error("Error fetching data:", err);
         setNoResult(true);
@@ -96,6 +108,17 @@ export default function ViewScoreResultPage() {
     };
     if (tournamentId && matchId) fetchAll();
   }, [tournamentId, matchId]);
+
+  // Auto-refresh scores every 5 seconds for live updates
+  useEffect(() => {
+    if (!autoRefresh || noResult || match?.status === "COMPLETED") return;
+
+    const interval = setInterval(() => {
+      fetchScores();
+    }, 5000); // Refresh every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, matchId, noResult, match?.status]);
 
   // Set teamA and teamB after teams and match are loaded
   useEffect(() => {
@@ -163,6 +186,30 @@ export default function ViewScoreResultPage() {
           <span className={`status-badge ${match?.status?.toLowerCase()}`}>
             {match?.status || "UNKNOWN"}
           </span>
+          {match?.status !== "COMPLETED" && (
+            <div className="live-indicator">
+              <div className="live-refresh-controls">
+                <button
+                  className="refresh-btn"
+                  onClick={() => fetchScores()}
+                  title="Refresh scores"
+                >
+                  🔄 Refresh
+                </button>
+                <label className="auto-refresh-toggle">
+                  <input
+                    type="checkbox"
+                    checked={autoRefresh}
+                    onChange={(e) => setAutoRefresh(e.target.checked)}
+                  />
+                  <span>Auto-refresh (5s)</span>
+                </label>
+                <span className="last-updated">
+                  Updated: {lastUpdated.toLocaleTimeString()}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Final Score */}
@@ -193,7 +240,7 @@ export default function ViewScoreResultPage() {
 
         {/* Set by Set Scores */}
         <div className="games-section">
-          <h3 className="section-heading">Set by Set Scores</h3>
+          <h3 className="section-heading">Set Results</h3>
           {scores.map((s, idx) => (
             <div key={idx} className="game-card">
               <div className="game-title">Set {idx + 1}</div>
