@@ -690,18 +690,6 @@ const TeamDetailsPage: React.FC = () => {
                   </div>
                   
                   <div className="member-actions">
-                    {/* Remove button - only show for captains and not for the captain themselves */}
-                    {isCurrentUserCaptain() && member.userId !== currentUser?.userId && (
-                      <button
-                        className="remove-member-btn"
-                        onClick={() => removeMember(member.userId)}
-                        disabled={removingMember === member.userId}
-                        title="Remove member from team"
-                      >
-                        {removingMember === member.userId ? '...' : '×'}
-                      </button>
-                    )}
-                    
                     {/* Accept membership button - only show for current user if they have pending status */}
                     {member.userId === currentUser?.userId && member.status === 'PENDING' && (
                       <button
@@ -723,6 +711,18 @@ const TeamDetailsPage: React.FC = () => {
                         title="Leave this team"
                       >
                         {leavingTeam === member.userId ? 'Leaving...' : 'Leave Team'}
+                      </button>
+                    )}
+                    
+                    {/* Remove button - ONLY visible to captains, can remove any member except themselves */}
+                    {isCurrentUserCaptain() && member.userId !== currentUser?.userId && (
+                      <button
+                        className="remove-member-btn"
+                        onClick={() => removeMember(member.userId)}
+                        disabled={removingMember === member.userId}
+                        title="Remove member from team"
+                      >
+                        {removingMember === member.userId ? '...' : '×'}
                       </button>
                     )}
                   </div>
