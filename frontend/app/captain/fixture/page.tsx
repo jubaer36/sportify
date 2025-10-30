@@ -1295,39 +1295,41 @@ export default function FixtureViewer() {
       <div className="flex">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main className="flex-1 p-8">
-          <h1 className="text-3xl font-bold mb-6">Fixture Management</h1>
+          <h1 className="text-3xl font-bold mb-6 text-center">Fixture Management</h1>
 
           {/* Tournament Selector */}
-          <div className="mb-6 max-w-md">
-            <label
-              htmlFor="tournament-select"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Select Tournament
-            </label>
-            <select
-              id="tournament-select"
-              value={selectedTournament?.tournamentId || ""}
-              onChange={(e) => {
-                const tournament =
-                  tournaments.find(
-                    (t) => t.tournamentId === parseInt(e.target.value)
-                  ) || null;
-                setSelectedTournament(tournament);
-                // Update URL without reloading page
-                router.push(`/captain/fixture?tournamentId=${e.target.value}`);
-              }}
-              className="w-full p-2 border border-gray-300 rounded-md shadow-sm"
-            >
-              <option value="" disabled>
-                -- Select a Tournament --
-              </option>
-              {tournaments.map((t) => (
-                <option key={t.tournamentId} value={t.tournamentId}>
-                  {t.name} ({t.sportName})
+          <div className="mb-6 flex justify-center">
+            <div className="w-full max-w-md">
+              <label
+                htmlFor="tournament-select"
+                className="block text-sm font-medium text-gray-700 mb-2 text-center"
+              >
+                Select Tournament
+              </label>
+              <select
+                id="tournament-select"
+                value={selectedTournament?.tournamentId || ""}
+                onChange={(e) => {
+                  const tournament =
+                    tournaments.find(
+                      (t) => t.tournamentId === parseInt(e.target.value)
+                    ) || null;
+                  setSelectedTournament(tournament);
+                  // Update URL without reloading page
+                  router.push(`/captain/fixture?tournamentId=${e.target.value}`);
+                }}
+                className="w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              >
+                <option value="" disabled>
+                  -- Select a Tournament --
                 </option>
-              ))}
-            </select>
+                {tournaments.map((t) => (
+                  <option key={t.tournamentId} value={t.tournamentId}>
+                    {t.name} ({t.sportName})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {error && (
