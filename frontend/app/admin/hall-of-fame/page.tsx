@@ -89,6 +89,7 @@ export default function HallOfFame() {
     const [expandedTeams, setExpandedTeams] = useState<Set<number>>(new Set());
     const [membersModalOpen, setMembersModalOpen] = useState(false);
     const [modalTeam, setModalTeam] = useState<{ name: string; logo?: string; members: TeamMember[] } | null>(null);
+    const [showAll, setShowAll] = useState(false);
 
     // Get available years from tournaments
     const getAvailableYears = () => {
@@ -314,8 +315,18 @@ export default function HallOfFame() {
             <div className="hall-of-fame-container">
                 <h1 className="page-title">Hall of Fame</h1>
 
+                {/* Show All Button */}
+                <div style={{textAlign: 'right', marginBottom: '1rem'}}>
+                    <button
+                        className="show-all-btn"
+                        onClick={() => setShowAll(v => !v)}
+                        style={{background: showAll ? '#0369a1' : '#e0f2fe', color: showAll ? 'white' : '#0284c7', fontWeight: 600, border: 'none', borderRadius: 8, padding: '0.6rem 1.2rem', cursor: 'pointer', boxShadow: '0 2px 6px #0284c715'}}>
+                        {showAll ? 'Show Podium View' : 'Show All'}
+                    </button>
+                </div>
+
                 {/* Filters */}
-                <div className="filters-section">
+                <div className="filters-section" style={{opacity: showAll ? 0.5 : 1, pointerEvents: showAll ? 'none' : 'auto'}}>
                     <div className="filter-group">
                         <label htmlFor="year-select">Year:</label>
                         <select
@@ -349,62 +360,97 @@ export default function HallOfFame() {
                     </div>
                 </div>
 
-                {/* Selected sport display */}
-                {selectedSportId && (
-                    <div className="selected-sport">
-                        {(() => {
-                            const sport = sports.find(s => s.sportId === selectedSportId);
-                            return sport ? (
-                                <div className="sport-info">
-                                    <img
-                                        src={getSportLogo(sport.name)}
-                                        alt={sport.name}
-                                        className="sport-logo"
-                                    />
-                                    <span className="sport-name">{sport.name} - {selectedYear}</span>
-                                </div>
-                            ) : null;
-                        })()}
+                {/* All Tournaments List View */}
+                {showAll && (
+                    <div className="all-tournaments-list" style={{background: '#fff', borderRadius: '18px', boxShadow: '0 4px 24px 0 #0284c72a', padding: '2rem', marginTop: '0', marginBottom: '2rem', maxHeight: 600, overflow: 'auto'}}>
+                        <table style={{width:'100%', borderCollapse: 'collapse'}}>
+                            <thead>
+                                <tr style={{background:'#e0f2fe', color:'#0284c7'}}>
+                                    <th style={{padding:'0.7rem', textAlign:'left'}}>Tournament</th>
+                                    <th style={{padding:'0.7rem', textAlign:'left'}}>Year</th>
+                                    <th style={{padding:'0.7rem', textAlign:'left'}}>Sport</th>
+                                    <th style={{padding:'0.7rem', textAlign:'left'}}>Champion</th>
+                                    <th style={{padding:'0.7rem', textAlign:'left'}}>Runner-up</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {tournaments.map(t => {
+                                    const sport = sports.find(s => s.sportId === t.sportId);
+                                    return (
+                                        <tr key={t.tournamentId} style={{borderBottom: '1px solid #f0f9ff'}}>
+                                            <td style={{padding:'0.65rem'}}>{t.name}</td>
+                                            <td style={{padding:'0.65rem'}}>{new Date(t.startDate).getFullYear()}</td>
+                                            <td style={{padding:'0.65rem'}}>{t.sportName}</td>
+                                            <td style={{padding:'0.65rem'}}><strong style={{color:'#22c55e'}}>{(sport?.isTeamGame ? t.championName : t.championName) || '-'}</strong></td>
+                                            <td style={{padding:'0.65rem'}}><span style={{color:'#c026d3'}}>{(sport?.isTeamGame ? t.runnerUpName : t.runnerUpName) || '-'}</span></td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
                 )}
 
-                {/* Winners Display */}
-                <div className="winners-section">
-                    {loading ? (
-                        <div className="loading-message">Loading winners...</div>
-                    ) : error ? (
-                        <div className="error-message">{error}</div>
-                    ) : !selectedYear || !selectedSportId ? (
-                        <div className="no-selection">
-                            <p>Please select both year and sport to view the Hall of Fame</p>
-                        </div>
-                    ) : winners.length === 0 ? (
-                        <div className="no-winners">
-                            <p>No winners found for {sports.find(s => s.sportId === selectedSportId)?.name} in {selectedYear}</p>
-                        </div>
-                    ) : (
-                        <div className="podium">
-                            {/* Render winners in order: 2nd, 1st, 3rd for podium effect */}
-                            <div className="podium-positions">
-                                {winners.find(w => w.position === 2) && (
-                                    <div className="position-container second">
-                                        {renderWinner(winners.find(w => w.position === 2)!)}
-                                    </div>
-                                )}
-                                {winners.find(w => w.position === 1) && (
-                                    <div className="position-container first">
-                                        {renderWinner(winners.find(w => w.position === 1)!)}
-                                    </div>
-                                )}
-                                {winners.find(w => w.position === 3) && (
-                                    <div className="position-container third">
-                                        {renderWinner(winners.find(w => w.position === 3)!)}
-                                    </div>
-                                )}
+                {/* Podium & Modal, unchanged code, only hidden if showAll */}
+                {!showAll && (
+                    <>
+                        {/* Selected sport display */}
+                        {selectedSportId && (
+                            <div className="selected-sport">
+                                {(() => {
+                                    const sport = sports.find(s => s.sportId === selectedSportId);
+                                    return sport ? (
+                                        <div className="sport-info">
+                                            <img
+                                                src={getSportLogo(sport.name)}
+                                                alt={sport.name}
+                                                className="sport-logo"
+                                            />
+                                            <span className="sport-name">{sport.name} - {selectedYear}</span>
+                                        </div>
+                                    ) : null;
+                                })()}
                             </div>
+                        )}
+                        {/* Winners Display */}
+                        <div className="winners-section">
+                            {loading ? (
+                                <div className="loading-message">Loading winners...</div>
+                            ) : error ? (
+                                <div className="error-message">{error}</div>
+                            ) : !selectedYear || !selectedSportId ? (
+                                <div className="no-selection">
+                                    <p>Please select both year and sport to view the Hall of Fame</p>
+                                </div>
+                            ) : winners.length === 0 ? (
+                                <div className="no-winners">
+                                    <p>No winners found for {sports.find(s => s.sportId === selectedSportId)?.name} in {selectedYear}</p>
+                                </div>
+                            ) : (
+                                <div className="podium">
+                                    {/* Render winners in order: 2nd, 1st, 3rd for podium effect */}
+                                    <div className="podium-positions">
+                                        {winners.find(w => w.position === 2) && (
+                                            <div className="position-container second">
+                                                {renderWinner(winners.find(w => w.position === 2)!)}
+                                            </div>
+                                        )}
+                                        {winners.find(w => w.position === 1) && (
+                                            <div className="position-container first">
+                                                {renderWinner(winners.find(w => w.position === 1)!)}
+                                            </div>
+                                        )}
+                                        {winners.find(w => w.position === 3) && (
+                                            <div className="position-container third">
+                                                {renderWinner(winners.find(w => w.position === 3)!)}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
+                    </>
+                )}
 
                 {membersModalOpen && modalTeam && (
                     <div className="modal-overlay" role="dialog" aria-modal="true">
