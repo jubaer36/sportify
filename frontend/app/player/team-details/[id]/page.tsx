@@ -63,6 +63,22 @@ const TeamDetailsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [membersLoading, setMembersLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ userId: number; role: string } | null>(null);
+  const [removingMember, setRemovingMember] = useState<number | null>(null);
+
+  // Fetch current user profile
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await makeAuthenticatedRequest<{ userId: number; role: string }>('/api/users/profile');
+      
+      if (response.data) {
+        setCurrentUser(response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching current user:', err);
+      // Don't set error here as this is optional functionality
+    }
+  };
 
   // Fetch team information
   const fetchTeamInfo = async () => {
@@ -127,11 +143,66 @@ const TeamDetailsPage: React.FC = () => {
     }
   };
 
+  // Remove team member (captain only)
+  const removeMember = async (memberId: number) => {
+    if (!currentUser || !team) return;
+    
+    // Check if current user is captain of this team
+    const isCaptain = members.some(member => 
+      member.userId === currentUser.userId && 
+      member.roleInTeam?.toLowerCase().includes('captain')
+    );
+    
+    if (!isCaptain) {
+      alert('Only team captains can remove members.');
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to remove this member from the team?')) {
+      return;
+    }
+
+    try {
+      setRemovingMember(memberId);
+      
+      const response = await makeAuthenticatedRequest(
+        `/api/team-members/team/${teamId}/user/${memberId}`,
+        { method: 'DELETE' }
+      );
+
+      if (response.error) {
+        alert('Failed to remove member: ' + response.error);
+        return;
+      }
+
+      // Refresh the members list
+      await fetchTeamMembers();
+      alert('Member removed successfully!');
+      
+    } catch (err) {
+      console.error('Error removing member:', err);
+      alert('Failed to remove member. Please try again.');
+    } finally {
+      setRemovingMember(null);
+    }
+  };
+
+  // Check if current user is captain of this team
+  const isCurrentUserCaptain = () => {
+    if (!currentUser || !members.length) return false;
+    
+    return members.some(member => 
+      member.userId === currentUser.userId && 
+      member.roleInTeam?.toLowerCase().includes('captain')
+    );
+  };
+
   // Initial data loading
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       await Promise.all([
+        fetchCurrentUser(),
         fetchTeamInfo(),
         fetchTeamMembers()
       ]);
@@ -363,6 +434,20 @@ const TeamDetailsPage: React.FC = () => {
                       </span>
                     </div>
                   </div>
+                  
+                  {/* Remove button - only show for captains and not for the captain themselves */}
+                  {isCurrentUserCaptain() && member.userId !== currentUser?.userId && (
+                    <div className="member-actions">
+                      <button
+                        className="remove-member-btn"
+                        onClick={() => removeMember(member.userId)}
+                        disabled={removingMember === member.userId}
+                        title="Remove member from team"
+                      >
+                        {removingMember === member.userId ? '...' : '×'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
