@@ -555,14 +555,14 @@ INSERT INTO announcements (announcement_id, title, content, posted_by, posted_at
 
 
 --Insert into cricket-scores
-
-INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team_b_innings, team_a_total_run, team_b_total_run, team_a_total_wicket, team_b_total_wicket, team_a_overs, team_b_overs) VALUES (6, 6, 1, 1, 0, 275, NULL, 7, NULL, '50.0', NULL);
-
-INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team_b_innings, team_a_total_run, team_b_total_run, team_a_total_wicket, team_b_total_wicket, team_a_overs, team_b_overs) VALUES (6, 6, 1, 1, 2, 275, 260, 7, 9, '50.0', '49.2');
-
-INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team_b_innings, team_a_total_run, team_b_total_run, team_a_total_wicket, team_b_total_wicket, team_a_overs, team_b_overs) VALUES (7, 7, 5, 1, 0, 180, NULL, 10, NULL, '45.3', NULL);
-
-INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team_b_innings, team_a_total_run, team_b_total_run, team_a_total_wicket, team_b_total_wicket, team_a_overs, team_b_overs) VALUES (7, 7, 5, 1, 2, 180, 185, 10, 5, '45.3', '40.1');
+--
+-- INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team_b_innings, team_a_total_run, team_b_total_run, team_a_total_wicket, team_b_total_wicket, team_a_overs, team_b_overs) VALUES (6, 6, 1, 1, 0, 275, NULL, 7, NULL, '50.0', NULL);
+--
+-- INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team_b_innings, team_a_total_run, team_b_total_run, team_a_total_wicket, team_b_total_wicket, team_a_overs, team_b_overs) VALUES (6, 6, 1, 1, 2, 275, 260, 7, 9, '50.0', '49.2');
+--
+-- INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team_b_innings, team_a_total_run, team_b_total_run, team_a_total_wicket, team_b_total_wicket, team_a_overs, team_b_overs) VALUES (7, 7, 5, 1, 0, 180, NULL, 10, NULL, '45.3', NULL);
+--
+-- INSERT INTO cricket_scores (match_id, team_a_id, team_b_id, team_a_innings, team_b_innings, team_a_total_run, team_b_total_run, team_a_total_wicket, team_b_total_wicket, team_a_overs, team_b_overs) VALUES (7, 7, 5, 1, 2, 180, 185, 10, 5, '45.3', '40.1');
 
 UPDATE tournaments SET champion_id = 1,  runner_up_id = 2 WHERE tournament_id = 1;
 UPDATE tournaments SET champion_id = 3,  runner_up_id = 4 WHERE tournament_id = 2;
