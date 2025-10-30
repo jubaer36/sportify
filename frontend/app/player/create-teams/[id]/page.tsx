@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Topbar from "@/Component/topbar";
 import './create-teams.css';
 import { makeAuthenticatedRequest } from '../../../../utils/api';
 
@@ -210,6 +211,9 @@ const CreateTeamPage = () => {
     setSelectedPlayers(prev => prev.filter(player => player.userId !== userId));
   };
 
+  // Check if all necessary fields are filled
+  const isFormValid = teamName.trim() && selectedLogo && user && tournament;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -326,6 +330,7 @@ const CreateTeamPage = () => {
   if (initialLoading) {
     return (
       <div className="create-team-container">
+        <Topbar />
         <div className="loading-message">Loading tournament information...</div>
       </div>
     );
@@ -334,6 +339,7 @@ const CreateTeamPage = () => {
   if (!user || !tournament) {
     return (
       <div className="create-team-container">
+        <Topbar />
         <div className="error-message">
           Failed to load required data. Please try again.
         </div>
@@ -343,17 +349,12 @@ const CreateTeamPage = () => {
 
   return (
     <div className="create-team-container">
+      <Topbar />
       <div className="create-team-card">
         <h1 className="page-title">Create Team</h1>
 
         <div className="tournament-info">
           <h3>Tournament: {tournament.name}</h3>
-        </div>
-
-        {/* Debug info */}
-        <div style={{ fontSize: '12px', color: '#888', marginBottom: '20px' }}>
-          <p>Selected Logo: {selectedLogo}</p>
-          <p>Available Logos: {availableLogos.length}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="create-team-form">
@@ -392,19 +393,14 @@ const CreateTeamPage = () => {
 
               <div className="logo-options">
                 <h4>Choose a Logo:</h4>
-                <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
-                  Click on any logo below to select it for your team
-                </p>
                 <div className="logo-grid">
                   {availableLogos.map((logo) => (
                     <div
                       key={logo.id}
                       className={`logo-option ${selectedLogo === logo.path ? 'selected' : ''}`}
                       onClick={() => {
-                        console.log('Logo selected:', logo.path);
                         setSelectedLogo(logo.path);
                       }}
-                      style={{ cursor: 'pointer' }}
                     >
                       <Image
                         src={logo.path}
@@ -549,10 +545,10 @@ const CreateTeamPage = () => {
             </button>
             <button
               type="submit"
-              className="btn btn-primary"
-              disabled={loading || !teamName.trim()}
+              className={`btn btn-primary ${!isFormValid ? 'btn-disabled' : ''}`}
+              disabled={!isFormValid}
             >
-              {loading ? 'Creating...' : 'Create Team'}
+              Create Team
             </button>
           </div>
         </form>
