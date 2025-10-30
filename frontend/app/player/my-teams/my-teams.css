@@ -397,7 +397,7 @@
 /* Card Footer */
 .team-card-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   padding-top: 1rem;
   border-top: 1px solid rgba(0, 0, 0, 0.05);
@@ -437,6 +437,28 @@
   font-size: 0.85rem;
   font-weight: 500;
   color: #7f8c8d;
+}
+
+.details-button {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.details-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+
+.details-button:active {
+  transform: translateY(0);
 }
 
 /* Responsive Design */
