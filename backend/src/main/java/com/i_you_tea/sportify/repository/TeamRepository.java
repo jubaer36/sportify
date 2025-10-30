@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TeamRepository extends JpaRepository<Team, Long> {
@@ -47,4 +48,12 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     // Find all dummy teams for a tournament (regardless of round)
     @Query("SELECT t FROM Team t WHERE t.dummy = true AND t.tournament.tournamentId = :tournamentId")
     List<Team> findAllDummyTeamsByTournamentId(@Param("tournamentId") Long tournamentId);
+
+    // Find team by id with eagerly loaded relations
+    @Query("SELECT t FROM Team t " +
+           "LEFT JOIN FETCH t.sport s " +
+           "LEFT JOIN FETCH t.createdBy u " +
+           "LEFT JOIN FETCH t.tournament tour " +
+           "WHERE t.teamId = :teamId")
+    Optional<Team> findByIdWithDetails(@Param("teamId") Long teamId);
 }

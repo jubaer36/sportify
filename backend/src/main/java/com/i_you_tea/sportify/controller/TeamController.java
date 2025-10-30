@@ -33,6 +33,35 @@ public class TeamController {
         return ResponseEntity.ok(teamDTOs);
     }
 
+    /**
+     * Get team details by ID
+     * Returns comprehensive team information including sport, creator, and tournament details
+     * 
+     * @param token Authorization token
+     * @param id Team ID
+     * @return TeamDTO with all team details
+     */
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN') or hasRole('PLAYER')")
+    public ResponseEntity<?> getTeamById(@RequestHeader("Authorization") String token,
+                                        @PathVariable Long id) {
+        try {
+            Team team = teamService.getTeamDetailsById(id)
+                    .orElseThrow(() -> new RuntimeException("Team not found with ID: " + id));
+            
+            TeamDTO teamDTO = TeamDTO.fromEntity(team);
+            
+            return ResponseEntity.ok(teamDTO);
+            
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error retrieving team: " + e.getMessage()));
+        }
+    }
+
     @GetMapping("/tournament/{tournamentId}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('CAPTAIN') or hasRole('PLAYER')")
     public ResponseEntity<List<TeamDTO>> getTeamsByTournamentId(@RequestHeader("Authorization") String token,

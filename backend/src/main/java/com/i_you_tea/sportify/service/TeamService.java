@@ -13,7 +13,6 @@ import com.i_you_tea.sportify.repository.UserRepository;
 import com.i_you_tea.sportify.repository.SportRepository;
 import com.i_you_tea.sportify.repository.TournamentRepository;
 import com.i_you_tea.sportify.repository.MatchRepository;
-import com.i_you_tea.sportify.repository.MatchRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,6 +36,31 @@ public class TeamService {
     }
     public Optional<Team> getTeamById(Long id) {
         return teamRepository.findById(id);
+    }
+
+    /**
+     * Get detailed team information by ID including related entities
+     * @param id The team ID
+     * @return Team with populated sport, creator, and tournament details
+     */
+    public Optional<Team> getTeamDetailsById(Long id) {
+        return teamRepository.findByIdWithDetails(id);
+    }
+
+    /**
+     * Get comprehensive team information including members
+     * @param id The team ID
+     * @return Team with all related information
+     */
+    public Optional<Team> getCompleteTeamDetailsById(Long id) {
+        Optional<Team> teamOptional = teamRepository.findByIdWithDetails(id);
+        if (teamOptional.isPresent()) {
+            Team team = teamOptional.get();
+            // The team members are already accessible through the team entity
+            // if needed, we could add additional processing here
+            return Optional.of(team);
+        }
+        return Optional.empty();
     }
     public List<Team> getTeamsByTournamentId(Long tournamentId) {
         return teamRepository.findByTournamentTournamentId(tournamentId);
