@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Topbar from "@/Component/topbar";
-import { makeAuthenticatedRequest } from "@/utils/api";
+import { makeAuthenticatedRequest, API_BASE_URL } from "@/utils/api";
 import "./tournaments.css";
 
 // --- DTOs matching backend ---
@@ -147,6 +147,30 @@ export default function TournamentsPage() {
     return "Upcoming";
   };
 
+  const sendCertificates = async (tournamentId: number) => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token) {
+        alert('You are not logged in. Please login and try again.');
+        return;
+      }
+      const resp = await fetch(`${API_BASE_URL}/api/certificates/generate/${tournamentId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!resp.ok) {
+        const text = await resp.text();
+        alert(`Failed to send certificates: ${text || resp.status}`);
+        return;
+      }
+      alert('Certificates are being generated for this tournament.');
+    } catch (e: any) {
+      alert('Failed to send certificates');
+    }
+  };
+
   // --- Apply Filters ---
   const filteredTournaments = tournaments.filter((t) => {
     const sport = getSport(t.sportId);
@@ -259,6 +283,17 @@ export default function TournamentsPage() {
                         📅
                       </button>
                       
+                      {/* Admin: Send Certificates for ended tournaments */}
+                      {userProfile?.role === "ADMIN" && status === "Ended" && (
+                        <button
+                          className="edit-tournament-btn"
+                          onClick={() => sendCertificates(tournament.tournamentId)}
+                          title="Send Certificates"
+                        >
+                          🏅
+                        </button>
+                      )}
+
                       {/* Edit button for tournaments created by current captain */}
                       {userProfile?.role === "CAPTAIN" && 
                        tournament.createdById === userProfile.userId && (

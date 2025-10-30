@@ -86,6 +86,9 @@ export default function HallOfFame() {
     const [winners, setWinners] = useState<Winner[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [expandedTeams, setExpandedTeams] = useState<Set<number>>(new Set());
+    const [membersModalOpen, setMembersModalOpen] = useState(false);
+    const [modalTeam, setModalTeam] = useState<{ name: string; logo?: string; members: TeamMember[] } | null>(null);
 
     // Get available years from tournaments
     const getAvailableYears = () => {
@@ -188,13 +191,13 @@ export default function HallOfFame() {
                             members: members
                         });
                     } else {
-                        // For individual games, we already have the name from tournament
+                        // For individual games, fall back if demo data lacks names
                         winnersData.push({
                             position: 1,
-                            id: tournament.championId,
-                            name: tournament.championName,
+                            id: tournament.championId ?? -1,
+                            name: tournament.championName || 'Champion',
                             isTeam: false,
-                            photo: '/Photos/profile.png' // Default user photo
+                            photo: '/Photos/profile.png'
                         });
                     }
                 }
@@ -218,13 +221,13 @@ export default function HallOfFame() {
                             members: members
                         });
                     } else {
-                        // For individual games, we already have the name from tournament
+                        // For individual games, fall back if demo data lacks names
                         winnersData.push({
                             position: 2,
-                            id: tournament.runnerUpId,
-                            name: tournament.runnerUpName,
+                            id: tournament.runnerUpId ?? -2,
+                            name: tournament.runnerUpName || 'Runner-up',
                             isTeam: false,
-                            photo: '/Photos/profile.png' // Default user photo
+                            photo: '/Photos/profile.png'
                         });
                     }
                 }
@@ -251,6 +254,16 @@ export default function HallOfFame() {
             3: '🥉'
         };
 
+        const openMembersModal = () => {
+            if (!winner.isTeam) return;
+            setModalTeam({
+                name: winner.name,
+                logo: winner.logo,
+                members: winner.members || []
+            });
+            setMembersModalOpen(true);
+        };
+
         return (
             <div key={`${winner.position}-${winner.id}`} className={`winner-card ${positionClasses[winner.position]}`}>
                 <div className="medal">{medals[winner.position]}</div>
@@ -258,34 +271,20 @@ export default function HallOfFame() {
                     {winner.isTeam ? (
                         // Team display
                         <div className="team-winner">
-                            <img
-                                src={winner.logo || '/Photos/logo1.png'}
-                                alt={winner.name}
-                                className="team-logo"
-                                onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.src = '/Photos/logo1.png';
-                                }}
-                            />
-                            <h3 className="winner-name">{winner.name}</h3>
-                            {winner.members && winner.members.length > 0 && (
-                                <div className="team-members">
-                                    {winner.members.map((member, index) => (
-                                        <div key={member.userId} className="member">
-                                            <img
-                                                src={member.profilePhoto || '/Photos/profile.png'}
-                                                alt={member.name}
-                                                className="member-photo"
-                                                onError={(e) => {
-                                                    const target = e.target as HTMLImageElement;
-                                                    target.src = '/Photos/profile.png';
-                                                }}
-                                            />
-                                            <span className="member-name">{member.name}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            <button type="button" className="team-header" onClick={openMembersModal} aria-haspopup="dialog">
+                                <img
+                                    src={winner.logo || '/Photos/logo1.png'}
+                                    alt={winner.name}
+                                    className="team-logo"
+                                    onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.src = '/Photos/logo1.png';
+                                    }}
+                                />
+                                <h3 className="winner-name">{winner.name}</h3>
+                                <span className="expand-indicator">View players</span>
+                            </button>
+                            {/* Members shown in modal now */}
                         </div>
                     ) : (
                         // Individual player display
@@ -406,6 +405,52 @@ export default function HallOfFame() {
                         </div>
                     )}
                 </div>
+
+                {membersModalOpen && modalTeam && (
+                    <div className="modal-overlay" role="dialog" aria-modal="true">
+                        <div className="modal">
+                            <div className="modal-header">
+                                <div className="modal-title">
+                                    <img
+                                        src={modalTeam.logo || '/Photos/logo1.png'}
+                                        alt={modalTeam.name}
+                                        className="team-logo small"
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.src = '/Photos/logo1.png';
+                                        }}
+                                    />
+                                    <h3>{modalTeam.name}</h3>
+                                </div>
+                                <button className="modal-close" onClick={() => setMembersModalOpen(false)} aria-label="Close">
+                                    ×
+                                </button>
+                            </div>
+                            <div className="modal-body">
+                                {modalTeam.members && modalTeam.members.length > 0 ? (
+                                    <div className="team-members grid">
+                                        {modalTeam.members.map(member => (
+                                            <div key={member.userId} className="member">
+                                                <img
+                                                    src={member.profilePhoto || '/Photos/profile.png'}
+                                                    alt={member.name}
+                                                    className="member-photo"
+                                                    onError={(e) => {
+                                                        const target = e.target as HTMLImageElement;
+                                                        target.src = '/Photos/profile.png';
+                                                    }}
+                                                />
+                                                <span className="member-name">{member.name}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="no-members">No players found for this team.</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
