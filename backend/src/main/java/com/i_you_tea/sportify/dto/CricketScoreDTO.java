@@ -9,55 +9,33 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CricketScoreDTO {
-    private Long scoreId;
+    private Long cricketScoreId;
     private Long matchId;
-    private Long teamAId;
-    private Long teamBId;
-
-    private Integer teamAInnings;
-    private Integer teamBInnings;
-
-    private Integer teamATotalRun;
-    private Integer teamBTotalRun;
-
-    private Integer teamATotalWicket;
-    private Integer teamBTotalWicket;
-
-    private String teamAOvers;
-    private String teamBOvers;
+    private Long teamId;
+    private Integer runs;
+    private Integer wickets;
+    private Double overs;
 
     // ---- Mapping ----
     public static CricketScoreDTO fromEntity(CricketScore entity) {
         return new CricketScoreDTO(
-            entity.getScoreId(),
-            entity.getMatch() != null ? entity.getMatch().getMatchId() : null,
-            entity.getTeamAId(),
-            entity.getTeamBId(),
-            entity.getTeamAInnings(),
-            entity.getTeamBInnings(),
-            entity.getTeamATotalRun(),
-            entity.getTeamBTotalRun(),
-            entity.getTeamATotalWicket(),
-            entity.getTeamBTotalWicket(),
-            entity.getTeamAOvers(),
-            entity.getTeamBOvers()
+            entity.getCricketScoreId(),
+            entity.getMatchId(),
+            entity.getTeamId(),
+            entity.getRuns(),
+            entity.getWickets(),
+            entity.getOvers()
         );
     }
 
     public CricketScore toEntity() {
         CricketScore cs = new CricketScore();
-        cs.setScoreId(this.scoreId);
-        // Match will be set in service via matchId lookup
-        cs.setTeamAId(this.teamAId);
-        cs.setTeamBId(this.teamBId);
-        cs.setTeamAInnings(this.teamAInnings);
-        cs.setTeamBInnings(this.teamBInnings);
-        cs.setTeamATotalRun(this.teamATotalRun);
-        cs.setTeamBTotalRun(this.teamBTotalRun);
-        cs.setTeamATotalWicket(this.teamATotalWicket);
-        cs.setTeamBTotalWicket(this.teamBTotalWicket);
-        cs.setTeamAOvers(this.teamAOvers);
-        cs.setTeamBOvers(this.teamBOvers);
+        cs.setCricketScoreId(this.cricketScoreId);
+        cs.setMatchId(this.matchId);
+        cs.setTeamId(this.teamId);
+        cs.setRuns(this.runs);
+        cs.setWickets(this.wickets);
+        cs.setOvers(this.overs);
         return cs;
     }
 }

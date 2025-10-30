@@ -9,6 +9,6 @@ import java.util.List;
 
 @Repository
 public interface CricketScoreRepository extends JpaRepository<CricketScore, Long> {
-    // find by match id (assuming Match has field matchId)
-    List<CricketScore> findByMatch_MatchId(Long matchId);
+    // Find cricket scores by match ID
+    List<CricketScore> findByMatchId(Long matchId);
 }
