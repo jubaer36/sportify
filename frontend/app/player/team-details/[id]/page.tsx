@@ -67,6 +67,12 @@ interface AddMemberRequest {
   roleInTeam: string;
 }
 
+interface UpdateStatusRequest {
+  teamId: number;
+  userId: number;
+  status: string;
+}
+
 const TeamDetailsPage: React.FC = () => {
   const params = useParams();
   const router = useRouter();
@@ -91,6 +97,8 @@ const TeamDetailsPage: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState('Player');
   const [addingMember, setAddingMember] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
+  const [leavingTeam, setLeavingTeam] = useState<number | null>(null);
 
   // Fetch current user profile
   const fetchCurrentUser = async () => {
@@ -327,6 +335,109 @@ const TeamDetailsPage: React.FC = () => {
     } finally {
       setAddingMember(false);
     }
+  };
+
+  // Accept membership (change status from PENDING to ACCEPTED)
+  const acceptMembership = async (memberId: number) => {
+    if (!currentUser || !team) return;
+
+    // Only allow the user to accept their own membership
+    if (memberId !== currentUser.userId) {
+      alert('You can only accept your own membership.');
+      return;
+    }
+
+    if (!window.confirm('Do you want to accept your membership in this team?')) {
+      return;
+    }
+
+    try {
+      setUpdatingStatus(memberId);
+
+      const updateStatusRequest: UpdateStatusRequest = {
+        teamId: team.teamId,
+        userId: memberId,
+        status: 'ACCEPTED'
+      };
+
+      const response = await makeAuthenticatedRequest(
+        '/api/team-members/status',
+        {
+          method: 'PUT',
+          body: JSON.stringify(updateStatusRequest)
+        }
+      );
+
+      if (response.error) {
+        alert('Failed to accept membership: ' + response.error);
+        return;
+      }
+
+      // Refresh the members list
+      await fetchTeamMembers();
+      alert('Membership accepted successfully!');
+
+    } catch (err) {
+      console.error('Error accepting membership:', err);
+      alert('Failed to accept membership. Please try again.');
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
+  // Leave team (remove self from team)
+  const leaveTeam = async (memberId: number) => {
+    if (!currentUser || !team) return;
+
+    // Only allow the user to leave themselves
+    if (memberId !== currentUser.userId) {
+      alert('You can only remove yourself from the team.');
+      return;
+    }
+
+    // Check if user is captain - captains shouldn't be able to leave easily
+    const userMember = members.find(member => member.userId === currentUser.userId);
+    if (userMember?.roleInTeam?.toLowerCase().includes('captain')) {
+      if (!window.confirm('As a captain, leaving the team may affect team management. Are you sure you want to leave?')) {
+        return;
+      }
+    } else {
+      if (!window.confirm('Are you sure you want to leave this team?')) {
+        return;
+      }
+    }
+
+    try {
+      setLeavingTeam(memberId);
+
+      const response = await makeAuthenticatedRequest(
+        `/api/team-members/team/${teamId}/user/${memberId}`,
+        { method: 'DELETE' }
+      );
+
+      if (response.error) {
+        alert('Failed to leave team: ' + response.error);
+        return;
+      }
+
+      // Show success message and redirect
+      alert('You have successfully left the team!');
+      // Redirect to my teams page or back
+      router.push('/player/my-teams');
+
+    } catch (err) {
+      console.error('Error leaving team:', err);
+      alert('Failed to leave team. Please try again.');
+    } finally {
+      setLeavingTeam(null);
+    }
+  };
+
+  // Check if current user is a member of this team (not captain)
+  const isCurrentUserMember = () => {
+    if (!currentUser || !members.length) return null;
+    
+    return members.find(member => member.userId === currentUser.userId);
   };
 
   // Initial data loading
@@ -578,9 +689,9 @@ const TeamDetailsPage: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* Remove button - only show for captains and not for the captain themselves */}
-                  {isCurrentUserCaptain() && member.userId !== currentUser?.userId && (
-                    <div className="member-actions">
+                  <div className="member-actions">
+                    {/* Remove button - only show for captains and not for the captain themselves */}
+                    {isCurrentUserCaptain() && member.userId !== currentUser?.userId && (
                       <button
                         className="remove-member-btn"
                         onClick={() => removeMember(member.userId)}
@@ -589,8 +700,32 @@ const TeamDetailsPage: React.FC = () => {
                       >
                         {removingMember === member.userId ? '...' : '×'}
                       </button>
-                    </div>
-                  )}
+                    )}
+                    
+                    {/* Accept membership button - only show for current user if they have pending status */}
+                    {member.userId === currentUser?.userId && member.status === 'PENDING' && (
+                      <button
+                        className="accept-member-btn"
+                        onClick={() => acceptMembership(member.userId)}
+                        disabled={updatingStatus === member.userId}
+                        title="Accept your membership in this team"
+                      >
+                        {updatingStatus === member.userId ? 'Accepting...' : 'Accept'}
+                      </button>
+                    )}
+                    
+                    {/* Leave team button - only show for current user (but not if they're the only captain) */}
+                    {member.userId === currentUser?.userId && (
+                      <button
+                        className="leave-team-btn"
+                        onClick={() => leaveTeam(member.userId)}
+                        disabled={leavingTeam === member.userId}
+                        title="Leave this team"
+                      >
+                        {leavingTeam === member.userId ? 'Leaving...' : 'Leave Team'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

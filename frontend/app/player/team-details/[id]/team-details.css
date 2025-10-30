@@ -479,6 +479,7 @@
   top: 0.5rem;
   right: 0.5rem;
   display: flex;
+  flex-direction: column;
   gap: 0.25rem;
 }
 
@@ -519,6 +520,70 @@
 .remove-member-btn:disabled:hover {
   background: #6c757d;
   transform: scale(1);
+}
+
+/* Accept membership button */
+.accept-member-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(-5px);
+  white-space: nowrap;
+}
+
+.member-card:hover .accept-member-btn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.accept-member-btn:hover {
+  background: #218838;
+  transform: translateY(-2px);
+}
+
+.accept-member-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: translateY(0);
+}
+
+/* Leave team button */
+.leave-team-btn {
+  background: #fd7e14;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(-5px);
+  white-space: nowrap;
+}
+
+.member-card:hover .leave-team-btn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.leave-team-btn:hover {
+  background: #e55a00;
+  transform: translateY(-2px);
+}
+
+.leave-team-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: translateY(0);
 }
 
 /* Team Stats Section */
