@@ -16,7 +16,6 @@ export default function CaptainSidebar({ open, onClose }: SidebarProps) {
         <Link href="/profile" className="sidebar-link">My Profile</Link>
         <Link href="/player/my-teams" className="sidebar-link">My Teams</Link>
         <Link href="/player/my-games" className="sidebar-link">My Games</Link>
-        <Link href="/favourites" className="sidebar-link">Favourites</Link>
         <Link href="/captain/create-tournaments" className="sidebar-link">Create Tournament</Link>
         <Link href="/captain/my-tournaments" className="sidebar-link">My Tournaments</Link>
         <Link href="/captain/fixture" className="sidebar-link">Fixtures</Link>

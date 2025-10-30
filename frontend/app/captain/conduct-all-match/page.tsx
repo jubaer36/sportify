@@ -68,6 +68,8 @@ export default function ConductAllMatchPage() {
   const [canCreateNew, setCanCreateNew] = useState(true);
   const [canComplete, setCanComplete] = useState(false);
   const [canEndMatch, setCanEndMatch] = useState(false);
+  const [savingScores, setSavingScores] = useState<{ [key: number]: boolean }>({});
+  const [completedGames, setCompletedGames] = useState<Set<number>>(new Set());
 
   // Debug log helper
   const debugLog = (...args: any[]) => {
@@ -150,11 +152,54 @@ export default function ConductAllMatchPage() {
     );
   };
 
+  // NEW: Live save score to database
+  const handleSaveScore = async (idx: number) => {
+    const g = games[idx];
+    if (!g) return;
+
+    setSavingScores((prev) => ({ ...prev, [idx]: true }));
+
+    try {
+      if (g.scoreId) {
+        // Update existing score with PUT
+        const updated = await makeAuthenticatedRequest<Score>(`/api/scores/${g.scoreId}`, {
+          method: "PUT",
+          body: JSON.stringify(g),
+        });
+        debugLog("Score updated:", updated);
+        if (updated.data) {
+          setGames((prev) =>
+            prev.map((game, i) => (i === idx ? { ...game, scoreId: updated.data!.scoreId } : game))
+          );
+        }
+      } else {
+        // Create new score with POST
+        const created = await makeAuthenticatedRequest<Score>(`/api/scores/createSet`, {
+          method: "POST",
+          body: JSON.stringify(g),
+        });
+        debugLog("Score created:", created);
+        if (created.data) {
+          setGames((prev) =>
+            prev.map((game, i) => (i === idx ? { ...game, scoreId: created.data!.scoreId } : game))
+          );
+        }
+      }
+      alert("Score saved successfully! Players can now view live updates.");
+    } catch (err) {
+      debugLog("Error in handleSaveScore:", err);
+      alert("Error saving score. Please try again.");
+    }
+
+    setSavingScores((prev) => ({ ...prev, [idx]: false }));
+  };
+
   const handleCompleteMatch = async () => {
     if (!games.length) return;
     setCompleting(true);
 
-    const g = games[games.length - 1];
+    const currentGameIdx = games.length - 1;
+    const g = games[currentGameIdx];
 
     try {
       if (g.scoreId) {
@@ -170,6 +215,9 @@ export default function ConductAllMatchPage() {
         g.scoreId = created.data?.scoreId;
       }
 
+      // Mark this game as completed
+      setCompletedGames((prev) => new Set(prev).add(currentGameIdx));
+      
       setCanComplete(false);
       setCanCreateNew(true);
       setCanEndMatch(true);
@@ -279,12 +327,34 @@ export default function ConductAllMatchPage() {
         </h2>
 
         <div className="games-section">
-          {games.map((g, idx) => (
+          {games.map((g, idx) => {
+            const isCompleted = completedGames.has(idx);
+            return (
             <div
               key={idx}
-              className={`game-card${activeGameIdx === idx ? " active" : ""}`}
+              className={`game-card${activeGameIdx === idx ? " active" : ""}${isCompleted ? " completed" : ""}`}
             >
-              <div className="game-title">Game {idx + 1}</div>
+              <div className="game-header">
+                <div className="game-title">
+                  Game {idx + 1}
+                  {isCompleted && <span className="completed-badge"> ✓ Completed</span>}
+                </div>
+                <button
+                  className={`save-score-btn ${g.scoreId ? "saved" : ""}`}
+                  onClick={() => handleSaveScore(idx)}
+                  disabled={savingScores[idx] || isCompleted}
+                  title={isCompleted ? "Set is completed" : g.scoreId ? "Update live score" : "Save live score"}
+                >
+                  {savingScores[idx] ? (
+                    <span className="save-icon">⏳</span>
+                  ) : g.scoreId ? (
+                    <span className="save-icon">✓</span>
+                  ) : (
+                    <span className="save-icon">💾</span>
+                  )}
+                  {savingScores[idx] ? "Saving..." : g.scoreId ? "Update" : "Save"}
+                </button>
+              </div>
               <div className="score-row">
                 <div className="team-score">
                   <span className="team-name">{teamA?.teamName ?? "Team A"}</span>
@@ -292,7 +362,7 @@ export default function ConductAllMatchPage() {
                     <button
                       className="score-btn"
                       onClick={() => updateScoreLocal(idx, "A", -1)}
-                      disabled={g.teamAPoints <= 0}
+                      disabled={g.teamAPoints <= 0 || isCompleted}
                     >
                       -
                     </button>
@@ -300,6 +370,7 @@ export default function ConductAllMatchPage() {
                     <button
                       className="score-btn"
                       onClick={() => updateScoreLocal(idx, "A", 1)}
+                      disabled={isCompleted}
                     >
                       +
                     </button>
@@ -312,7 +383,7 @@ export default function ConductAllMatchPage() {
                     <button
                       className="score-btn"
                       onClick={() => updateScoreLocal(idx, "B", -1)}
-                      disabled={g.teamBPoints <= 0}
+                      disabled={g.teamBPoints <= 0 || isCompleted}
                     >
                       -
                     </button>
@@ -320,6 +391,7 @@ export default function ConductAllMatchPage() {
                     <button
                       className="score-btn"
                       onClick={() => updateScoreLocal(idx, "B", 1)}
+                      disabled={isCompleted}
                     >
                       +
                     </button>
@@ -327,7 +399,7 @@ export default function ConductAllMatchPage() {
                 </div>
               </div>
             </div>
-          ))}
+          )})}
         </div>
 
         <div className="actions-row">

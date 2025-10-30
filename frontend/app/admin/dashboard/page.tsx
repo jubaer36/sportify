@@ -82,7 +82,7 @@ export default function AdminDashboard() {
       <Topbar />
 
       <div className="dashboard-content">
-        <h1 className="dashboard-title">Welcome, Admin!</h1>
+        <h1 className="dashboard-title">WELCOME !</h1>
 
         {/* Search bar */}
         <div className="search-bar">

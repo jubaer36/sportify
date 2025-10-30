@@ -149,9 +149,9 @@ public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginRequest)
     public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequestDTO refreshRequest) {
         try {
             String refreshToken = refreshRequest.getRefreshToken();
-            String email = jwtService.extractUserName(refreshToken);
+            String username = jwtService.extractUserName(refreshToken);
 
-            Optional<User> userOptional = userService.findByEmail(email);
+            Optional<User> userOptional = userService.findByUsername(username);
             if (userOptional.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "Invalid refresh token"));
