@@ -43,8 +43,20 @@ export default function CertificatesPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleDownloadPDF = (cert: Certificate) => {
-        alert('PDF download coming!');
+    const handleDownloadPDF = async (cert: Certificate) => {
+        try {
+            const jsPDF = (await import('jspdf')).default;
+            const html2canvas = (await import('html2canvas')).default;
+            const certNode = document.getElementById(`cert-card-${cert.id}`);
+            if (!certNode) throw new Error('Certificate element not found');
+            const canvas = await html2canvas(certNode, { scale: 2, backgroundColor: null });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({ unit: 'pt', format: [canvas.width, canvas.height] });
+            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+            pdf.save(`${cert.recipientName || 'certificate'}.pdf`);
+        } catch (e) {
+            alert('Failed to download PDF');
+        }
     };
 
     useEffect(() => {
@@ -99,7 +111,7 @@ export default function CertificatesPage() {
                         const sportSuffix = containsSport ? '' : ` (${cert.sportName})`;
                         return (
                         <div key={cert.id} className="certificate-wrapper">
-                            <div className={`certificate ${cert.position.toLowerCase()}`}>
+                            <div id={`cert-card-${cert.id}`} className={`certificate ${cert.position.toLowerCase()}`}>
                                 <div className="certificate-border">
                                     <div className="certificate-header">
                                         <img src="/Photos/logo1.png" alt="Organization Logo" className="certificate-logo" onError={(e) => { (e.target as HTMLImageElement).src = '/Photos/logo1.png'; }} />
