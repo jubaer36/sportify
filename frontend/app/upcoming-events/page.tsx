@@ -72,7 +72,7 @@ export default function UpcomingEvents() {
     <div className="upcoming-events-bg">
       <Topbar />
       <div className="upcoming-events-content">
-        <h1 className="upcoming-events-title">Upcoming Events</h1>
+        <h1 className="upcoming-events-title">Upcoming Event</h1>
         <div className="upcoming-announcement-list">
           {loading ? (
             <div>Loading upcoming events...</div>
