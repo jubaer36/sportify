@@ -90,27 +90,17 @@ const CreateTeamPage = () => {
   // Handle logo error fallback
   const handleLogoError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const target = e.target as HTMLImageElement;
-    // Fallback to existing logos if team logos don't exist
-    if (target.src.includes('/Photos/team-logos/logo1.png')) {
-      target.src = '/Photos/logo1.png';
-    } else if (target.src.includes('/Photos/team-logos/logo2.png')) {
-      target.src = '/Photos/logo2.png';
-    } else if (target.src.includes('/Photos/team-logos/logo3.png')) {
-      target.src = '/Photos/logo3.png';
-    } else if (target.src.includes('/Photos/team-logos/logo4.png')) {
-      target.src = '/Photos/logo4.png';
-    } else if (target.src.includes('/Photos/team-logos/logo5.png')) {
-      target.src = '/Photos/basketball_logo.png';
-    } else if (target.src.includes('/Photos/team-logos/logo6.png')) {
-      target.src = '/Photos/football_logo.png';
-    } else if (target.src.includes('/Photos/team-logos/logo7.png')) {
-      target.src = '/Photos/cricket_logo.png';
-    } else if (target.src.includes('/Photos/team-logos/logo8.png')) {
-      target.src = '/Photos/volleyball_logo.png';
-    } else {
-      // Final fallback
-      target.src = '/Photos/logo1.png';
+    // Hide the broken image and show default logo instead
+    target.style.display = 'none';
+    const parent = target.parentElement;
+    if (parent) {
+      parent.innerHTML = `<div class="default-logo" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">?</div>`;
     }
+  };
+
+  // Helper function to validate logo paths
+  const isValidLogoPath = (logoPath: string): boolean => {
+    return Boolean(logoPath && logoPath.trim() && (logoPath.startsWith('/') || logoPath.startsWith('http')));
   };
 
   // Fetch user profile and tournament info on component mount
@@ -357,6 +347,12 @@ const CreateTeamPage = () => {
           <h3>Tournament: {tournament.name}</h3>
         </div>
 
+        {/* Debug info */}
+        <div style={{ fontSize: '12px', color: '#888', marginBottom: '20px' }}>
+          <p>Selected Logo: {selectedLogo}</p>
+          <p>Available Logos: {availableLogos.length}</p>
+        </div>
+
         <form onSubmit={handleSubmit} className="create-team-form">
           <div className="form-group">
             <label htmlFor="teamName" className="form-label">
@@ -393,23 +389,44 @@ const CreateTeamPage = () => {
 
               <div className="logo-options">
                 <h4>Choose a Logo:</h4>
+                <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+                  Click on any logo below to select it for your team
+                </p>
                 <div className="logo-grid">
                   {availableLogos.map((logo) => (
                     <div
                       key={logo.id}
                       className={`logo-option ${selectedLogo === logo.path ? 'selected' : ''}`}
                       onClick={() => {
+                        console.log('Logo selected:', logo.path);
                         setSelectedLogo(logo.path);
                       }}
+                      style={{ cursor: 'pointer' }}
                     >
-                      <Image
-                        src={logo.path}
-                        alt={logo.name}
-                        className="logo-thumbnail"
-                        width={60}
-                        height={60}
-                        onError={handleLogoError}
-                      />
+                      {isValidLogoPath(logo.path) ? (
+                        <Image
+                          src={logo.path}
+                          alt={logo.name}
+                          className="logo-thumbnail"
+                          width={60}
+                          height={60}
+                          onError={handleLogoError}
+                        />
+                      ) : (
+                        <div className="default-logo-thumbnail" style={{
+                          width: '60px',
+                          height: '60px',
+                          borderRadius: '8px',
+                          background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontWeight: 'bold'
+                        }}>
+                          ?
+                        </div>
+                      )}
                       <span className="logo-name">{logo.name}</span>
                     </div>
                   ))}

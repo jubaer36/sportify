@@ -41,6 +41,7 @@ interface Team {
   logo: string;
   tournamentId?: number;
   tournament?: Tournament | null;
+  memberCount?: number;
 }
 
 interface TeamResponse {
@@ -55,6 +56,42 @@ export default function MyTeams() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Helper function to validate if a logo path is valid
+  const isValidLogoPath = (logoPath: string | null | undefined): boolean => {
+    if (!logoPath || typeof logoPath !== 'string') return false;
+    const trimmedPath = logoPath.trim();
+    if (!trimmedPath) return false;
+
+    // Check if it's a valid path (starts with / for absolute paths or is a valid URL)
+    return trimmedPath.startsWith('/') || trimmedPath.startsWith('http');
+  };
+
+  const fetchTeamMemberCount = async (teamId: number): Promise<number> => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return 0;
+
+      const response = await fetch(`http://localhost:8090/api/team-members/team/${teamId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.warn(`Failed to fetch team members for team ${teamId}`);
+        return 0;
+      }
+
+      const members = await response.json();
+      return Array.isArray(members) ? members.length : 0;
+    } catch (err) {
+      console.warn(`Error fetching team members for team ${teamId}:`, err);
+      return 0;
+    }
+  };
 
   const fetchTournamentData = async (tournamentId: number): Promise<Tournament | null> => {
     try {
@@ -89,7 +126,7 @@ export default function MyTeams() {
         setLoading(false);
         return;
       }
-      
+
       const response = await fetch('http://localhost:8090/api/teams/user-teams', {
         method: 'POST',
         headers: {
@@ -104,20 +141,31 @@ export default function MyTeams() {
       }
 
       const teamData: TeamResponse = await response.json();
-      
-      // Fetch tournament data for each team that has a tournamentId
+
+      // Fetch tournament data and member count for each team
       const teamsWithTournaments = await Promise.all(
         teamData.teams.map(async (team) => {
+          let tournament: Tournament | null = null;
+          let memberCount = 0;
+
+          // Fetch tournament data if team has a tournamentId
           if (team.tournamentId) {
-            const tournament = await fetchTournamentData(team.tournamentId);
-            return { ...team, tournament };
+            tournament = await fetchTournamentData(team.tournamentId);
           }
-          return team;
+
+          // Fetch member count
+          memberCount = await fetchTeamMemberCount(team.teamId);
+
+          return {
+            ...team,
+            tournament,
+            memberCount
+          };
         })
       );
-      
+
       setTeams(teamsWithTournaments);
-      
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch teams');
     } finally {
@@ -148,10 +196,10 @@ export default function MyTeams() {
 
       const userData: User = await response.json();
       setUser(userData);
-      
+
       // Now fetch teams for this user
       await fetchUserTeams(userData.userId);
-      
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch user profile');
       setLoading(false);
@@ -215,13 +263,21 @@ export default function MyTeams() {
                 <div key={team.teamId} className="team-card">
                   <div className="team-card-header">
                     <div className="team-logo">
-                      {team.logo ? (
-                        <Image 
-                          src={`/images/${team.logo}`} 
+                      {isValidLogoPath(team.logo) ? (
+                        <Image
+                          src={team.logo}
                           alt={team.teamName}
                           width={60}
                           height={60}
                           className="logo-image"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `<div class="default-logo">${team.teamName.charAt(0).toUpperCase()}</div>`;
+                            }
+                          }}
                         />
                       ) : (
                         <div className="default-logo">
@@ -231,19 +287,27 @@ export default function MyTeams() {
                     </div>
                     <div className="team-basic-info">
                       <h3 className="team-name">{team.teamName}</h3>
-                      <div className="sport-badge">
-                        <span className="sport-icon">⚽</span>
-                        <span>{team.sportName}</span>
+                      <div className="team-meta">
+                        <div className="sport-badge">
+                          <span className="sport-icon">⚽</span>
+                          <span>{team.sportName}</span>
+                        </div>
+                        {team.memberCount !== undefined && (
+                          <div className="member-count">
+                            <span className="member-icon">👥</span>
+                            <span>{team.memberCount} member{team.memberCount !== 1 ? 's' : ''}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="team-details">
                     <div className="detail-row">
                       <span className="detail-label">Created by:</span>
                       <span className="detail-value">{team.createdByName}</span>
                     </div>
-                    
+
                     {team.tournament ? (
                       <div className="tournament-section">
                         <h4 className="tournament-title">
@@ -265,7 +329,7 @@ export default function MyTeams() {
                             <span className="detail-label">Organized by:</span>
                             <span className="detail-value">{team.tournament.createdByName}</span>
                           </div>
-                          
+
                           {team.tournament.championName && team.tournament.runnerUpName && (
                             <div className="tournament-results">
                               <div className="results-title">Tournament Results:</div>
@@ -290,7 +354,7 @@ export default function MyTeams() {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="team-card-footer">
                     <div className="status-indicator">
                       <span className={`status-dot ${team.tournament ? 'active' : 'inactive'}`}></span>
@@ -298,7 +362,7 @@ export default function MyTeams() {
                         {team.tournament ? 'Active in Tournament' : 'Available for Tournament'}
                       </span>
                     </div>
-                    <button 
+                    <button
                       className="details-button"
                       onClick={() => router.push(`/player/team-details/${team.teamId}`)}
                     >

@@ -14,7 +14,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
+  background-image:
     radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
   pointer-events: none;
@@ -24,7 +24,8 @@
   padding: 2rem;
   max-width: 1400px;
   margin: 0 auto;
-  padding-top: 6rem; /* Account for fixed topbar */
+  padding-top: 6rem;
+  /* Account for fixed topbar */
   position: relative;
   z-index: 1;
 }
@@ -79,8 +80,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-message {
@@ -144,6 +150,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -246,9 +253,16 @@
 .team-name {
   font-size: 1.5rem;
   font-weight: 700;
-  margin: 0 0 0.8rem 0;
+  margin: 0 0 1rem 0;
   color: #2c3e50;
   line-height: 1.2;
+}
+
+.team-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  align-items: center;
 }
 
 .sport-badge {
@@ -265,7 +279,22 @@
   width: fit-content;
 }
 
-.sport-icon {
+.member-count {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(76, 175, 80, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+  font-weight: 600;
+  font-size: 0.9rem;
+  width: fit-content;
+}
+
+.sport-icon,
+.member-icon {
   font-size: 1.1rem;
 }
 
@@ -350,7 +379,8 @@
   flex-wrap: wrap;
 }
 
-.champion, .runner-up {
+.champion,
+.runner-up {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -425,9 +455,12 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -474,46 +507,55 @@
     padding: 1rem;
     padding-top: 5rem;
   }
-  
+
   .my-teams-title {
     font-size: 2.8rem;
   }
-  
+
   .teams-grid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
-  
+
   .team-card {
     padding: 1.5rem;
   }
-  
+
   .team-card-header {
     gap: 1rem;
   }
-  
+
   .team-logo {
     width: 50px;
     height: 50px;
   }
-  
+
   .default-logo {
     font-size: 1.5rem;
   }
-  
+
   .team-name {
     font-size: 1.3rem;
   }
-  
+
   .sport-badge {
     padding: 0.4rem 0.8rem;
     font-size: 0.8rem;
   }
-  
+
+  .member-count {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .team-meta {
+    gap: 0.6rem;
+  }
+
   .tournament-section {
     padding: 1rem;
   }
-  
+
   .results-info {
     flex-direction: column;
     gap: 0.5rem;
@@ -525,51 +567,54 @@
     padding: 0.8rem;
     padding-top: 4.5rem;
   }
-  
+
   .my-teams-title {
     font-size: 2.2rem;
   }
-  
+
   .teams-header h2 {
     font-size: 2rem;
   }
-  
+
   .team-card {
     padding: 1.2rem;
   }
-  
+
   .team-card-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
   }
-  
+
   .team-basic-info {
     width: 100%;
   }
-  
-  .sport-badge {
+
+  .team-meta {
     margin-top: 0.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
-  
+
   .detail-row {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.3rem;
   }
-  
+
   .detail-value {
     text-align: left;
   }
-  
+
   .no-teams-message {
     padding: 2.5rem 1.5rem;
   }
-  
+
   .no-teams-icon {
     font-size: 3rem;
   }
-  
+
   .no-teams-message h3 {
     font-size: 1.8rem;
   }

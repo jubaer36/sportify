@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Topbar from "@/Component/topbar";
 import { makeAuthenticatedRequest, API_BASE_URL } from "@/utils/api";
@@ -70,6 +70,7 @@ export default function TournamentsPage() {
   const [selectedSport, setSelectedSport] = useState<string>("All");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [showMyTournaments, setShowMyTournaments] = useState<boolean>(false);
+  const [query, setQuery] = useState<string>("");
 
   // Fetch user profile first
   useEffect(() => {
@@ -172,105 +173,148 @@ export default function TournamentsPage() {
   };
 
   // --- Apply Filters ---
-  const filteredTournaments = tournaments.filter((t) => {
-    const sport = getSport(t.sportId);
-    const status = getStatus(t);
+  const filteredTournaments = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return tournaments.filter((t) => {
+      const sport = getSport(t.sportId);
+      const status = getStatus(t);
 
-    // Apply "My Tournaments" filter for captains
-    if (showMyTournaments && userProfile && userProfile.role === "CAPTAIN") {
-      if (t.createdById !== userProfile.userId) {
-        return false;
+      if (showMyTournaments && userProfile && userProfile.role === "CAPTAIN") {
+        if (t.createdById !== userProfile.userId) return false;
       }
-    }
 
-    return (
-      (selectedSport === "All" || sport?.name === selectedSport) &&
-      (selectedStatus === "All" || status === selectedStatus)
-    );
-  });
+      const matchesSport = selectedSport === "All" || sport?.name === selectedSport;
+      const matchesStatus = selectedStatus === "All" || status === selectedStatus;
+      const matchesQuery =
+        !q ||
+        t.name.toLowerCase().includes(q) ||
+        (sport?.name?.toLowerCase().includes(q) ?? false) ||
+        (t.championName?.toLowerCase().includes(q) ?? false);
+
+      return matchesSport && matchesStatus && matchesQuery;
+    });
+  }, [tournaments, selectedSport, selectedStatus, showMyTournaments, userProfile, query, sports]);
 
   // Add this function to handle the create team navigation
   const handleCreateTeam = (tournamentId: number) => {
     router.push(`/player/create-teams/${tournamentId}`);
   };
 
+  const retryLoad = () => {
+    // force re-run by clearing profile then setting back
+    const current = userProfile;
+    setUserProfile(null);
+    setTimeout(() => setUserProfile(current), 0);
+  };
+
   return (
     <div className="tournaments-bg">
       <Topbar />
 
-      <div className="tournaments-content">
-        <h1 className="tournaments-title">Tournaments</h1>
-
-        {/* --- Filter Section --- */}
-        <div className="filter-bar">
-          <select
-            value={selectedSport}
-            onChange={(e) => setSelectedSport(e.target.value)}
-          >
-            <option value="All">All Sports</option>
-            {sports.map((sport) => (
-              <option key={sport.sportId} value={sport.name}>
-                {sport.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-          >
-            <option value="All">All Status</option>
-            <option value="Ongoing">Ongoing</option>
-            <option value="Ended">Ended</option>
-            <option value="Upcoming">Upcoming</option>
-          </select>
-
-          {/* Captain-specific filter */}
-          {userProfile?.role === "CAPTAIN" && (
-            <div className="captain-filter">
-              <label className="checkbox-container">
-                <input
-                  type="checkbox"
-                  checked={showMyTournaments}
-                  onChange={(e) => setShowMyTournaments(e.target.checked)}
-                />
-                <span className="checkmark"></span>
-                My Tournaments Only
-              </label>
+      <section className="tournaments-hero">
+        <div className="hero-content">
+          <h1 className="tournaments-title">Tournaments</h1>
+          <p className="tournaments-subtitle">Browse all sports tournaments, filter by status or sport, and jump into fixtures.</p>
+          <div className="search-and-filters">
+            <div className="search-input">
+              <span className="search-icon">🔎</span>
+              <input
+                type="text"
+                placeholder="Search by name, sport, or champion..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                aria-label="Search tournaments"
+              />
             </div>
-          )}
+            <div className="filters-inline">
+              <select
+                value={selectedSport}
+                onChange={(e) => setSelectedSport(e.target.value)}
+                aria-label="Filter by sport"
+              >
+                <option value="All">All Sports</option>
+                {sports.map((sport) => (
+                  <option key={sport.sportId} value={sport.name}>
+                    {sport.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                aria-label="Filter by status"
+              >
+                <option value="All">All Status</option>
+                <option value="Ongoing">Ongoing</option>
+                <option value="Ended">Ended</option>
+                <option value="Upcoming">Upcoming</option>
+              </select>
+              {userProfile?.role === "CAPTAIN" && (
+                <label className="checkbox-container">
+                  <input
+                    type="checkbox"
+                    checked={showMyTournaments}
+                    onChange={(e) => setShowMyTournaments(e.target.checked)}
+                  />
+                  My tournaments
+                </label>
+              )}
+              {(selectedSport !== "All" || selectedStatus !== "All" || showMyTournaments || query) && (
+                <button className="btn-clear" onClick={() => { setSelectedSport("All"); setSelectedStatus("All"); setShowMyTournaments(false); setQuery(""); }}>
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
         </div>
+      </section>
 
+      <div className="tournaments-content">
         {/* --- Display Section --- */}
         {loading ? (
-          <div className="loading-message">Loading tournaments...</div>
+          <div className="tournaments-grid" aria-live="polite" aria-busy="true">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div className="tournament-card skeleton" key={i}>
+                <div className="skeleton-header" />
+                <div className="skeleton-line" />
+                <div className="skeleton-line short" />
+                <div className="skeleton-footer" />
+              </div>
+            ))}
+          </div>
         ) : error ? (
-          <div className="error-message">{error}</div>
+          <div className="error-state">
+            <div className="error-message">{error}</div>
+            <button className="btn-retry" onClick={retryLoad}>Try again</button>
+          </div>
         ) : filteredTournaments.length === 0 ? (
-          <div className="no-tournaments-message">No tournaments found.</div>
+          <div className="empty-state">
+            <div className="no-tournaments-message">No tournaments match your filters.</div>
+            <button className="btn-retry" onClick={() => { setSelectedSport("All"); setSelectedStatus("All"); setShowMyTournaments(false); setQuery(""); }}>Reset filters</button>
+          </div>
         ) : (
-          <div className="tournaments-list">
+          <div className="tournaments-grid">
             {filteredTournaments.map((tournament) => {
               const sport = getSport(tournament.sportId);
               const status = getStatus(tournament);
               return (
                 <div className="tournament-card" key={tournament.tournamentId}>
-                  <div className="tournament-header">
-                    <div className="tournament-name">{tournament.name}</div>
-                    <div className="tournament-header-right">
-                      {status === "Ended" && (
-                        <span className="tournament-status ended">Ended</span>
-                      )}
-                      {status === "Ongoing" && (
-                        <span className="tournament-status ongoing">Ongoing</span>
-                      )}
-                      {status === "Upcoming" && (
-                        <span className="tournament-status upcoming">Upcoming</span>
-                      )}
-                      
-                      {/* View Fixture button */}
+                  <div className="tournament-card-header">
+                    <div className="card-left">
+                      <img
+                        src={sport ? getSportLogo(sport.name) : "/Photos/logo1.png"}
+                        alt={sport ? sport.name : "Sport"}
+                        className="sport-logo-lg"
+                      />
+                      <div className="title-and-meta">
+                        <h3 className="tournament-name">{tournament.name}</h3>
+                        <div className="tournament-meta">{sport ? sport.name : "Unknown Sport"}</div>
+                      </div>
+                    </div>
+                    <div className="card-right">
+                      <span className={`tournament-status ${status.toLowerCase()}`}>{status}</span>
                       <button
-                        className="view-fixture-btn"
+                        className="icon-btn view-fixture-btn"
                         onClick={() => {
                           if (userProfile?.role === "CAPTAIN" && tournament.createdById === userProfile.userId) {
                             router.push(`/captain/fixture?tournamentId=${tournament.tournamentId}`);
@@ -279,69 +323,51 @@ export default function TournamentsPage() {
                           }
                         }}
                         title="View Fixture"
+                        aria-label="View fixture"
                       >
                         📅
                       </button>
-                      
-                      {/* Admin: Send Certificates for ended tournaments */}
                       {userProfile?.role === "ADMIN" && status === "Ended" && (
                         <button
-                          className="edit-tournament-btn"
+                          className="icon-btn edit-tournament-btn"
                           onClick={() => sendCertificates(tournament.tournamentId)}
                           title="Send Certificates"
+                          aria-label="Send certificates"
                         >
                           🏅
                         </button>
                       )}
-
-                      {/* Edit button for tournaments created by current captain */}
-                      {userProfile?.role === "CAPTAIN" && 
-                       tournament.createdById === userProfile.userId && (
+                      {userProfile?.role === "CAPTAIN" && tournament.createdById === userProfile.userId && (
                         <button
-                          className="edit-tournament-btn"
+                          className="icon-btn edit-tournament-btn"
                           onClick={() => router.push(`/tournaments/edit/${tournament.tournamentId}`)}
                           title="Edit Tournament"
+                          aria-label="Edit tournament"
                         >
                           ✏️
                         </button>
                       )}
                     </div>
                   </div>
+
                   <div className="tournament-details">
                     <div className="tournament-row">
-                      <span className="label">Duration:</span>
+                      <span className="label">Duration</span>
                       <span className="value">
-                        {formatDate(tournament.startDate)} -{" "}
-                        {tournament.endDate ? formatDate(tournament.endDate) : "Present"}
+                        {formatDate(tournament.startDate)} – {tournament.endDate ? formatDate(tournament.endDate) : "Present"}
                       </span>
                     </div>
                     <div className="tournament-row">
-                      <span className="label">Champion:</span>
-                      <span className="value">
-                        {tournament.championName || "Not Decided Yet"}
-                      </span>
+                      <span className="label">Champion</span>
+                      <span className="value">{tournament.championName || "Not decided yet"}</span>
                     </div>
                     <div className="tournament-row">
-                      <span className="label">Runners Up:</span>
-                      <span className="value">
-                        {tournament.runnerUpName || "Not Decided Yet"}
-                      </span>
-                    </div>
-                    <div className="tournament-tags">
-                      <span className="tag sport-tag">
-                        <img
-                          src={sport ? getSportLogo(sport.name) : "/Photos/logo1.png"}
-                          alt={sport ? sport.name : "Sport"}
-                          className="sport-logo"
-                        />
-                        {sport ? sport.name : "Unknown Sport"}
-                      </span>
-
+                      <span className="label">Runner-up</span>
+                      <span className="value">{tournament.runnerUpName || "Not decided yet"}</span>
                     </div>
                   </div>
 
                   <div className="tournament-actions">
-                    {/* Create Team button, visible only for team games */}
                     {sport?.isTeamGame && (
                       <button
                         onClick={() => handleCreateTeam(tournament.tournamentId)}
