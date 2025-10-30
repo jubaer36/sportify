@@ -79,10 +79,10 @@ export default function MyTournamentsPage() {
           setError(response.error);
           return;
         }
-        
+
         const profile = response.data!;
         setUserProfile(profile);
-        
+
         // Check if user is a captain
         if (profile.role !== "CAPTAIN") {
           setError("Access denied. This page is only for captains.");
@@ -96,7 +96,7 @@ export default function MyTournamentsPage() {
     fetchUserProfile();
   }, []);
 
-  // Fetch tournaments created by this captain and sports assigned to this captain
+  // Fetch tournaments managed by this captain (based on sports they manage) and sports assigned to this captain
   useEffect(() => {
     if (!userProfile) return;
 
@@ -105,25 +105,78 @@ export default function MyTournamentsPage() {
       setError(null);
 
       try {
-        // Fetch tournaments created by this captain
-        const tRes = await makeAuthenticatedRequest<Tournament[]>(`/api/tournaments/user/${userProfile.userId}`);
-        // Fetch only sports assigned to this captain for filter dropdown
+        console.log("[my-tournaments] Fetching captain sports: GET /api/sports/captain/" + userProfile.userId);
+        // First fetch sports assigned to this captain
         const sRes = await makeAuthenticatedRequest<Sport[]>(`/api/sports/captain/${userProfile.userId}`);
+        console.log("[my-tournaments] Captain sports response status:", sRes.status);
+        console.log("[my-tournaments] Captain sports response:", sRes);
 
-        if (tRes.status === 401 || sRes.status === 401) {
+        if (sRes.status === 401) {
           setError("Authentication failed. Please login again.");
           setTournaments([]);
           setSports([]);
-        } else if (tRes.error || sRes.error) {
-          setError(tRes.error || sRes.error || "Failed to load tournaments or sports.");
+          return;
+        }
+
+        if (sRes.error) {
+          setError(`Failed to fetch captain sports: ${sRes.error}`);
           setTournaments([]);
           setSports([]);
-        } else {
-          setTournaments(Array.isArray(tRes.data) ? tRes.data : []);
-          setSports(Array.isArray(sRes.data) ? sRes.data : []);
+          return;
         }
+
+        if (!sRes.data) {
+          setError("Failed to fetch captain sports - no data received");
+          setTournaments([]);
+          setSports([]);
+          return;
+        }
+
+        setSports(Array.isArray(sRes.data) ? sRes.data : []);
+
+        // If captain has no sports, show empty tournaments
+        if (sRes.data.length === 0) {
+          console.log("[my-tournaments] Captain has no sports assigned");
+          setTournaments([]);
+          return;
+        }
+
+        console.log("[my-tournaments] Fetching tournaments: GET /api/tournaments");
+        // Fetch all tournaments and filter by captain's sports
+        const tRes = await makeAuthenticatedRequest<Tournament[]>("/api/tournaments");
+        console.log("[my-tournaments] Tournaments response status:", tRes.status);
+        console.log("[my-tournaments] Tournaments response:", tRes);
+
+        if (tRes.status === 401) {
+          setError("Authentication failed. Please login again.");
+          setTournaments([]);
+          return;
+        }
+
+        if (tRes.error) {
+          setError(`Failed to fetch tournaments: ${tRes.error}`);
+          setTournaments([]);
+          return;
+        }
+
+        if (!tRes.data) {
+          setError("Failed to fetch tournaments - no data received");
+          setTournaments([]);
+          return;
+        }
+
+        // Filter tournaments to only include those from sports this captain manages
+        const captainSportNames = sRes.data.map((sport) => sport.name);
+        const filteredTournaments = tRes.data.filter((tournament) =>
+          tournament.sportName && captainSportNames.includes(tournament.sportName)
+        );
+
+        console.log("[my-tournaments] Filtered tournaments:", filteredTournaments);
+        setTournaments(filteredTournaments);
+
       } catch (err) {
-        setError("Failed to load tournaments or sports.");
+        console.error("[my-tournaments] Unexpected error:", err);
+        setError(`Error fetching tournaments: ${err instanceof Error ? err.message : 'Unknown error'}`);
         setTournaments([]);
         setSports([]);
       } finally {
@@ -180,7 +233,7 @@ export default function MyTournamentsPage() {
       <div className="my-tournaments-content">
         <div className="page-header">
           <h1 className="my-tournaments-title">My Tournaments</h1>
-          <p className="my-tournaments-subtitle">Tournaments created by you</p>
+          <p className="my-tournaments-subtitle">Tournaments for sports you manage</p>
           <button onClick={handleCreateNew} className="create-new-btn">
             + Create New Tournament
           </button>
@@ -212,12 +265,12 @@ export default function MyTournamentsPage() {
             </select>
           </div>
         )}
-        
+
         {/* Show message if captain has no assigned sports */}
         {!loading && !error && sports.length === 0 && tournaments.length === 0 && (
           <div className="no-sports-message">
             <p>You are not currently assigned as captain for any sports.</p>
-            <p>Contact an administrator to be assigned to sports before creating tournaments.</p>
+            <p>Contact an administrator to be assigned to sports before managing tournaments.</p>
           </div>
         )}
 
@@ -229,8 +282,8 @@ export default function MyTournamentsPage() {
         ) : filteredTournaments.length === 0 ? (
           <div className="no-tournaments-section">
             <div className="no-tournaments-message">
-              {tournaments.length === 0 
-                ? "You haven't created any tournaments yet." 
+              {tournaments.length === 0
+                ? "No tournaments found for the sports you manage."
                 : "No tournaments match your filters."
               }
             </div>
@@ -259,7 +312,7 @@ export default function MyTournamentsPage() {
                       {status === "Upcoming" && (
                         <span className="tournament-status upcoming">Upcoming</span>
                       )}
-                      
+
                       {/* View Fixture button */}
                       <button
                         className="view-fixture-btn"
@@ -268,7 +321,7 @@ export default function MyTournamentsPage() {
                       >
                         📅
                       </button>
-                      
+
                       <button
                         className="edit-tournament-btn"
                         onClick={() => handleEditTournament(tournament.tournamentId)}
