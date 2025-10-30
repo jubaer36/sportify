@@ -51,6 +51,22 @@ interface TeamMembersResponse {
   totalMembers: number;
 }
 
+interface User {
+  userId: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  address: string | null;
+  role: string;
+  profilePhoto: string | null;
+}
+
+interface AddMemberRequest {
+  teamId: number;
+  userId: number;
+  roleInTeam: string;
+}
+
 const TeamDetailsPage: React.FC = () => {
   const params = useParams();
   const router = useRouter();
@@ -65,6 +81,16 @@ const TeamDetailsPage: React.FC = () => {
   const [membersLoading, setMembersLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ userId: number; role: string } | null>(null);
   const [removingMember, setRemovingMember] = useState<number | null>(null);
+  
+  // Add member modal states
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedRole, setSelectedRole] = useState('Player');
+  const [addingMember, setAddingMember] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(false);
 
   // Fetch current user profile
   const fetchCurrentUser = async () => {
@@ -195,6 +221,112 @@ const TeamDetailsPage: React.FC = () => {
       member.userId === currentUser.userId && 
       member.roleInTeam?.toLowerCase().includes('captain')
     );
+  };
+
+  // Fetch all users for adding members
+  const fetchAllUsers = async () => {
+    try {
+      setUsersLoading(true);
+      const response = await makeAuthenticatedRequest<User[]>('/api/users');
+      
+      if (response.error) {
+        console.error('Failed to fetch users:', response.error);
+        return;
+      }
+
+      if (response.data) {
+        // Filter out users who are already members of this team
+        const currentMemberIds = members.map(member => member.userId);
+        const availableUsers = response.data.filter(user => 
+          !currentMemberIds.includes(user.userId)
+        );
+        setAllUsers(availableUsers);
+        setFilteredUsers(availableUsers);
+      }
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  // Handle search input for users
+  const handleSearchUsers = (query: string) => {
+    setSearchQuery(query);
+    if (!query.trim()) {
+      setFilteredUsers(allUsers);
+      return;
+    }
+
+    const filtered = allUsers.filter(user =>
+      user.name.toLowerCase().includes(query.toLowerCase()) ||
+      user.email.toLowerCase().includes(query.toLowerCase())
+    );
+    setFilteredUsers(filtered);
+  };
+
+  // Open add member modal
+  const openAddMemberModal = () => {
+    setShowAddMemberModal(true);
+    setSearchQuery('');
+    setSelectedUser(null);
+    setSelectedRole('Player');
+    fetchAllUsers();
+  };
+
+  // Close add member modal
+  const closeAddMemberModal = () => {
+    setShowAddMemberModal(false);
+    setSearchQuery('');
+    setSelectedUser(null);
+    setSelectedRole('Player');
+    setAllUsers([]);
+    setFilteredUsers([]);
+  };
+
+  // Add new member to team
+  const addMember = async () => {
+    if (!selectedUser || !currentUser || !team) return;
+
+    // Check if current user is captain
+    if (!isCurrentUserCaptain()) {
+      alert('Only team captains can add members.');
+      return;
+    }
+
+    try {
+      setAddingMember(true);
+
+      const addMemberRequest: AddMemberRequest = {
+        teamId: team.teamId,
+        userId: selectedUser.userId,
+        roleInTeam: selectedRole
+      };
+
+      const response = await makeAuthenticatedRequest(
+        '/api/team-members',
+        {
+          method: 'POST',
+          body: JSON.stringify(addMemberRequest)
+        }
+      );
+
+      if (response.error) {
+        alert('Failed to add member: ' + response.error);
+        return;
+      }
+
+      // Refresh the members list
+      await fetchTeamMembers();
+      closeAddMemberModal();
+      alert('Member added successfully!');
+
+    } catch (err) {
+      console.error('Error adding member:', err);
+      alert('Failed to add member. Please try again.');
+    } finally {
+      setAddingMember(false);
+    }
   };
 
   // Initial data loading
@@ -388,11 +520,22 @@ const TeamDetailsPage: React.FC = () => {
         {/* Team Members Section */}
         <div className="members-section">
           <div className="members-header">
-            <h2>Team Members</h2>
-            {!membersLoading && (
-              <span className="members-count">
-                {members.length} member{members.length !== 1 ? 's' : ''}
-              </span>
+            <div className="members-title-section">
+              <h2>Team Members</h2>
+              {!membersLoading && (
+                <span className="members-count">
+                  {members.length} member{members.length !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            {isCurrentUserCaptain() && (
+              <button
+                className="add-member-btn"
+                onClick={openAddMemberModal}
+                disabled={membersLoading}
+              >
+                + Add Member
+              </button>
             )}
           </div>
 
@@ -477,6 +620,109 @@ const TeamDetailsPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Add Member Modal */}
+      {showAddMemberModal && (
+        <div className="modal-overlay" onClick={closeAddMemberModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Add Team Member</h3>
+              <button className="modal-close-btn" onClick={closeAddMemberModal}>
+                ×
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {/* Search Users */}
+              <div className="search-section">
+                <label className="form-label">Search Users</label>
+                <input
+                  type="text"
+                  className="search-input"
+                  placeholder="Search by name or email..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearchUsers(e.target.value)}
+                />
+              </div>
+
+              {/* Users List */}
+              <div className="users-list-section">
+                {usersLoading ? (
+                  <div className="users-loading">
+                    <div className="loading-spinner-small"></div>
+                    <p>Loading users...</p>
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="no-users">
+                    {searchQuery.trim() ? 'No users found matching your search.' : 'No available users to add.'}
+                  </div>
+                ) : (
+                  <div className="users-list">
+                    {filteredUsers.map((user) => (
+                      <div
+                        key={user.userId}
+                        className={`user-option ${selectedUser?.userId === user.userId ? 'selected' : ''}`}
+                        onClick={() => setSelectedUser(user)}
+                      >
+                        <div className="user-avatar">
+                          <Image
+                            src={user.profilePhoto || '/Photos/profile.png'}
+                            alt={user.name}
+                            width={40}
+                            height={40}
+                            className="user-photo"
+                          />
+                        </div>
+                        <div className="user-details">
+                          <h4 className="user-name">{user.name}</h4>
+                          <p className="user-email">{user.email}</p>
+                          <span className={`user-role ${user.role.toLowerCase()}`}>
+                            {user.role}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Role Selection */}
+              {selectedUser && (
+                <div className="role-section">
+                  <label className="form-label">Role in Team</label>
+                  <select
+                    className="role-select"
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                  >
+                    <option value="Player">Player</option>
+                    <option value="Captain">Captain</option>
+                    <option value="Goalkeeper">Goalkeeper</option>
+                    <option value="Vice Captain">Vice Captain</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="cancel-btn"
+                onClick={closeAddMemberModal}
+                disabled={addingMember}
+              >
+                Cancel
+              </button>
+              <button
+                className="add-btn"
+                onClick={addMember}
+                disabled={!selectedUser || addingMember}
+              >
+                {addingMember ? 'Adding...' : 'Add Member'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
