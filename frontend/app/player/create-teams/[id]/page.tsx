@@ -33,6 +33,12 @@ interface TeamRequest {
   tournamentId: number;
 }
 
+interface TeamLogo {
+  id: string;
+  name: string;
+  path: string;
+}
+
 interface TeamMemberRequest {
   teamId: number;
   userId: number;
@@ -51,15 +57,16 @@ const CreateTeamPage = () => {
   const params = useParams();
   const router = useRouter();
   const tournamentId = params.id as string;
-  
+
   const [teamName, setTeamName] = useState('');
+  const [selectedLogo, setSelectedLogo] = useState('/Photos/team-logos/logo1.png');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [user, setUser] = useState<User | null>(null);
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
-  
+
   // Player search and selection states
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,12 +74,50 @@ const CreateTeamPage = () => {
   const [selectedPlayers, setSelectedPlayers] = useState<SelectedPlayer[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
 
+  // Available team logos
+  const availableLogos: TeamLogo[] = [
+    { id: 'logo1', name: 'Classic Shield', path: '/Photos/team-logos/logo1.png' },
+    { id: 'logo2', name: 'Modern Emblem', path: '/Photos/team-logos/logo2.png' },
+    { id: 'logo3', name: 'Athletic Badge', path: '/Photos/team-logos/logo3.png' },
+    { id: 'logo4', name: 'Champion Crest', path: '/Photos/team-logos/logo4.png' },
+    { id: 'logo5', name: 'Victory Wing', path: '/Photos/team-logos/logo5.png' },
+    { id: 'logo6', name: 'Power Symbol', path: '/Photos/team-logos/logo6.png' },
+    { id: 'logo7', name: 'Elite Mark', path: '/Photos/team-logos/logo7.png' },
+    { id: 'logo8', name: 'Thunder Bolt', path: '/Photos/team-logos/logo8.png' },
+  ];
+
+  // Handle logo error fallback
+  const handleLogoError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const target = e.target as HTMLImageElement;
+    // Fallback to existing logos if team logos don't exist
+    if (target.src.includes('/Photos/team-logos/logo1.png')) {
+      target.src = '/Photos/logo1.png';
+    } else if (target.src.includes('/Photos/team-logos/logo2.png')) {
+      target.src = '/Photos/logo2.png';
+    } else if (target.src.includes('/Photos/team-logos/logo3.png')) {
+      target.src = '/Photos/logo3.png';
+    } else if (target.src.includes('/Photos/team-logos/logo4.png')) {
+      target.src = '/Photos/logo4.png';
+    } else if (target.src.includes('/Photos/team-logos/logo5.png')) {
+      target.src = '/Photos/basketball_logo.png';
+    } else if (target.src.includes('/Photos/team-logos/logo6.png')) {
+      target.src = '/Photos/football_logo.png';
+    } else if (target.src.includes('/Photos/team-logos/logo7.png')) {
+      target.src = '/Photos/cricket_logo.png';
+    } else if (target.src.includes('/Photos/team-logos/logo8.png')) {
+      target.src = '/Photos/volleyball_logo.png';
+    } else {
+      // Final fallback
+      target.src = '/Photos/logo1.png';
+    }
+  };
+
   // Fetch user profile and tournament info on component mount
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
         setInitialLoading(true);
-        
+
         // Fetch user profile
         const userResponse = await makeAuthenticatedRequest<User>('/api/users/profile');
         if (userResponse.error) {
@@ -88,7 +133,7 @@ const CreateTeamPage = () => {
           return;
         }
         setTournament(tournamentResponse.data!);
-        
+
       } catch (err) {
         setError('An error occurred while fetching data');
         console.error('Error fetching initial data:', err);
@@ -167,7 +212,7 @@ const CreateTeamPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!teamName.trim()) {
       setError('Team name is required');
       return;
@@ -188,7 +233,7 @@ const CreateTeamPage = () => {
         teamName: teamName.trim(),
         sportId: tournament.sportId,
         createdById: user.userId,
-        logo: '/Photos/dream_team_logo.png',
+        logo: selectedLogo,
         tournamentId: parseInt(tournamentId)
       };
       const teamResponse = await makeAuthenticatedRequest<{
@@ -226,7 +271,7 @@ const CreateTeamPage = () => {
         userId: user.userId,
         roleInTeam: 'Captain'
       };
-      
+
       const creatorMemberResponse = await makeAuthenticatedRequest('/api/team-members', {
         method: 'POST',
         body: JSON.stringify(creatorMemberRequest)
@@ -244,7 +289,7 @@ const CreateTeamPage = () => {
           userId: player.userId,
           roleInTeam: player.roleInTeam
         };
-        
+
         const memberResponse = await makeAuthenticatedRequest('/api/team-members', {
           method: 'POST',
           body: JSON.stringify(memberRequest)
@@ -261,9 +306,10 @@ const CreateTeamPage = () => {
         const successMessage = teamResponse.data?.message || 'Team created successfully';
         setSuccess(`${successMessage}! ${selectedPlayers.length > 0 ? 'All members added successfully!' : ''}`);
         setTeamName('');
+        setSelectedLogo('/Photos/team-logos/logo1.png');
         setSelectedPlayers([]);
         setSearchQuery('');
-        
+
         // Redirect to teams list or dashboard after a short delay
         setTimeout(() => {
           router.push('/player/my-teams');
@@ -299,9 +345,15 @@ const CreateTeamPage = () => {
     <div className="create-team-container">
       <div className="create-team-card">
         <h1 className="page-title">Create Team</h1>
-        
+
         <div className="tournament-info">
           <h3>Tournament: {tournament.name}</h3>
+        </div>
+
+        {/* Debug info */}
+        <div style={{ fontSize: '12px', color: '#888', marginBottom: '20px' }}>
+          <p>Selected Logo: {selectedLogo}</p>
+          <p>Available Logos: {availableLogos.length}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="create-team-form">
@@ -322,16 +374,51 @@ const CreateTeamPage = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Team Logo</label>
-            <div className="logo-info">
-              <Image 
-                src="/Photos/dream_team_logo.png" 
-                alt="Default Team Logo" 
-                className="logo-preview"
-                width={64}
-                height={64}
-              />
-              <p className="logo-text">Default logo will be used</p>
+            <label className="form-label">
+              Team Logo <span className="required">*</span>
+            </label>
+            <div className="logo-selection">
+              <div className="current-logo">
+                <Image
+                  src={selectedLogo}
+                  alt="Selected Team Logo"
+                  className="logo-preview"
+                  width={80}
+                  height={80}
+                  onError={handleLogoError}
+                />
+                <p className="logo-text">Selected Logo</p>
+              </div>
+
+              <div className="logo-options">
+                <h4>Choose a Logo:</h4>
+                <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+                  Click on any logo below to select it for your team
+                </p>
+                <div className="logo-grid">
+                  {availableLogos.map((logo) => (
+                    <div
+                      key={logo.id}
+                      className={`logo-option ${selectedLogo === logo.path ? 'selected' : ''}`}
+                      onClick={() => {
+                        console.log('Logo selected:', logo.path);
+                        setSelectedLogo(logo.path);
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <Image
+                        src={logo.path}
+                        alt={logo.name}
+                        className="logo-thumbnail"
+                        width={60}
+                        height={60}
+                        onError={handleLogoError}
+                      />
+                      <span className="logo-name">{logo.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -346,30 +433,30 @@ const CreateTeamPage = () => {
               placeholder="Search players by name or email..."
               disabled={loading || usersLoading}
             />
-            
+
             {usersLoading && <div className="loading-message">Loading players...</div>}
-            
+
             {/* Search Instructions */}
             {!usersLoading && searchQuery.length === 0 && (
               <div className="search-instructions">
                 <p>Start typing to search for players...</p>
               </div>
             )}
-            
+
             {/* Search too short message */}
             {!usersLoading && searchQuery.length > 0 && searchQuery.length < 2 && (
               <div className="search-instructions">
                 <p>Type at least 2 characters to search...</p>
               </div>
             )}
-            
+
             {/* No results message */}
             {!usersLoading && searchQuery.length >= 2 && filteredUsers.length === 0 && (
               <div className="no-results">
                 <p>No players found matching &ldquo;{searchQuery}&rdquo;</p>
               </div>
             )}
-            
+
             {/* Available Players List */}
             {!usersLoading && searchQuery.length >= 2 && filteredUsers.length > 0 && (
               <div className="players-list">
@@ -406,7 +493,7 @@ const CreateTeamPage = () => {
                 )}
               </div>
             )}
-            
+
             {/* Selected Players with Role Assignment */}
             {selectedPlayers.length > 0 && (
               <div className="selected-players">
