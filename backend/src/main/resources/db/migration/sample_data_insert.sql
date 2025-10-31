@@ -175,12 +175,7 @@ INSERT INTO announcements (announcement_id, title, content, posted_by, posted_at
                                                                                                                                                      (7, 'Elite Cricket Championship Guidelines', 'Special guidelines for the Elite Cricket Championship have been published. All participating teams must review before September 1st.', 7, '2024-08-20 12:00:00', 3, 7, NULL, NULL),
                                                                                                                                                      (8, 'Winter Football Championship 2024 Registration Open!', 'The Winter Football Championship 2024 is now accepting team registrations! This knockout tournament will feature 32 teams competing for the winter crown. Register your teams before November 15th, 2024.', 1, '2024-11-01 09:00:00', 1, 8, '2024-11-01 00:00:00', '2024-11-15 23:59:59'),
                                                                                                                                                      (9, 'Winter Football Championship Rules & Guidelines', 'Special winter playing conditions and rules have been published for the Winter Football Championship 2024. All 32 participating teams must review the updated guidelines including cold weather protocols.', 1, '2024-11-05 14:00:00', 1, 8, NULL, NULL),
-                                                                                                                                                     (10, 'Winter Football Championship Draw Ceremony', 'The official draw ceremony for the Winter Football Championship 2024 will be held on November 20th. The knockout bracket will be announced with first round matches starting December 1st.', 1, '2024-11-10 11:30:00', 1, 8, '2024-11-20 18:00:00', '2024-11-20 20:00:00'),
-(16, 'Volleyball Championship 2025 Registration', 'Registration for the Volleyball Championship 2025 is now open. Teams can register until December 31st, 2024.', 24, '2024-12-01 10:00:00', 6, 9, '2024-12-01 00:00:00', '2024-12-31 23:59:59'),
-(17, 'Table Tennis Open 2025 Announced', 'The Table Tennis Open 2025 will feature top players from around the region. Registration opens January 1st.', 25, '2024-12-15 14:00:00', 7, 10, '2025-01-01 00:00:00', '2025-01-31 23:59:59'),
-(18, 'Carrom Masters 2025 Launch', 'Introducing the Carrom Masters 2025 tournament. All skill levels welcome!', 26, '2025-01-01 09:00:00', 8, 11, '2025-01-01 00:00:00', '2025-02-28 23:59:59'),
-(19, 'Chess Tournament 2025 Schedule', 'The Chess Tournament 2025 schedule has been released. Matches start in April.', 27, '2025-03-01 11:00:00', 9, 12, '2025-04-01 00:00:00', '2025-04-30 23:59:59'),
-(20, 'Scrabble Championship 2025', 'Join the Scrabble Championship 2025 for word enthusiasts. Registration now open!', 28, '2025-04-01 12:00:00', 10, 13, '2025-04-01 00:00:00', '2025-05-31 23:59:59');
+                                                                                                                                                     (10, 'Winter Football Championship Draw Ceremony', 'The official draw ceremony for the Winter Football Championship 2024 will be held on November 20th. The knockout bracket will be announced with first round matches starting December 1st.', 1, '2024-11-10 11:30:00', 1, 8, '2024-11-20 18:00:00', '2024-11-20 20:00:00');
 
 -- Insert Notifications
 INSERT INTO notifications (notification_id, recipient_id, message, sent_at, is_read) VALUES
@@ -191,11 +186,11 @@ INSERT INTO notifications (notification_id, recipient_id, message, sent_at, is_r
 (5, 2, 'Your profile has been updated successfully with your latest achievements.', '2024-04-01 14:15:00', true),
 (6, 6, 'Congratulations! Your team Golden Gladiators won the Captain''s Football League match. Excellent leadership!', '2024-08-15 18:30:00', true),
 (7, 7, 'Your Elite Cricket Championship tournament has been successfully created and scheduled for September.', '2024-08-20 14:00:00', true),
-(8, 24, 'Congratulations on winning the Volleyball Championship! You are now in the Hall of Fame.', '2025-01-16 10:00:00', false),
-(9, 25, 'Your Table Tennis match is scheduled for tomorrow. Prepare well!', '2025-02-09 15:00:00', false),
-(10, 26, 'New announcement for Carrom Masters 2025. Check the details.', '2025-01-02 09:00:00', true),
-(11, 27, 'Chess Tournament 2025 registration confirmed. Good luck!', '2025-03-02 11:00:00', true),
-(12, 28, 'Scrabble Championship 2025 starts soon. Get ready for some word fun!', '2025-04-02 12:00:00', false);
+(8, 2, 'Congratulations on winning the Volleyball Championship! You are now in the Hall of Fame.', '2025-01-16 10:00:00', false),
+(9, 6, 'Your Table Tennis match is scheduled for tomorrow. Prepare well!', '2025-02-09 15:00:00', false),
+(10, 6, 'New announcement for Carrom Masters 2025. Check the details.', '2025-01-02 09:00:00', false),
+(11, 5, 'Chess Tournament 2025 registration confirmed. Good luck!', '2025-03-02 11:00:00', false),
+(12, 5, 'Scrabble Championship 2025 starts soon. Get ready for some word fun!', '2025-04-02 12:00:00', false);
 
 -- Insert Refresh Tokens (extending MasterEntity)
 
@@ -551,7 +546,13 @@ INSERT INTO announcements (announcement_id, title, content, posted_by, posted_at
                                                                                                                                                      (12, 'Basketball League Quarter Finals Schedule', 'Quarter finals schedule for the Inter-College Basketball League has been announced. Matches will be held from April 15th to April 20th.', 1, '2024-04-10 14:00:00', 2, 2, '2024-04-15 00:00:00', '2024-04-20 23:59:59'),
                                                                                                                                                      (13, 'Cricket Tournament Team Registration', 'Team registration for the upcoming cricket tournament is now open. Last date for registration is April 25th, 2024.', 1, '2024-04-15 09:00:00', 3, 3, '2024-04-15 00:00:00', '2024-04-25 23:59:59'),
                                                                                                                                                      (14, 'Tennis Coaching Camp Announcement', 'Special tennis coaching camp for beginners will be conducted from June 1st to June 15th. Limited seats available!', 1, '2024-05-20 11:00:00', 4, NULL, '2024-06-01 00:00:00', '2024-06-15 23:59:59'),
-                                                                                                                                                     (15, 'Captain''s Football League Playoffs', 'Playoff matches for Captain''s Football League will begin on September 15th. Top 8 teams will compete for the championship.', 6, '2024-09-10 16:00:00', 1, 6, '2024-09-15 00:00:00', '2024-09-25 23:59:59');
+                                                                                                                                                     (15, 'Captain''s Football League Playoffs', 'Playoff matches for Captain''s Football League will begin on September 15th. Top 8 teams will compete for the championship.', 6, '2024-09-10 16:00:00', 1, 6, '2024-09-15 00:00:00', '2024-09-25 23:59:59'),
+                                                                                                                                                     (16, 'Volleyball Championship 2025 Registration', 'Registration for the Volleyball Championship 2025 is now open. Teams can register until December 31st, 2024.', 24, '2024-12-01 10:00:00', 6, 9, '2024-12-01 00:00:00', '2025-12-31 23:59:59'),
+                                                                                                                                                     (17, 'Table Tennis Open 2025 Announced', 'The Table Tennis Open 2025 will feature top players from around the region. Registration opens January 1st.', 25, '2024-12-15 14:00:00', 7, 10, '2025-01-01 00:00:00', '2025-11-30 23:59:59'),
+                                                                                                                                                     (18, 'Carrom Masters 2025 Launch', 'Introducing the Carrom Masters 2025 tournament. All skill levels welcome!', 26, '2025-01-01 09:00:00', 8, 11, '2025-11-01 00:00:00', '2026-02-28 23:59:59'),
+                                                                                                                                                     (19, 'Chess Tournament 2025 Schedule', 'The Chess Tournament 2025 schedule has been released. Matches start in April.', 27, '2025-03-01 11:00:00', 9, 12, '2025-11-01 00:00:00', '2025-12-30 23:59:59'),
+                                                                                                                                                     (20, 'Scrabble Championship 2025', 'Join the Scrabble Championship 2025 for word enthusiasts. Registration now open!', 28, '2025-04-01 12:00:00', 10, 13, '2025-11-01 00:00:00', '2025-12-31 23:59:59');
+
 
 
 --Insert into cricket-scores

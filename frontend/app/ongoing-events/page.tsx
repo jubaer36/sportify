@@ -57,12 +57,15 @@ export default function OngoingEvents() {
     fetchAnnouncements();
   }, []);
 
-  // Filter for ongoing events: startDate < today && endDate is null
+  // Filter for ongoing events: startDate <= today && (endDate is null OR endDate > today)
   const today = new Date();
   const ongoingAnnouncements = announcements.filter((a) => {
     if (!a.startDate) return false;
     const start = new Date(a.startDate);
-    return start < today && (!a.endDate || a.endDate === null);
+    // Event is ongoing if it has started and either has no end date or end date is in the future
+    const hasStarted = start <= today;
+    const notEnded = !a.endDate || a.endDate === null || new Date(a.endDate) > today;
+    return hasStarted && notEnded;
   });
 
   return (
