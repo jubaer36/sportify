@@ -3,6 +3,8 @@
 A full-stack web application for managing sports tournaments and events.
 Built with Spring Boot (Backend) and React (Frontend).
 
+[Project Demo Link](https://drive.google.com/file/d/1y0joPsSwVjOZiQoFLRrYjok168OLAPpc/view?usp=sharing)
+
 ## Features
 
 - **Game Registration** – Register as a team or individual player across multiple sports.
